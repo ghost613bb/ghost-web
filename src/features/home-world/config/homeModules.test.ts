@@ -21,4 +21,27 @@ describe("homeModules", () => {
   it("keeps first-version home modules publicly navigable", () => {
     expect(homeModules.every((module) => module.visibility === "public")).toBe(true);
   });
+
+  it("defines pixel-town placeholder styles for future assets", () => {
+    expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
+      "cottage",
+      "library",
+      "greenhouse",
+      "workshop",
+      "tower",
+      "mail",
+    ]);
+    expect(homeModules.every((module) => module.assetKey === undefined)).toBe(true);
+  });
+
+  it("uses a balanced isometric town layout", () => {
+    expect(homeModules.map((module) => module.position)).toEqual([
+      [-3.2, 0, 0.8],
+      [-1.5, 0, -1.7],
+      [1.35, 0, -1.75],
+      [3.2, 0, 0.25],
+      [1.55, 0, 1.95],
+      [-1.7, 0, 2.05],
+    ]);
+  });
 });
