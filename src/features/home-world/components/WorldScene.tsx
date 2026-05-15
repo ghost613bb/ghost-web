@@ -1,6 +1,6 @@
 "use client";
 
-import { Environment, Float, OrbitControls, Stars } from "@react-three/drei";
+import { Float, OrbitControls, Stars } from "@react-three/drei";
 import type { HomeModule } from "@/features/home-world/types";
 import { CenterAvatar } from "./CenterAvatar";
 import { HouseNode } from "./HouseNode";
@@ -20,7 +20,6 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
       <pointLight position={[-3, 2.2, 2]} color="#00f5d4" intensity={45} distance={8} />
       <pointLight position={[3, 2.4, -2]} color="#f15bb5" intensity={35} distance={7} />
       <Stars radius={18} depth={18} count={900} factor={2.5} saturation={0.2} fade speed={0.35} />
-      <Environment preset="city" />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[5.4, 80]} />
