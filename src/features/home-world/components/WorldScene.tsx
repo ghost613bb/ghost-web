@@ -18,10 +18,12 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
       <color attach="background" args={["#acf5fa"]} />
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 7, 3]} intensity={2.2} castShadow />
-      <LowPolyCloud position={[-4.6, 3.7, -4.2]} rotation={[0, -0.2, 0]} scale={0.018} />
-      <LowPolyCloud position={[-2.5, 4.25, -5.2]} rotation={[0, 0.35, 0]} scale={0.014} />
-      <LowPolyCloud position={[2.7, 4.1, -4.9]} rotation={[0, -0.35, 0]} scale={0.016} />
-      <LowPolyCloud position={[4.8, 3.55, -3.2]} rotation={[0, 0.2, 0]} scale={0.013} />
+      <LowPolyCloud position={[-6.25, 1.12, -0.35]} rotation={[0, -0.18, 0]} scale={0.026} />
+      <LowPolyCloud position={[-4.75, 1.35, -2.0]} rotation={[0, 0.28, 0]} scale={0.022} />
+      <LowPolyCloud position={[-3.05, 1.56, -3.7]} rotation={[0, -0.35, 0]} scale={0.016} />
+      <LowPolyCloud position={[3.2, 1.56, -3.3]} rotation={[0, 0.2, 0]} scale={0.016} />
+      <LowPolyCloud position={[4.0, 1.35, -2.2]} rotation={[0, -0.28, 0]} scale={0.022} />
+      <LowPolyCloud position={[4.95, 1.12, -0.95]} rotation={[0, -0.12, 0]} scale={0.026} />
 
       <mesh rotation={[-Math.PI / 2, 0, Math.PI / 4]} receiveShadow>
         <boxGeometry args={[7.4, 7.4, 0.18]} />
