@@ -19,6 +19,7 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
   const emissiveIntensity = active ? 1.2 : 0.25;
   const scale = active ? 1.08 : 1;
   const y = grassSurfaceY + (active ? 0.14 : 0);
+  const rotationY = module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
 
   const roofColor = useMemo(() => module.accentColor, [module.accentColor]);
 
@@ -35,6 +36,7 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
   return (
     <group
       position={[module.position[0], module.position[1] + y, module.position[2]]}
+      rotation={[0, rotationY, 0]}
       scale={scale}
       onPointerEnter={(event) => {
         event.stopPropagation();

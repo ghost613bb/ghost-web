@@ -4,6 +4,7 @@ import { Float, OrbitControls } from "@react-three/drei";
 import type { HomeModule } from "@/features/home-world/types";
 import { CenterAvatar } from "./CenterAvatar";
 import { HouseNode } from "./HouseNode";
+import { ParallelogramTownGround } from "./ParallelogramTownGround";
 import { LowPolyCloud } from "./LowPolyCloud";
 
 type WorldSceneProps = {
@@ -25,15 +26,8 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
       <LowPolyCloud position={[4.0, 1.35, -2.2]} rotation={[0, -0.28, 0]} scale={0.022} />
       <LowPolyCloud position={[4.95, 1.12, -0.95]} rotation={[0, -0.12, 0]} scale={0.026} />
 
-      <mesh rotation={[-Math.PI / 2, 0, Math.PI / 4]} receiveShadow>
-        <boxGeometry args={[7.4, 7.4, 0.18]} />
-        <meshStandardMaterial color="rgb(119, 70, 66)" roughness={0.82} metalness={0.08} />
-      </mesh>
-
-      <mesh position={[0, 0.13, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 4]} receiveShadow>
-        <boxGeometry args={[7.4, 7.4, 0.08]} />
-        <meshStandardMaterial color="rgb(137, 197, 82)" roughness={0.9} />
-      </mesh>
+      <ParallelogramTownGround color="rgb(119, 70, 66)" y={-0.09} thickness={0.18} roughness={0.82} metalness={0.08} />
+      <ParallelogramTownGround color="rgb(137, 197, 82)" y={0.12} thickness={0.08} roughness={0.9} />
 
       <mesh position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.05, 3.35, 96]} />
