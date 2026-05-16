@@ -8,7 +8,7 @@ export function ConnieAvatar() {
   const { scene } = useGLTF(connieModelPath);
 
   return (
-    <group position={[0, 0.02, 0.15]} rotation={[0, Math.PI, 0]} scale={0.32}>
+    <group position={[0, 0.02, 0.15]} rotation={[0, 0, 0]} scale={0.32}>
       <Clone object={scene} />
     </group>
   );

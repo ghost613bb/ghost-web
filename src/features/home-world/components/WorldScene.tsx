@@ -23,9 +23,9 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
       <LowPolyCloud position={[2.7, 4.1, -4.9]} rotation={[0, -0.35, 0]} scale={0.016} />
       <LowPolyCloud position={[4.8, 3.55, -3.2]} rotation={[0, 0.2, 0]} scale={0.013} />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[5.4, 80]} />
-        <meshStandardMaterial color="#10202f" roughness={0.82} metalness={0.08} />
+      <mesh rotation={[-Math.PI / 2, 0, Math.PI / 4]} receiveShadow>
+        <boxGeometry args={[7.4, 7.4, 0.18]} />
+        <meshStandardMaterial color="rgb(119, 70, 66)" roughness={0.82} metalness={0.08} />
       </mesh>
 
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
