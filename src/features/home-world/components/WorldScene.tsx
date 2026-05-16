@@ -28,7 +28,12 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
         <meshStandardMaterial color="rgb(119, 70, 66)" roughness={0.82} metalness={0.08} />
       </mesh>
 
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 0.13, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 4]} receiveShadow>
+        <boxGeometry args={[7.4, 7.4, 0.08]} />
+        <meshStandardMaterial color="rgb(137, 197, 82)" roughness={0.9} />
+      </mesh>
+
+      <mesh position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.05, 3.35, 96]} />
         <meshBasicMaterial color="#7dd3fc" transparent opacity={0.18} />
       </mesh>
