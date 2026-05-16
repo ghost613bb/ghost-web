@@ -1,0 +1,11 @@
+Model Information:
+* title:	Rosemi Lovelock [Nijisanji EN Obsydia]
+* source:	https://sketchfab.com/3d-models/rosemi-lovelock-nijisanji-en-obsydia-96b8d41059dc48c5993454d4533408fb
+* author:	scuffward (https://sketchfab.com/scuffward)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Rosemi Lovelock [Nijisanji EN Obsydia]" (https://sketchfab.com/3d-models/rosemi-lovelock-nijisanji-en-obsydia-96b8d41059dc48c5993454d4533408fb) by scuffward (https://sketchfab.com/scuffward) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
