@@ -15,7 +15,7 @@ export function HomeWorldCanvas({ activeModuleId, modules, onActiveModuleChange 
   return (
     <div className="absolute inset-0">
       <Canvas
-        camera={{ position: [0, 4.2, 6], fov: 48 }}
+        camera={{ position: [0, 3.25, 6.8], fov: 46 }}
         dpr={[1, 1.6]}
         shadows
         gl={{ antialias: true, powerPreference: "high-performance" }}
