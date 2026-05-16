@@ -6,6 +6,7 @@ import { CenterAvatar } from "./CenterAvatar";
 import { HouseNode } from "./HouseNode";
 import { ParallelogramTownGround } from "./ParallelogramTownGround";
 import { LowPolyCloud } from "./LowPolyCloud";
+import { LowPolySun } from "./LowPolySun";
 
 type WorldSceneProps = {
   activeModuleId: string | null;
@@ -20,7 +21,8 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 7, 3]} intensity={2.2} castShadow />
       <LowPolyCloud position={[-6.25, 1.12, -0.35]} rotation={[0, -0.18, 0]} scale={0.026} />
-      <LowPolyCloud position={[-4.75, 1.35, -2.0]} rotation={[0, 0.28, 0]} scale={0.022} />
+      <LowPolyCloud position={[-4.55, 1.35, -2.0]} rotation={[0, 0.28, 0]} scale={0.022} />
+      <LowPolySun position={[-4.95, 1.58, -3.7]} rotation={[0, 0, 0]} scale={0.0034} />
       <LowPolyCloud position={[-3.05, 1.56, -3.7]} rotation={[0, -0.35, 0]} scale={0.016} />
       <LowPolyCloud position={[3.2, 1.56, -3.3]} rotation={[0, 0.2, 0]} scale={0.016} />
       <LowPolyCloud position={[4.0, 1.35, -2.2]} rotation={[0, -0.28, 0]} scale={0.022} />
