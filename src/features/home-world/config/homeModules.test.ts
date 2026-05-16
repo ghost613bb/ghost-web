@@ -34,14 +34,14 @@ describe("homeModules", () => {
     expect(homeModules.every((module) => module.assetKey === undefined)).toBe(true);
   });
 
-  it("uses a balanced isometric town layout", () => {
+  it("uses a balanced wide isometric town layout", () => {
     expect(homeModules.map((module) => module.position)).toEqual([
-      [-3.2, 0, 0.8],
-      [-1.5, 0, -1.7],
-      [1.35, 0, -1.75],
-      [3.2, 0, 0.25],
-      [1.55, 0, 1.95],
-      [-1.7, 0, 2.05],
+      [-2.5, 0, 0.4],
+      [-1.3, 0, -1.2],
+      [1.3, 0, -1.2],
+      [2.5, 0, 0.4],
+      [1.35, 0, 1.55],
+      [-1.35, 0, 1.55],
     ]);
   });
 });
