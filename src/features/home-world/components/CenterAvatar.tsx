@@ -4,7 +4,7 @@ import { PomuAvatar } from "./PomuAvatar";
 export function CenterAvatar() {
   return (
     <Float speed={1.6} rotationIntensity={0.08} floatIntensity={0.12}>
-      <group>
+      <group position={[0, 0.17, 0]}>
         <PomuAvatar />
         <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <ringGeometry args={[0.55, 0.62, 48]} />

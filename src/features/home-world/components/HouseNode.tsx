@@ -11,12 +11,14 @@ type HouseNodeProps = {
   onActiveChange: (id: string | null) => void;
 };
 
+const grassSurfaceY = 0.17;
+
 export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
   const router = useRouter();
   const [pressedOnce, setPressedOnce] = useState(false);
   const emissiveIntensity = active ? 1.2 : 0.25;
   const scale = active ? 1.08 : 1;
-  const y = active ? 0.14 : 0;
+  const y = grassSurfaceY + (active ? 0.14 : 0);
 
   const roofColor = useMemo(() => module.accentColor, [module.accentColor]);
 
