@@ -1,9 +1,10 @@
 "use client";
 
-import { Float, OrbitControls, Stars } from "@react-three/drei";
+import { Float, OrbitControls } from "@react-three/drei";
 import type { HomeModule } from "@/features/home-world/types";
 import { CenterAvatar } from "./CenterAvatar";
 import { HouseNode } from "./HouseNode";
+import { LowPolyCloud } from "./LowPolyCloud";
 
 type WorldSceneProps = {
   activeModuleId: string | null;
@@ -14,12 +15,13 @@ type WorldSceneProps = {
 export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: WorldSceneProps) {
   return (
     <>
-      <color attach="background" args={["#050816"]} />
-      <ambientLight intensity={0.8} />
+      <color attach="background" args={["#acf5fa"]} />
+      <ambientLight intensity={1.2} />
       <directionalLight position={[4, 7, 3]} intensity={2.2} castShadow />
-      <pointLight position={[-3, 2.2, 2]} color="#00f5d4" intensity={45} distance={8} />
-      <pointLight position={[3, 2.4, -2]} color="#f15bb5" intensity={35} distance={7} />
-      <Stars radius={18} depth={18} count={900} factor={2.5} saturation={0.2} fade speed={0.35} />
+      <LowPolyCloud position={[-4.6, 3.7, -4.2]} rotation={[0, -0.2, 0]} scale={0.018} />
+      <LowPolyCloud position={[-2.5, 4.25, -5.2]} rotation={[0, 0.35, 0]} scale={0.014} />
+      <LowPolyCloud position={[2.7, 4.1, -4.9]} rotation={[0, -0.35, 0]} scale={0.016} />
+      <LowPolyCloud position={[4.8, 3.55, -3.2]} rotation={[0, 0.2, 0]} scale={0.013} />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[5.4, 80]} />

@@ -4,11 +4,12 @@ import { homeModules } from "@/features/home-world/config/homeModules";
 import { HomeOverlay } from "./HomeOverlay";
 
 describe("HomeOverlay", () => {
-  it("renders the site identity", () => {
+  it("renders the site identity without the intro badge", () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
     expect(screen.getByRole("heading", { name: "Ghost Garden" })).toBeInTheDocument();
     expect(screen.getByText("个人数字花园")).toBeInTheDocument();
+    expect(screen.queryByText("在这里收集生活碎片、学习笔记和一点古灵精怪的审美。")).not.toBeInTheDocument();
   });
 
   it("renders a fallback link for every home module", () => {
@@ -19,10 +20,10 @@ describe("HomeOverlay", () => {
     }
   });
 
-  it("shows active module intro when a house is selected", () => {
+  it("does not render the selected-house info panel", () => {
     render(<HomeOverlay activeModuleId="album" modules={homeModules} />);
 
-    expect(screen.getByRole("heading", { level: 2, name: "相册" })).toBeInTheDocument();
-    expect(screen.getByText("照片不是证据，是当时心情的标本。")).toBeInTheDocument();
+    expect(screen.queryByText("当前靠近")).not.toBeInTheDocument();
+    expect(screen.queryByText("照片不是证据，是当时心情的标本。")).not.toBeInTheDocument();
   });
 });
