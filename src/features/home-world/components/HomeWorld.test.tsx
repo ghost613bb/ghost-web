@@ -11,7 +11,7 @@ describe("HomeWorld", () => {
     render(<HomeWorld />);
 
     expect(screen.getByTestId("home-world-canvas")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Ghost Garden" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ghostspace" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "技能温室" })).toHaveAttribute("href", "/album");
   });
 });

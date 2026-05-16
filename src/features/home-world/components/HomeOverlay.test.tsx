@@ -4,11 +4,11 @@ import { homeModules } from "@/features/home-world/config/homeModules";
 import { HomeOverlay } from "./HomeOverlay";
 
 describe("HomeOverlay", () => {
-  it("renders the site identity without the intro badge", () => {
+  it("renders the pixel-style site identity without subtitle text", () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
-    expect(screen.getByRole("heading", { name: "Ghost Garden" })).toBeInTheDocument();
-    expect(screen.getByText("个人数字花园")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ghostspace" })).toBeInTheDocument();
+    expect(screen.queryByText("个人数字花园")).not.toBeInTheDocument();
     expect(screen.queryByText("在这里收集生活碎片、学习笔记和一点古灵精怪的审美。")).not.toBeInTheDocument();
   });
 
