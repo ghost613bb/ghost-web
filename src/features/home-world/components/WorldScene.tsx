@@ -14,40 +14,45 @@ type WorldSceneProps = {
   onActiveModuleChange: (id: string | null) => void;
 };
 
+const sceneGroupPosition: [number, number, number] = [0, -0.24, 0];
+const sceneGroupScale = 1.04;
+
 export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: WorldSceneProps) {
   return (
     <>
       <color attach="background" args={["#acf5fa"]} />
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 7, 3]} intensity={2.2} castShadow />
-      <LowPolyCloud position={[-6.25, 1.12, -0.35]} rotation={[0, -0.18, 0]} scale={0.026} />
-      <LowPolyCloud position={[-4.55, 1.35, -2.0]} rotation={[0, 0.28, 0]} scale={0.022} />
-      <LowPolySun position={[-4.95, 1.58, -3.7]} rotation={[0, 0, 0]} scale={0.0034} />
-      <LowPolyCloud position={[-3.05, 1.56, -3.7]} rotation={[0, -0.35, 0]} scale={0.016} />
-      <LowPolyCloud position={[3.2, 1.56, -3.3]} rotation={[0, 0.2, 0]} scale={0.016} />
-      <LowPolyCloud position={[4.0, 1.35, -2.2]} rotation={[0, -0.28, 0]} scale={0.022} />
-      <LowPolyCloud position={[4.95, 1.12, -0.95]} rotation={[0, -0.12, 0]} scale={0.026} />
+      <group position={sceneGroupPosition} scale={sceneGroupScale}>
+        <LowPolyCloud position={[-6.25, 1.12, -0.35]} rotation={[0, -0.18, 0]} scale={0.026} />
+        <LowPolyCloud position={[-4.55, 1.35, -2.0]} rotation={[0, 0.28, 0]} scale={0.022} />
+        <LowPolySun position={[-4.95, 1.58, -3.7]} rotation={[0, 0, 0]} scale={0.0034} />
+        <LowPolyCloud position={[-3.05, 1.56, -3.7]} rotation={[0, -0.35, 0]} scale={0.016} />
+        <LowPolyCloud position={[3.2, 1.56, -3.3]} rotation={[0, 0.2, 0]} scale={0.016} />
+        <LowPolyCloud position={[4.0, 1.35, -2.2]} rotation={[0, -0.28, 0]} scale={0.022} />
+        <LowPolyCloud position={[4.95, 1.12, -0.95]} rotation={[0, -0.12, 0]} scale={0.026} />
 
-      <ParallelogramTownGround color="rgb(119, 70, 66)" y={-0.09} thickness={0.18} roughness={0.82} metalness={0.08} />
-      <ParallelogramTownGround color="rgb(137, 197, 82)" y={0.12} thickness={0.08} roughness={0.9} />
+        <ParallelogramTownGround color="rgb(119, 70, 66)" y={-0.09} thickness={0.18} roughness={0.82} metalness={0.08} />
+        <ParallelogramTownGround color="rgb(137, 197, 82)" y={0.12} thickness={0.08} roughness={0.9} />
 
-      <mesh position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.05, 3.35, 96]} />
-        <meshBasicMaterial color="#7dd3fc" transparent opacity={0.18} />
-      </mesh>
+        <mesh position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[1.05, 3.35, 96]} />
+          <meshBasicMaterial color="#7dd3fc" transparent opacity={0.18} />
+        </mesh>
 
-      <Float speed={1} rotationIntensity={0.04} floatIntensity={0.08}>
-        <CenterAvatar />
-      </Float>
+        <Float speed={1} rotationIntensity={0.04} floatIntensity={0.08}>
+          <CenterAvatar />
+        </Float>
 
-      {modules.map((module) => (
-        <HouseNode
-          key={module.id}
-          module={module}
-          active={activeModuleId === module.id}
-          onActiveChange={onActiveModuleChange}
-        />
-      ))}
+        {modules.map((module) => (
+          <HouseNode
+            key={module.id}
+            module={module}
+            active={activeModuleId === module.id}
+            onActiveChange={onActiveModuleChange}
+          />
+        ))}
+      </group>
 
       <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2.15} minDistance={4.2} maxDistance={7.2} />
     </>
