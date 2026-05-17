@@ -22,7 +22,7 @@ describe("homeModules", () => {
     expect(homeModules.every((module) => module.visibility === "public")).toBe(true);
   });
 
-  it("defines pixel-town placeholder styles for future assets", () => {
+  it("defines pixel-town placeholder styles and only replaces the message house asset", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -31,7 +31,14 @@ describe("homeModules", () => {
       "tower",
       "mail",
     ]);
-    expect(homeModules.every((module) => module.assetKey === undefined)).toBe(true);
+    expect(homeModules.map((module) => module.assetKey)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "fastFoodRestaurant",
+    ]);
   });
 
   it("uses a balanced wide isometric town layout", () => {

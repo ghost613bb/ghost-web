@@ -1,4 +1,5 @@
 import type { Visibility } from "@/features/content-modules/types";
+import type { HouseAssetKey } from "@/features/home-world/config/houseAssets";
 
 export type HouseStyle = "cottage" | "tower" | "gallery" | "music" | "mailbox";
 
@@ -14,7 +15,7 @@ export type HomeModule = {
   accentColor: string;
   houseStyle: HouseStyle;
   placeholderStyle: PlaceholderStyle;
-  assetKey?: string;
+  assetKey?: HouseAssetKey;
   visibility: Visibility;
   sortOrder: number;
 };

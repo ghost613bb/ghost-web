@@ -2,8 +2,9 @@
 
 import { Html } from "@react-three/drei";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { HomeModule } from "@/features/home-world/types";
+import { HouseVisual } from "./HouseVisual";
 
 type HouseNodeProps = {
   module: HomeModule;
@@ -20,8 +21,6 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
   const scale = active ? 1.08 : 1;
   const y = grassSurfaceY + (active ? 0.14 : 0);
   const rotationY = module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
-
-  const roofColor = useMemo(() => module.accentColor, [module.accentColor]);
 
   function handleClick() {
     if (typeof window !== "undefined" && window.matchMedia("(hover: none)").matches && !pressedOnce) {
@@ -52,18 +51,7 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
         handleClick();
       }}
     >
-      <mesh castShadow receiveShadow position={[0, 0.38, 0]}>
-        <boxGeometry args={[0.86, 0.76, 0.86]} />
-        <meshStandardMaterial color={module.color} emissive={module.color} emissiveIntensity={emissiveIntensity} roughness={0.5} />
-      </mesh>
-      <mesh castShadow position={[0, 0.9, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[0.72, 0.55, 4]} />
-        <meshStandardMaterial color={roofColor} emissive={roofColor} emissiveIntensity={active ? 0.85 : 0.18} roughness={0.48} />
-      </mesh>
-      <mesh position={[0, 0.38, 0.435]}>
-        <boxGeometry args={[0.22, 0.32, 0.025]} />
-        <meshStandardMaterial color="#fff7ad" emissive="#fff7ad" emissiveIntensity={active ? 1.5 : 0.45} />
-      </mesh>
+      <HouseVisual module={module} active={active} emissiveIntensity={emissiveIntensity} />
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.58, 0.64, 48]} />
         <meshBasicMaterial color={module.accentColor} transparent opacity={active ? 0.75 : 0.18} />

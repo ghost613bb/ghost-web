@@ -76,6 +76,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#ffd6c7",
     houseStyle: "mailbox",
     placeholderStyle: "mail",
+    assetKey: "fastFoodRestaurant",
     visibility: "public",
     sortOrder: 6,
   },
