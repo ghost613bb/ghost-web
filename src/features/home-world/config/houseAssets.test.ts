@@ -7,7 +7,7 @@ describe("houseAssets", () => {
   it("registers the fast food restaurant model with a public GLTF path", () => {
     expect(houseAssets.fastFoodRestaurant).toEqual({
       path: "/models/fast_food_restaurant/scene.gltf",
-      scale: 0.013,
+      scale: 0.0115,
       position: [0, 0.1, 0],
       rotation: [0, 0, 0],
     });

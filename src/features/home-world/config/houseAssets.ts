@@ -8,7 +8,7 @@ export type HouseAssetConfig = {
 export const houseAssets = {
   fastFoodRestaurant: {
     path: "/models/fast_food_restaurant/scene.gltf",
-    scale: 0.013,
+    scale: 0.0115,
     position: [0, 0.1, 0],
     rotation: [0, 0, 0],
   },
