@@ -12,6 +12,12 @@ export const houseAssets = {
     position: [0, 0.1, 0],
     rotation: [0, 0, 0],
   },
+  lowPolyCafe: {
+    path: "/models/low_poly_cafe/scene.gltf",
+    scale: 0.0028,
+    position: [0, 0.02, 0],
+    rotation: [0, 0, 0],
+  },
 } as const satisfies Record<string, HouseAssetConfig>;
 
 export type HouseAssetKey = keyof typeof houseAssets;

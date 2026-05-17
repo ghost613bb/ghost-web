@@ -11,6 +11,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#ffe2b7",
     houseStyle: "cottage",
     placeholderStyle: "cottage",
+    assetKey: "lowPolyCafe",
     visibility: "public",
     sortOrder: 1,
   },

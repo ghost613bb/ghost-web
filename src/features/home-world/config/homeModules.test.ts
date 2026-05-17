@@ -14,15 +14,21 @@ describe("homeModules", () => {
   });
 
   it("uses unique ids and routes", () => {
-    expect(new Set(homeModules.map((module) => module.id)).size).toBe(homeModules.length);
-    expect(new Set(homeModules.map((module) => module.route)).size).toBe(homeModules.length);
+    expect(new Set(homeModules.map((module) => module.id)).size).toBe(
+      homeModules.length,
+    );
+    expect(new Set(homeModules.map((module) => module.route)).size).toBe(
+      homeModules.length,
+    );
   });
 
   it("keeps first-version home modules publicly navigable", () => {
-    expect(homeModules.every((module) => module.visibility === "public")).toBe(true);
+    expect(homeModules.every((module) => module.visibility === "public")).toBe(
+      true,
+    );
   });
 
-  it("defines pixel-town placeholder styles and only replaces the message house asset", () => {
+  it("uses real models only for the about cafe and message fast food restaurant", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -32,13 +38,25 @@ describe("homeModules", () => {
       "mail",
     ]);
     expect(homeModules.map((module) => module.assetKey)).toEqual([
-      undefined,
+      "lowPolyCafe",
       undefined,
       undefined,
       undefined,
       undefined,
       "fastFoodRestaurant",
     ]);
+    expect(homeModules.find((module) => module.id === "about")).toMatchObject({
+      title: "关于我小屋",
+      route: "/about",
+      assetKey: "lowPolyCafe",
+    });
+    expect(homeModules.find((module) => module.id === "message")).toMatchObject(
+      {
+        title: "联系邮局",
+        route: "/message",
+        assetKey: "fastFoodRestaurant",
+      },
+    );
   });
 
   it("uses a balanced wide isometric town layout", () => {

@@ -57,4 +57,6 @@ export function HouseVisual(props: HouseVisualProps) {
   return <PlaceholderHouse {...props} />;
 }
 
-useGLTF.preload(houseAssets.fastFoodRestaurant.path);
+Object.values(houseAssets).forEach((asset) => {
+  useGLTF.preload(asset.path);
+});
