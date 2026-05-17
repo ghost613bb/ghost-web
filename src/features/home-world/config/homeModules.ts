@@ -64,6 +64,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#ffcf8f",
     houseStyle: "cottage",
     placeholderStyle: "tower",
+    assetKey: "coffeeShopIsometric",
     visibility: "public",
     sortOrder: 5,
   },

@@ -18,6 +18,12 @@ export const houseAssets = {
     position: [0, 0.02, 0],
     rotation: [0, 0, 0],
   },
+  coffeeShopIsometric: {
+    path: "/models/coffee_shop_isometric/scene.gltf",
+    scale: 0.28,
+    position: [0, 0.06, 0],
+    rotation: [0, 0, 0],
+  },
 } as const satisfies Record<string, HouseAssetConfig>;
 
 export type HouseAssetKey = keyof typeof houseAssets;
