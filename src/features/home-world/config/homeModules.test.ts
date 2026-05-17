@@ -22,7 +22,7 @@ describe("homeModules", () => {
     expect(homeModules.every((module) => module.visibility === "public")).toBe(true);
   });
 
-  it("defines pixel-town placeholder styles and only replaces the message house asset", () => {
+  it("defines pixel-town placeholder styles and assigns model assets to todo and message houses", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -36,7 +36,7 @@ describe("homeModules", () => {
       undefined,
       undefined,
       undefined,
-      undefined,
+      "coffeeShopIsometric",
       "fastFoodRestaurant",
     ]);
   });

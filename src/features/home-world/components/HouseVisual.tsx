@@ -1,8 +1,8 @@
 "use client";
 
 import { Clone, useGLTF } from "@react-three/drei";
-import { useEffect, useMemo } from "react";
-import { Mesh } from "three";
+import { useMemo } from "react";
+import { Mesh, Object3D } from "three";
 import { houseAssets } from "@/features/home-world/config/houseAssets";
 import type { HomeModule } from "@/features/home-world/types";
 
@@ -16,16 +16,27 @@ function ModelHouse({ module }: { module: HomeModule & { assetKey: keyof typeof 
   const asset = houseAssets[module.assetKey];
   const { scene } = useGLTF(asset.path);
 
-  useEffect(() => {
+  const modelScene = useMemo(() => {
+    const removableObjects: Object3D[] = [];
+
     scene.traverse((object) => {
+      if (module.assetKey === "coffeeShopIsometric" && object.name === "Object_121") {
+        removableObjects.push(object);
+        return;
+      }
+
       if (object instanceof Mesh) {
         object.castShadow = true;
         object.receiveShadow = true;
       }
     });
-  }, [scene]);
 
-  return <Clone object={scene} position={asset.position} rotation={asset.rotation} scale={asset.scale} />;
+    removableObjects.forEach((object) => object.parent?.remove(object));
+
+    return scene;
+  }, [module.assetKey, scene]);
+
+  return <Clone object={modelScene} position={asset.position} rotation={asset.rotation} scale={asset.scale} />;
 }
 
 function PlaceholderHouse({ module, active, emissiveIntensity }: HouseVisualProps) {
@@ -58,3 +69,4 @@ export function HouseVisual(props: HouseVisualProps) {
 }
 
 useGLTF.preload(houseAssets.fastFoodRestaurant.path);
+useGLTF.preload(houseAssets.coffeeShopIsometric.path);
