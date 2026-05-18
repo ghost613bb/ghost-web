@@ -43,6 +43,15 @@ describe("houseAssets", () => {
     });
   });
 
+  it("registers the isometric mall model for the project workshop", () => {
+    expect(houseAssets.isometricMall).toEqual({
+      path: "/models/isometric_mall/scene.gltf",
+      scale: 0.012,
+      position: [0, 0.066, 0],
+      rotation: [0, 0, 0],
+    });
+  });
+
   it("keeps the fast food restaurant model files available from public assets", () => {
     expect(() =>
       readFileSync(
@@ -176,5 +185,12 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/scene.bin"))).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/textures/rig_initialShadingGroup1_baseColor.png"))).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/license.txt"), "utf8")).not.toThrow();
+  });
+
+  it("keeps the isometric mall model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_mall/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_mall/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_mall/textures/Scene_-_Root_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_mall/license.txt"), "utf8")).not.toThrow();
   });
 });

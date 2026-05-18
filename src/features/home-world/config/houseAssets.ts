@@ -36,6 +36,12 @@ export const houseAssets = {
     position: [0, 0.06, 0],
     rotation: [0, 0, 0],
   },
+  isometricMall: {
+    path: "/models/isometric_mall/scene.gltf",
+    scale: 0.012,
+    position: [0, 0.066, 0],
+    rotation: [0, 0, 0],
+  },
 } as const satisfies Record<string, HouseAssetConfig>;
 
 export type HouseAssetKey = keyof typeof houseAssets;

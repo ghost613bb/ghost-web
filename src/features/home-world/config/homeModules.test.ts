@@ -28,7 +28,7 @@ describe("homeModules", () => {
     );
   });
 
-  it("uses real models for the about cafe, thoughts house, skills greenhouse, todo coffee shop, and message fast food restaurant", () => {
+  it("uses real models for the about cafe, thoughts house, skills greenhouse, project workshop mall, todo coffee shop, and message fast food restaurant", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -41,7 +41,7 @@ describe("homeModules", () => {
       "lowPolyCafe",
       "houseBuildingLowPoly",
       "isometricCinema",
-      undefined,
+      "isometricMall",
       "coffeeShopIsometric",
       "fastFoodRestaurant",
     ]);
@@ -59,6 +59,11 @@ describe("homeModules", () => {
       title: "技能温室",
       route: "/album",
       assetKey: "isometricCinema",
+    });
+    expect(homeModules.find((module) => module.id === "playlists")).toMatchObject({
+      title: "项目工坊",
+      route: "/playlists",
+      assetKey: "isometricMall",
     });
     expect(homeModules.find((module) => module.id === "todo")).toMatchObject({
       title: "经历塔楼",
