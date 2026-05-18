@@ -26,7 +26,7 @@ export const houseAssets = {
   },
   isometricCinema: {
     path: "/models/isometric_cinema/scene.gltf",
-    scale: 0.065,
+    scale: 0.13,
     position: [0, 0.06, 0],
     rotation: [0, 0, 0],
   },
