@@ -1,13 +1,12 @@
 import { Shape, Vector2 } from "three";
 
-const halfWidth = 4.25;
-const halfDepth = 3.35;
+const groundHalfSize = 4.25;
 
 const groundShape = new Shape([
-  new Vector2(0, -halfDepth),
-  new Vector2(halfWidth, 0),
-  new Vector2(0, halfDepth),
-  new Vector2(-halfWidth, 0),
+  new Vector2(0, -groundHalfSize),
+  new Vector2(groundHalfSize, 0),
+  new Vector2(0, groundHalfSize),
+  new Vector2(-groundHalfSize, 0),
 ]);
 
 type ParallelogramTownGroundProps = {
