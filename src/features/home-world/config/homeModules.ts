@@ -48,7 +48,7 @@ const unsortedHomeModules: HomeModule[] = [
     title: "项目工坊",
     route: "/playlists",
     intro: "把循环过很多遍的歌和当时的感触放在一起。",
-    position: [2.5, 0, 0.4],
+    position: [3.05, 0, 0.25],
     color: "#6fa8dc",
     accentColor: "#cfe8ff",
     houseStyle: "music",
