@@ -1,0 +1,11 @@
+Model Information:
+* title:	8
+* source:	https://sketchfab.com/3d-models/8-f5883933aa374a79b1157eeb96fc381e
+* author:	YU (https://sketchfab.com/pein)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "8" (https://sketchfab.com/3d-models/8-f5883933aa374a79b1157eeb96fc381e) by YU (https://sketchfab.com/pein) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
