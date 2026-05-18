@@ -25,6 +25,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#ffe0b5",
     houseStyle: "tower",
     placeholderStyle: "library",
+    assetKey: "houseBuildingLowPoly",
     visibility: "public",
     sortOrder: 2,
   },

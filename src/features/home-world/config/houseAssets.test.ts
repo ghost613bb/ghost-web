@@ -34,6 +34,15 @@ describe("houseAssets", () => {
     });
   });
 
+  it("registers the blog library house building model", () => {
+    expect(houseAssets.houseBuildingLowPoly).toEqual({
+      path: "/models/house_building_low_poly/scene.gltf",
+      scale: 0.14,
+      position: [0, 0.04, 0],
+      rotation: [0, 0, 0],
+    });
+  });
+
   it("keeps the fast food restaurant model files available from public assets", () => {
     expect(() =>
       readFileSync(
@@ -103,6 +112,63 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_shop_isometric/scene.gltf"), "utf8")).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_shop_isometric/scene.bin"))).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_shop_isometric/license.txt"), "utf8")).not.toThrow();
+  });
+
+  it("removes the blog library house building source base plane from the model asset", () => {
+    const scene = JSON.parse(
+      readFileSync(
+        path.join(
+          process.cwd(),
+          "public/models/house_building_low_poly/scene.gltf",
+        ),
+        "utf8",
+      ),
+    );
+
+    expect(scene.nodes.map((node: { name?: string }) => node.name)).not.toContain(
+      "Plane_2",
+    );
+    expect(scene.nodes.map((node: { name?: string }) => node.name)).not.toContain(
+      "Object_13",
+    );
+    expect(scene.meshes.map((mesh: { name?: string }) => mesh.name)).not.toContain(
+      "Object_7",
+    );
+    expect(
+      scene.materials.map(
+        (material: { pbrMetallicRoughness?: { baseColorFactor?: number[] } }) =>
+          material.pbrMetallicRoughness?.baseColorFactor,
+      ),
+    ).not.toContainEqual([0.33108273651581677, 1, 0.9460033963762664, 1]);
+  });
+
+  it("keeps the blog library house building model files available from public assets", () => {
+    expect(() =>
+      readFileSync(
+        path.join(
+          process.cwd(),
+          "public/models/house_building_low_poly/scene.gltf",
+        ),
+        "utf8",
+      ),
+    ).not.toThrow();
+    expect(() =>
+      readFileSync(
+        path.join(
+          process.cwd(),
+          "public/models/house_building_low_poly/scene.bin",
+        ),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      readFileSync(
+        path.join(
+          process.cwd(),
+          "public/models/house_building_low_poly/license.txt",
+        ),
+        "utf8",
+      ),
+    ).not.toThrow();
   });
 
   it("keeps the isometric cinema model files available from public assets", () => {
