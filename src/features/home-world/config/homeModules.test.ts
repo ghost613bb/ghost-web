@@ -28,7 +28,7 @@ describe("homeModules", () => {
     );
   });
 
-  it("uses real models for the about cafe, todo coffee shop, and message fast food restaurant", () => {
+  it("uses real models for the about cafe, blog library, todo coffee shop, and message fast food restaurant", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -39,7 +39,7 @@ describe("homeModules", () => {
     ]);
     expect(homeModules.map((module) => module.assetKey)).toEqual([
       "lowPolyCafe",
-      undefined,
+      "isometricCinema",
       undefined,
       undefined,
       "coffeeShopIsometric",
@@ -49,6 +49,11 @@ describe("homeModules", () => {
       title: "关于我小屋",
       route: "/about",
       assetKey: "lowPolyCafe",
+    });
+    expect(homeModules.find((module) => module.id === "thoughts")).toMatchObject({
+      title: "博客图书馆",
+      route: "/thoughts",
+      assetKey: "isometricCinema",
     });
     expect(homeModules.find((module) => module.id === "todo")).toMatchObject({
       title: "经历塔楼",
