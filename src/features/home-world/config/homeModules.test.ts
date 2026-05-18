@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { homeModules } from "./homeModules";
 
 describe("homeModules", () => {
-  it("contains the six first-version modules in sorted order", () => {
+  it("contains the seven first-version modules in sorted order", () => {
     expect(homeModules.map((module) => module.id)).toEqual([
       "about",
       "thoughts",
+      "museum",
       "album",
       "playlists",
       "todo",
@@ -13,11 +14,8 @@ describe("homeModules", () => {
     ]);
   });
 
-  it("uses unique ids and routes", () => {
+  it("uses unique ids", () => {
     expect(new Set(homeModules.map((module) => module.id)).size).toBe(
-      homeModules.length,
-    );
-    expect(new Set(homeModules.map((module) => module.route)).size).toBe(
       homeModules.length,
     );
   });
@@ -28,10 +26,11 @@ describe("homeModules", () => {
     );
   });
 
-  it("uses real models for the about cafe, thoughts house, skills greenhouse, todo coffee shop, and message fast food restaurant", () => {
+  it("uses real models for the about cafe, thoughts house, medieval house, skills greenhouse, todo coffee shop, and message fast food restaurant", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
+      "cottage",
       "greenhouse",
       "workshop",
       "tower",
@@ -40,6 +39,7 @@ describe("homeModules", () => {
     expect(homeModules.map((module) => module.assetKey)).toEqual([
       "lowPolyCafe",
       "houseBuildingLowPoly",
+      "lowPolyMedievalHouse",
       "isometricCinema",
       undefined,
       "coffeeShopIsometric",
@@ -54,6 +54,11 @@ describe("homeModules", () => {
       title: "博客图书馆",
       route: "/thoughts",
       assetKey: "houseBuildingLowPoly",
+    });
+    expect(homeModules.find((module) => module.id === "museum")).toMatchObject({
+      title: "博物小馆",
+      route: "/about",
+      assetKey: "lowPolyMedievalHouse",
     });
     expect(homeModules.find((module) => module.id === "album")).toMatchObject({
       title: "技能温室",
@@ -74,11 +79,12 @@ describe("homeModules", () => {
     );
   });
 
-  it("uses a balanced wide isometric town layout", () => {
+  it("uses the manually tuned wide isometric town layout", () => {
     expect(homeModules.map((module) => module.position)).toEqual([
       [-2.5, 0, 0.4],
       [-1.3, 0, -1.2],
-      [1.3, 0, -1.2],
+      [0, 0, -1.95],
+      [1.3, 0, -0.9],
       [2.5, 0, 0.4],
       [1.35, 0, 1.55],
       [-1.35, 0, 1.55],

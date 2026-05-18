@@ -36,6 +36,12 @@ export const houseAssets = {
     position: [0, 0.06, 0],
     rotation: [0, 0, 0],
   },
+  lowPolyMedievalHouse: {
+    path: "/models/low_poly_medieval_house_1/scene.gltf",
+    scale: 0.25,
+    position: [0, 0.04, 0],
+    rotation: [0, 0, 0],
+  },
 } as const satisfies Record<string, HouseAssetConfig>;
 
 export type HouseAssetKey = keyof typeof houseAssets;
