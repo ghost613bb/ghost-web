@@ -31,10 +31,10 @@ vi.mock("@react-three/drei", () => ({
 }));
 
 const moduleWithCoffeeShopAsset = {
-  id: "todo",
-  title: "经历塔楼",
-  route: "/todo",
-  intro: "一些想做的事，以及已经完成的小小里程碑。",
+  id: "playlists",
+  title: "咖啡推荐",
+  route: "/coffee",
+  intro: "留给喜欢的咖啡店、豆子和风味笔记。",
   position: [1.35, 0, 1.55],
   color: "#c98f5a",
   accentColor: "#ffcf8f",

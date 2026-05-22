@@ -1,3 +1,3 @@
 export default function MessagePage() {
-  return <h1>联系邮局</h1>;
+  return <h1>学习笔记</h1>;
 }

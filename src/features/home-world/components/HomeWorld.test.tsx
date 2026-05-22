@@ -12,7 +12,8 @@ describe("HomeWorld", () => {
 
     expect(screen.getByTestId("home-world-canvas")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ghostspace" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "技能温室" })).toHaveAttribute("href", "/album");
-    expect(screen.getByRole("link", { name: "博物小馆" })).toHaveAttribute("href", "/about");
+    expect(screen.getByRole("link", { name: "个人相册" })).toHaveAttribute("href", "/album");
+    expect(screen.getByRole("link", { name: "歌单" })).toHaveAttribute("href", "/playlists");
+    expect(screen.getByRole("link", { name: "咖啡推荐" })).toHaveAttribute("href", "/coffee");
   });
 });

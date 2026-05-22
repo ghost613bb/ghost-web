@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { homeModules } from "./homeModules";
 
 describe("homeModules", () => {
-  it("contains the seven first-version modules in sorted order", () => {
+  it("contains the seven home modules in sorted order", () => {
     expect(homeModules.map((module) => module.id)).toEqual([
       "about",
       "thoughts",
@@ -20,13 +20,25 @@ describe("homeModules", () => {
     );
   });
 
-  it("keeps first-version home modules publicly navigable", () => {
+  it("keeps home modules publicly navigable", () => {
     expect(homeModules.every((module) => module.visibility === "public")).toBe(
       true,
     );
   });
 
-  it("uses real models for the about cafe, thoughts house, medieval house, skills greenhouse, project workshop mall, todo coffee shop, and message fast food restaurant", () => {
+  it("renders the requested tab titles in homepage order", () => {
+    expect(homeModules.map((module) => module.title)).toEqual([
+      "个人相册",
+      "碎碎念",
+      "歌单",
+      "心情日记",
+      "咖啡推荐",
+      "人生todolist",
+      "学习笔记",
+    ]);
+  });
+
+  it("maps each homepage tab to its updated destination and keeps coffee on the coffee shop model", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -36,52 +48,43 @@ describe("homeModules", () => {
       "tower",
       "mail",
     ]);
-    expect(homeModules.map((module) => module.assetKey)).toEqual([
-      "lowPolyCafe",
-      "houseBuildingLowPoly",
-      "lowPolyMedievalHouse",
-      "isometricCinema",
-      "isometricMall",
-      "coffeeShopIsometric",
-      "fastFoodRestaurant",
-    ]);
+
     expect(homeModules.find((module) => module.id === "about")).toMatchObject({
-      title: "关于我小屋",
-      route: "/about",
+      title: "个人相册",
+      route: "/album",
       assetKey: "lowPolyCafe",
     });
     expect(homeModules.find((module) => module.id === "thoughts")).toMatchObject({
-      title: "博客图书馆",
+      title: "碎碎念",
       route: "/thoughts",
       assetKey: "houseBuildingLowPoly",
     });
     expect(homeModules.find((module) => module.id === "museum")).toMatchObject({
-      title: "博物小馆",
-      route: "/about",
+      title: "歌单",
+      route: "/playlists",
       assetKey: "lowPolyMedievalHouse",
     });
     expect(homeModules.find((module) => module.id === "album")).toMatchObject({
-      title: "技能温室",
-      route: "/album",
+      title: "心情日记",
+      route: "/about",
       assetKey: "isometricCinema",
     });
     expect(homeModules.find((module) => module.id === "playlists")).toMatchObject({
-      title: "项目工坊",
-      route: "/playlists",
-      assetKey: "isometricMall",
-    });
-    expect(homeModules.find((module) => module.id === "todo")).toMatchObject({
-      title: "经历塔楼",
-      route: "/todo",
+      title: "咖啡推荐",
+      route: "/coffee",
       assetKey: "coffeeShopIsometric",
     });
-    expect(homeModules.find((module) => module.id === "message")).toMatchObject(
-      {
-        title: "联系邮局",
-        route: "/message",
-        assetKey: "fastFoodRestaurant",
-      },
-    );
+    expect(homeModules.find((module) => module.id === "todo")).toMatchObject({
+      title: "人生todolist",
+      route: "/todo",
+      assetKey: "isometricMall",
+    });
+    expect(homeModules.find((module) => module.id === "message")).toMatchObject({
+      title: "学习笔记",
+      route: "/message",
+      assetKey: "fastFoodRestaurant",
+    });
+    expect(homeModules.filter((module) => module.assetKey === "coffeeShopIsometric")).toHaveLength(1);
   });
 
   it("uses the manually tuned wide isometric town layout", () => {

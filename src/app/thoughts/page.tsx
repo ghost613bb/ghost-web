@@ -1,3 +1,3 @@
 export default function ThoughtsPage() {
-  return <h1>博客图书馆</h1>;
+  return <h1>碎碎念</h1>;
 }
