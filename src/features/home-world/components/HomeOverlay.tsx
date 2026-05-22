@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { HomeModule } from "@/features/home-world/types";
 
 type HomeOverlayProps = {
@@ -6,7 +7,69 @@ type HomeOverlayProps = {
   modules: HomeModule[];
 };
 
+const NAV_HORIZONTAL_PADDING = 96;
+const NAV_VIEWPORT_BASELINE_HEIGHT = 700;
+
+function getNavScale(innerWidth: number, innerHeight: number, measuredWidth: number) {
+  if (measuredWidth === 0) {
+    return 1;
+  }
+
+  const availableWidth = Math.max(innerWidth - NAV_HORIZONTAL_PADDING, 0);
+  const widthScale = availableWidth / measuredWidth;
+  const heightScale = innerHeight / NAV_VIEWPORT_BASELINE_HEIGHT;
+
+  return Math.min(1, widthScale, heightScale);
+}
+
 export function HomeOverlay({ modules }: HomeOverlayProps) {
+  const navRef = useRef<HTMLElement | null>(null);
+  const [navScale, setNavScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const updateNavScale = () => {
+      const nav = navRef.current;
+
+      if (!nav) {
+        return;
+      }
+
+      setNavScale(getNavScale(window.innerWidth, window.innerHeight, nav.scrollWidth));
+    };
+
+    updateNavScale();
+    window.addEventListener("resize", updateNavScale);
+
+    return () => window.removeEventListener("resize", updateNavScale);
+  }, [modules]);
+
+  useEffect(() => {
+    const nav = navRef.current;
+
+    if (!nav) {
+      return;
+    }
+
+    const updateNavScale = () => {
+      setNavScale(getNavScale(window.innerWidth, window.innerHeight, nav.scrollWidth));
+    };
+
+    const fontsReady = document.fonts?.ready;
+
+    if (fontsReady) {
+      void fontsReady.then(updateNavScale);
+    }
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(updateNavScale);
+    observer.observe(nav);
+
+    return () => observer.disconnect();
+  }, [modules]);
+
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col p-5 text-white sm:p-8">
       <header className="ml-8 max-w-xl sm:ml-16">
@@ -15,12 +78,17 @@ export function HomeOverlay({ modules }: HomeOverlayProps) {
         </h1>
       </header>
 
-      <nav aria-label="首页模块导航" className="pointer-events-auto absolute right-20 top-6 flex max-w-5xl flex-wrap gap-2 border-4 border-[#3b2415] bg-[rgb(251,223,184)] px-3 py-2 font-[Microsoft_YaHei,微软雅黑,sans-serif] text-slate-950 shadow-[6px_6px_0_#6f3f25] sm:right-40">
+      <nav
+        ref={navRef}
+        aria-label="首页模块导航"
+        style={{ transform: `scale(${navScale})`, transformOrigin: "top right" }}
+        className="pointer-events-auto absolute right-4 top-6 flex w-max max-w-none flex-nowrap gap-2 border-4 border-[#3b2415] bg-[rgb(251,223,184)] px-3 py-2 font-[Microsoft_YaHei,微软雅黑,sans-serif] text-slate-950 shadow-[6px_6px_0_#6f3f25] sm:right-40"
+      >
         {modules.map((module, index) => (
           <Link
             key={module.id}
             href={module.route}
-            className={`border-2 border-transparent px-3 py-1 text-lg font-normal transition hover:border-[#8a4f2a] hover:bg-[rgb(238,171,118)] ${
+            className={`shrink-0 border-2 border-transparent px-3 py-1 text-lg font-normal transition hover:border-[#8a4f2a] hover:bg-[rgb(238,171,118)] ${
               index === 0 ? "bg-[rgb(238,171,118)] shadow-[4px_4px_0_rgba(111,63,37,0.28)]" : ""
             }`}
           >
