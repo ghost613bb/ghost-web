@@ -23,49 +23,68 @@ function getNavScale(innerWidth: number, innerHeight: number, measuredWidth: num
 }
 
 export function HomeOverlay({ modules }: HomeOverlayProps) {
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
+  const [titleScale, setTitleScale] = useState(1);
   const [navScale, setNavScale] = useState(1);
 
   useLayoutEffect(() => {
-    const updateNavScale = () => {
+    const updateOverlayScale = () => {
       const nav = navRef.current;
+      const title = titleRef.current;
 
-      if (!nav) {
-        return;
+      if (nav) {
+        setNavScale(getNavScale(window.innerWidth, window.innerHeight, nav.scrollWidth));
       }
 
-      setNavScale(getNavScale(window.innerWidth, window.innerHeight, nav.scrollWidth));
+      if (title) {
+        setTitleScale(getNavScale(window.innerWidth, window.innerHeight, title.scrollWidth));
+      }
     };
 
-    updateNavScale();
-    window.addEventListener("resize", updateNavScale);
+    updateOverlayScale();
+    window.addEventListener("resize", updateOverlayScale);
 
-    return () => window.removeEventListener("resize", updateNavScale);
+    return () => window.removeEventListener("resize", updateOverlayScale);
   }, [modules]);
 
   useEffect(() => {
     const nav = navRef.current;
+    const title = titleRef.current;
 
-    if (!nav) {
+    if (!nav && !title) {
       return;
     }
 
-    const updateNavScale = () => {
-      setNavScale(getNavScale(window.innerWidth, window.innerHeight, nav.scrollWidth));
+    const updateOverlayScale = () => {
+      if (nav) {
+        setNavScale(getNavScale(window.innerWidth, window.innerHeight, nav.scrollWidth));
+      }
+
+      if (title) {
+        setTitleScale(getNavScale(window.innerWidth, window.innerHeight, title.scrollWidth));
+      }
     };
 
     const fontsReady = document.fonts?.ready;
 
     if (fontsReady) {
-      void fontsReady.then(updateNavScale);
+      void fontsReady.then(updateOverlayScale);
     }
 
     if (typeof ResizeObserver === "undefined") {
       return;
     }
 
-    const observer = new ResizeObserver(updateNavScale);
-    observer.observe(nav);
+    const observer = new ResizeObserver(updateOverlayScale);
+
+    if (nav) {
+      observer.observe(nav);
+    }
+
+    if (title) {
+      observer.observe(title);
+    }
 
     return () => observer.disconnect();
   }, [modules]);
@@ -73,7 +92,11 @@ export function HomeOverlay({ modules }: HomeOverlayProps) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col p-5 text-white sm:p-8">
       <header className="ml-8 max-w-xl sm:ml-16">
-        <h1 className="font-mono text-4xl font-black tracking-tight text-[#f3b16e] [text-shadow:4px_0_0_#3b2415,-4px_0_0_#3b2415,0_4px_0_#3b2415,0_-4px_0_#3b2415,4px_4px_0_#8a4f2a] sm:text-6xl">
+        <h1
+          ref={titleRef}
+          style={{ transform: `scale(${titleScale})`, transformOrigin: "top left" }}
+          className="inline-block font-mono text-4xl font-black tracking-tight text-[#f3b16e] [text-shadow:4px_0_0_#3b2415,-4px_0_0_#3b2415,0_4px_0_#3b2415,0_-4px_0_#3b2415,4px_4px_0_#8a4f2a] sm:text-6xl"
+        >
           Ghostspace
         </h1>
       </header>

@@ -11,9 +11,11 @@ const originalScrollWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElemen
 const NAV_HORIZONTAL_PADDING = 96;
 const NAV_VIEWPORT_BASELINE_HEIGHT = 700;
 let navScrollWidth = 720;
+let titleScrollWidth = 420;
 
-function mockViewportMetrics(innerWidth: number, scrollWidth: number, innerHeight = originalInnerHeight) {
+function mockViewportMetrics(innerWidth: number, scrollWidth: number, innerHeight = originalInnerHeight, headingWidth = 420) {
   navScrollWidth = scrollWidth;
+  titleScrollWidth = headingWidth;
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
     writable: true,
@@ -42,7 +44,15 @@ describe("HomeOverlay", () => {
     Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
       configurable: true,
       get() {
-        return this.getAttribute?.("aria-label") === "首页模块导航" ? navScrollWidth : 0;
+        if (this.getAttribute?.("aria-label") === "首页模块导航") {
+          return navScrollWidth;
+        }
+
+        if (this.tagName === "H1") {
+          return titleScrollWidth;
+        }
+
+        return 0;
       },
     });
   });
@@ -72,12 +82,18 @@ describe("HomeOverlay", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the pixel-style site identity without subtitle text", () => {
+  it("renders the pixel-style site identity without subtitle text", async () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
-    expect(screen.getByRole("heading", { name: "Ghostspace" })).toBeInTheDocument();
+    const heading = screen.getByRole("heading", { name: "Ghostspace" });
+
+    expect(heading).toBeInTheDocument();
     expect(screen.queryByText("个人数字花园")).not.toBeInTheDocument();
     expect(screen.queryByText("在这里收集生活碎片、学习笔记和一点古灵精怪的审美。")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(heading.style.transform).toBe("scale(1)");
+    });
   });
 
   it("renders a fallback link for every home module", () => {
@@ -92,7 +108,7 @@ describe("HomeOverlay", () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
     const nav = screen.getByRole("navigation", { name: "首页模块导航" });
-    const firstLink = screen.getByRole("link", { name: "关于我小屋" });
+    const firstLink = screen.getByRole("link", { name: "个人相册" });
 
     await waitFor(() => {
       expect(nav.style.transform).toBe("scale(1)");
@@ -115,10 +131,16 @@ describe("HomeOverlay", () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
     const nav = screen.getByRole("navigation", { name: "首页模块导航" });
+    const heading = screen.getByRole("heading", { name: "Ghostspace" });
     const expectedScale = Math.min(1, (498 - NAV_HORIZONTAL_PADDING) / 900);
+    const expectedTitleScale = Math.min(1, (498 - NAV_HORIZONTAL_PADDING) / 420, originalInnerHeight / NAV_VIEWPORT_BASELINE_HEIGHT);
 
     await waitFor(() => {
       expect(nav.style.transform).toBe(`scale(${expectedScale})`);
+    });
+
+    await waitFor(() => {
+      expect(heading.style.transform).toBe(`scale(${expectedTitleScale})`);
     });
 
     expect(nav.className).toContain("flex-nowrap");
@@ -129,10 +151,15 @@ describe("HomeOverlay", () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
     const nav = screen.getByRole("navigation", { name: "首页模块导航" });
+    const heading = screen.getByRole("heading", { name: "Ghostspace" });
     const expectedScale = Math.min(1, 430 / NAV_VIEWPORT_BASELINE_HEIGHT);
 
     await waitFor(() => {
       expect(nav.style.transform).toBe(`scale(${expectedScale})`);
+    });
+
+    await waitFor(() => {
+      expect(heading.style.transform).toBe(`scale(${expectedScale})`);
     });
   });
 
@@ -165,12 +192,20 @@ describe("HomeOverlay", () => {
     render(<HomeOverlay activeModuleId={null} modules={homeModules} />);
 
     const nav = screen.getByRole("navigation", { name: "首页模块导航" });
+    const heading = screen.getByRole("heading", { name: "Ghostspace" });
 
     navScrollWidth = 900;
+    titleScrollWidth = 560;
     resolveFontsReady?.();
 
     await waitFor(() => {
       expect(nav.style.transform).toBe(`scale(${(720 - NAV_HORIZONTAL_PADDING) / 900})`);
+    });
+
+    const expectedTitleScale = Math.min(1, (720 - NAV_HORIZONTAL_PADDING) / 560, originalInnerHeight / NAV_VIEWPORT_BASELINE_HEIGHT);
+
+    await waitFor(() => {
+      expect(heading.style.transform).toBe(`scale(${expectedTitleScale})`);
     });
   });
 
