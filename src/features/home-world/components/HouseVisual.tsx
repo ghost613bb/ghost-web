@@ -25,6 +25,11 @@ function ModelHouse({ module }: { module: HomeModule & { assetKey: keyof typeof 
         return;
       }
 
+      if (object.name === "Collider" || object.name === "Collider_Collider_0") {
+        removableObjects.push(object);
+        return;
+      }
+
       if (object instanceof Mesh) {
         object.castShadow = true;
         object.receiveShadow = true;

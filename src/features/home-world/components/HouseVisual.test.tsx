@@ -7,15 +7,26 @@ const { cloneMock, scene } = vi.hoisted(() => {
   const mockedScene = {
     removedNodes: [] as string[],
     traverse: (callback: (object: { name: string; parent?: { remove: (object: { name: string }) => void } }) => void) => {
-      const blueFloor = {
-        name: "Object_121",
-        parent: {
-          remove: (object: { name: string }) => {
-            mockedScene.removedNodes.push(object.name);
-          },
+      const removableParent = {
+        remove: (object: { name: string }) => {
+          mockedScene.removedNodes.push(object.name);
         },
       };
+      const blueFloor = {
+        name: "Object_121",
+        parent: removableParent,
+      };
+      const colliderGroup = {
+        name: "Collider",
+        parent: removableParent,
+      };
+      const colliderMesh = {
+        name: "Collider_Collider_0",
+        parent: removableParent,
+      };
       callback(blueFloor);
+      callback(colliderGroup);
+      callback(colliderMesh);
     },
   };
 
@@ -51,5 +62,14 @@ describe("HouseVisual", () => {
 
     expect(cloneMock).toHaveBeenCalled();
     expect(cloneMock.mock.calls.at(-1)?.[0].object.removedNodes).toContain("Object_121");
+  });
+
+  it("removes collider helper nodes from imported models", () => {
+    render(<HouseVisual module={moduleWithCoffeeShopAsset} active={false} emissiveIntensity={0.25} />);
+
+    expect(cloneMock).toHaveBeenCalled();
+    expect(cloneMock.mock.calls.at(-1)?.[0].object.removedNodes).toEqual(
+      expect.arrayContaining(["Collider", "Collider_Collider_0"]),
+    );
   });
 });
