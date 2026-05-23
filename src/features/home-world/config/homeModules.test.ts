@@ -82,7 +82,7 @@ describe("homeModules", () => {
     expect(homeModules.find((module) => module.id === "message")).toMatchObject({
       title: "学习笔记",
       route: "/message",
-      assetKey: "fastFoodRestaurant",
+      assetKey: "lowPolyPizzaRestaurant",
     });
     expect(homeModules.filter((module) => module.assetKey === "coffeeShopIsometric")).toHaveLength(1);
   });

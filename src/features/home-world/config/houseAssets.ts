@@ -6,9 +6,9 @@ export type HouseAssetConfig = {
 };
 
 export const houseAssets = {
-  fastFoodRestaurant: {
+  lowPolyPizzaRestaurant: {
     // 学习笔记模型
-    path: "/models/fast_food_restaurant/scene.gltf",
+    path: "/models/low_poly_pizza_restaurant/scene.gltf",
     scale: 0.012,
     position: [0, 0.03, 0],
     rotation: [0, 0, 0],

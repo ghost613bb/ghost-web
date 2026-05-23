@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { houseAssets } from "./houseAssets";
 
 describe("houseAssets", () => {
-  it("registers the restaurant and cafe models with public GLTF paths", () => {
-    expect(houseAssets.fastFoodRestaurant).toEqual({
-      path: "/models/fast_food_restaurant/scene.gltf",
+  it("registers the study notes and cafe models with public GLTF paths", () => {
+    expect(houseAssets.lowPolyPizzaRestaurant).toEqual({
+      path: "/models/low_poly_pizza_restaurant/scene.gltf",
       scale: 0.012,
       position: [0, 0.03, 0],
       rotation: [0, 0, 0],
@@ -70,12 +70,12 @@ describe("houseAssets", () => {
     });
   });
 
-  it("keeps the fast food restaurant model files available from public assets", () => {
+  it("keeps the study notes pizza restaurant model files available from public assets", () => {
     expect(() =>
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/fast_food_restaurant/scene.gltf",
+          "public/models/low_poly_pizza_restaurant/scene.gltf",
         ),
         "utf8",
       ),
@@ -84,7 +84,7 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/fast_food_restaurant/scene.bin",
+          "public/models/low_poly_pizza_restaurant/scene.bin",
         ),
       ),
     ).not.toThrow();
@@ -92,7 +92,7 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/fast_food_restaurant/textures/FastFood_RestaurantSG_baseColor.png",
+          "public/models/low_poly_pizza_restaurant/textures/Texture_buildings1_baseColor.png",
         ),
       ),
     ).not.toThrow();
@@ -100,7 +100,7 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/fast_food_restaurant/license.txt",
+          "public/models/low_poly_pizza_restaurant/license.txt",
         ),
         "utf8",
       ),
