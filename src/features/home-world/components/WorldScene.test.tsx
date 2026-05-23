@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { isValidElement, type ReactNode } from "react";
 import { describe, expect, it } from "vitest";
+import { WorldScene } from "./WorldScene";
 
 function extractGroupSource(source: string, groupStart: string) {
   const groupStartIndex = source.indexOf(groupStart);
@@ -27,6 +29,22 @@ function extractGroupSource(source: string, groupStart: string) {
   }
 
   return "";
+}
+
+function collectElementTypes(node: ReactNode, types: string[] = []) {
+  if (Array.isArray(node)) {
+    node.forEach((child) => collectElementTypes(child, types));
+    return types;
+  }
+
+  if (!isValidElement(node)) {
+    return types;
+  }
+
+  const elementType = node.type;
+  types.push(typeof elementType === "string" ? elementType : elementType.name ?? "anonymous");
+  collectElementTypes(node.props.children, types);
+  return types;
 }
 
 describe("WorldScene", () => {
@@ -85,5 +103,22 @@ describe("WorldScene", () => {
     expect(framedSceneSource).toContain("<ParallelogramTownGround");
     expect(framedSceneSource).toContain("<Float");
     expect(framedSceneSource).toContain("<HouseNode");
+  });
+
+  it("does not render the deprecated pale blue ground ring", () => {
+    const tree = WorldScene({
+      activeModuleId: null,
+      modules: [],
+      onActiveModuleChange: () => {},
+    });
+
+    const elementTypes = collectElementTypes(tree);
+    const meshCount = elementTypes.filter((type) => type === "mesh").length;
+    const ringGeometryCount = elementTypes.filter((type) => type === "ringGeometry").length;
+    const meshBasicMaterialCount = elementTypes.filter((type) => type === "meshBasicMaterial").length;
+
+    expect(meshCount).toBe(0);
+    expect(ringGeometryCount).toBe(0);
+    expect(meshBasicMaterialCount).toBe(0);
   });
 });

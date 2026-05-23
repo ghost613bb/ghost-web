@@ -35,11 +35,6 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
         <ParallelogramTownGround color="rgb(119, 70, 66)" y={-0.09} thickness={0.18} roughness={0.82} metalness={0.08} />
         <ParallelogramTownGround color="rgb(137, 197, 82)" y={0.12} thickness={0.08} roughness={0.9} />
 
-        <mesh position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.05, 3.35, 96]} />
-          <meshBasicMaterial color="#7dd3fc" transparent opacity={0.18} />
-        </mesh>
-
         <Float speed={1} rotationIntensity={0.04} floatIntensity={0.08}>
           <CenterAvatar />
         </Float>
