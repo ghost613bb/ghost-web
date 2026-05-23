@@ -38,7 +38,7 @@ describe("homeModules", () => {
     ]);
   });
 
-  it("maps each homepage tab to its updated destination and keeps coffee on the coffee shop model", () => {
+  it("maps each homepage tab to its updated destination and uses the low poly building model for mood diary", () => {
     expect(homeModules.map((module) => module.placeholderStyle)).toEqual([
       "cottage",
       "library",
@@ -67,7 +67,7 @@ describe("homeModules", () => {
     expect(homeModules.find((module) => module.id === "album")).toMatchObject({
       title: "心情日记",
       route: "/about",
-      assetKey: "isometricCinema",
+      assetKey: "lowPolyBuilding",
     });
     expect(homeModules.find((module) => module.id === "playlists")).toMatchObject({
       title: "咖啡推荐",

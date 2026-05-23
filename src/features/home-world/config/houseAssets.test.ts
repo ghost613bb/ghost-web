@@ -43,6 +43,15 @@ describe("houseAssets", () => {
     });
   });
 
+  it("registers the low poly building model for mood diary", () => {
+    expect(houseAssets.lowPolyBuilding).toEqual({
+      path: "/models/low_poly_building/scene.gltf",
+      scale: 0.14,
+      position: [0, 0.04, 0],
+      rotation: [0, 0, 0],
+    });
+  });
+
   it("registers the isometric mall model for the project workshop", () => {
     expect(houseAssets.isometricMall).toEqual({
       path: "/models/isometric_mall/scene.gltf",
@@ -187,6 +196,13 @@ describe("houseAssets", () => {
         "utf8",
       ),
     ).not.toThrow();
+  });
+
+  it("keeps the low poly building model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/textures/Material_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/license.txt"), "utf8")).not.toThrow();
   });
 
   it("keeps the isometric cinema model files available from public assets", () => {

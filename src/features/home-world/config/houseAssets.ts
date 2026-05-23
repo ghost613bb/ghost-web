@@ -24,6 +24,12 @@ export const houseAssets = {
     position: [0, 0.04, 0],
     rotation: [0, 0, 0],
   },
+  lowPolyBuilding: {
+    path: "/models/low_poly_building/scene.gltf",
+    scale: 0.14,
+    position: [0, 0.04, 0],
+    rotation: [0, 0, 0],
+  },
   coffeeShopIsometric: {
     path: "/models/coffee_shop_isometric/scene.gltf",
     scale: 0.28,

@@ -53,7 +53,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#d8fff6",
     houseStyle: "gallery",
     placeholderStyle: "greenhouse",
-    assetKey: "isometricCinema",
+    assetKey: "lowPolyBuilding",
     visibility: "public",
     sortOrder: 4,
   },
