@@ -48,11 +48,11 @@ export const houseAssets = {
     position: [0, 0.06, 0],
     rotation: [0, 0, 0],
   },
-  isometricMall: {
-    path: "/models/isometric_mall/scene.gltf",
-    scale: 0.012,
-    position: [0, 0.066, -0.3],
-    rotation: [0, 0, 0],
+  lowPolyCar2: {
+    path: "/models/low_poly_car_2/scene.gltf",
+    scale: 0.22,
+    position: [0, 0.02, -0.08],
+    rotation: [0, -Math.PI / 4, 0],
   },
   lowPolyMedievalHouse: {
     // 歌单模型

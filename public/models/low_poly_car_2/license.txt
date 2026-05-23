@@ -1,0 +1,8 @@
+Model Information:
+* title:	Low poly car 2
+* source:	https://sketchfab.com/3d-models/low-poly-car-2-54c63fa8d7864720afda5e568d7eb577
+* author:	assetfactory (https://sketchfab.com/assetfactory)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
