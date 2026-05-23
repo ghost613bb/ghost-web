@@ -43,9 +43,9 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the low poly building model for mood diary", () => {
+  it("registers the generic shop model for mood diary", () => {
     expect(houseAssets.lowPolyBuilding).toEqual({
-      path: "/models/low_poly_building/scene.gltf",
+      path: "/models/low_poly_generic_shop/scene.gltf",
       scale: 0.29,
       position: [1.2, 0, -0.4],
       rotation: [0, -Math.PI / 2, 0],
@@ -198,11 +198,11 @@ describe("houseAssets", () => {
     ).not.toThrow();
   });
 
-  it("keeps the low poly building model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/textures/Material_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_building/license.txt"), "utf8")).not.toThrow();
+  it("keeps the generic shop model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/textures/Texture_buildings1_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/license.txt"), "utf8")).not.toThrow();
   });
 
   it("keeps the isometric cinema model files available from public assets", () => {

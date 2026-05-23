@@ -56,12 +56,34 @@ const moduleWithCoffeeShopAsset = {
   sortOrder: 5,
 } satisfies HomeModule;
 
+const moduleWithMoodDiaryAsset = {
+  id: "album",
+  title: "心情日记",
+  route: "/about",
+  intro: "记录一些不想被快速略过的情绪起伏。",
+  position: [1.3, 0, -0.9],
+  color: "#8fd6c8",
+  accentColor: "#d8fff6",
+  houseStyle: "gallery",
+  placeholderStyle: "greenhouse",
+  assetKey: "lowPolyBuilding",
+  visibility: "public",
+  sortOrder: 4,
+} satisfies HomeModule;
+
 describe("HouseVisual", () => {
   it("removes the coffee shop model background floor from raycasting", () => {
     render(<HouseVisual module={moduleWithCoffeeShopAsset} active={false} emissiveIntensity={0.25} />);
 
     expect(cloneMock).toHaveBeenCalled();
     expect(cloneMock.mock.calls.at(-1)?.[0].object.removedNodes).toContain("Object_121");
+  });
+
+  it("removes the mood diary generic shop collider mesh", () => {
+    render(<HouseVisual module={moduleWithMoodDiaryAsset} active={false} emissiveIntensity={0.25} />);
+
+    expect(cloneMock).toHaveBeenCalled();
+    expect(cloneMock.mock.calls.at(-1)?.[0].object.removedNodes).toContain("Collider");
   });
 
   it("removes collider helper nodes from imported models", () => {

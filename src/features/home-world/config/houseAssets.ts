@@ -29,7 +29,7 @@ export const houseAssets = {
   },
   lowPolyBuilding: {
     // 心情日记模型
-    path: "/models/low_poly_building/scene.gltf",
+    path: "/models/low_poly_generic_shop/scene.gltf",
     scale: 0.29,
     // x是左右，y是上下，z是前后（以左上至右下为正方向）
     position: [1.2, 0, -0.4],
