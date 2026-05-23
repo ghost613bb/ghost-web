@@ -47,8 +47,8 @@ describe("houseAssets", () => {
     expect(houseAssets.lowPolyBuilding).toEqual({
       path: "/models/low_poly_building/scene.gltf",
       scale: 0.29,
-      position: [0.35, 0, -1.8],
-      rotation: [0, Math.PI / 2, 0],
+      position: [1.2, 0, -0.4],
+      rotation: [0, -Math.PI / 2, 0],
     });
   });
 
