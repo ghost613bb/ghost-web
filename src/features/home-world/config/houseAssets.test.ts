@@ -34,9 +34,9 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the blog library house building model", () => {
+  it("registers the thoughts model with the new low poly cinema asset", () => {
     expect(houseAssets.houseBuildingLowPoly).toEqual({
-      path: "/models/house_building_low_poly/scene.gltf",
+      path: "/models/low_poly_cinema/scene.gltf",
       scale: 0.18,
       position: [0, 0, -0.5],
       rotation: [0, 0, 0],
@@ -169,12 +169,12 @@ describe("houseAssets", () => {
     ).not.toContainEqual([0.33108273651581677, 1, 0.9460033963762664, 1]);
   });
 
-  it("keeps the blog library house building model files available from public assets", () => {
+  it("keeps the low poly cinema model files available from public assets", () => {
     expect(() =>
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/house_building_low_poly/scene.gltf",
+          "public/models/low_poly_cinema/scene.gltf",
         ),
         "utf8",
       ),
@@ -183,7 +183,7 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/house_building_low_poly/scene.bin",
+          "public/models/low_poly_cinema/scene.bin",
         ),
       ),
     ).not.toThrow();
@@ -191,7 +191,15 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/house_building_low_poly/license.txt",
+          "public/models/low_poly_cinema/textures/Texture_buildings1_baseColor.png",
+        ),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      readFileSync(
+        path.join(
+          process.cwd(),
+          "public/models/low_poly_cinema/license.txt",
         ),
         "utf8",
       ),
