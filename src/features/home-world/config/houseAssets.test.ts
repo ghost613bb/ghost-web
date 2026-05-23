@@ -7,14 +7,14 @@ describe("houseAssets", () => {
   it("registers the restaurant and cafe models with public GLTF paths", () => {
     expect(houseAssets.fastFoodRestaurant).toEqual({
       path: "/models/fast_food_restaurant/scene.gltf",
-      scale: 0.0115,
-      position: [0, 0.04, 0],
+      scale: 0.012,
+      position: [0, 0.03, 0],
       rotation: [0, 0, 0],
     });
     expect(houseAssets.lowPolyCafe).toEqual({
       path: "/models/low_poly_cafe/scene.gltf",
-      scale: 0.0028,
-      position: [0, 0.02, 0],
+      scale: 0.0036,
+      position: [0, 0, -0.3],
       rotation: [0, 0, 0],
     });
   });
@@ -22,8 +22,8 @@ describe("houseAssets", () => {
   it("registers the coffee shop and cinema isometric models near the fast food restaurant visual size", () => {
     expect(houseAssets.coffeeShopIsometric).toEqual({
       path: "/models/coffee_shop_isometric/scene.gltf",
-      scale: 0.28,
-      position: [0, 0.015, 0],
+      scale: 0.3,
+      position: [0.19, 0.015, -0.3],
       rotation: [0, 0, 0],
     });
     expect(houseAssets.isometricCinema).toEqual({
@@ -37,8 +37,8 @@ describe("houseAssets", () => {
   it("registers the blog library house building model", () => {
     expect(houseAssets.houseBuildingLowPoly).toEqual({
       path: "/models/house_building_low_poly/scene.gltf",
-      scale: 0.14,
-      position: [0, 0.04, 0],
+      scale: 0.18,
+      position: [0, 0, -0.5],
       rotation: [0, 0, 0],
     });
   });
@@ -46,8 +46,8 @@ describe("houseAssets", () => {
   it("registers the low poly building model for mood diary", () => {
     expect(houseAssets.lowPolyBuilding).toEqual({
       path: "/models/low_poly_building/scene.gltf",
-      scale: 0.14,
-      position: [0, 0.04, 0],
+      scale: 0.29,
+      position: [0.35, 0, -1.8],
       rotation: [0, 0, 0],
     });
   });
@@ -56,7 +56,7 @@ describe("houseAssets", () => {
     expect(houseAssets.isometricMall).toEqual({
       path: "/models/isometric_mall/scene.gltf",
       scale: 0.012,
-      position: [0, 0.066, 0],
+      position: [0, 0.066, -0.3],
       rotation: [0, 0, 0],
     });
   });

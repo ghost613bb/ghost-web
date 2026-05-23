@@ -7,33 +7,39 @@ export type HouseAssetConfig = {
 
 export const houseAssets = {
   fastFoodRestaurant: {
+    // 学习笔记模型
     path: "/models/fast_food_restaurant/scene.gltf",
-    scale: 0.0115,
-    position: [0, 0.04, 0],
+    scale: 0.012,
+    position: [0, 0.03, 0],
     rotation: [0, 0, 0],
   },
   lowPolyCafe: {
+    // 个人相册模型
     path: "/models/low_poly_cafe/scene.gltf",
-    scale: 0.0028,
-    position: [0, 0.02, 0],
+    scale: 0.0036,
+    position: [0, 0, -0.3],
     rotation: [0, 0, 0],
   },
   houseBuildingLowPoly: {
+    // 碎碎念模型
     path: "/models/house_building_low_poly/scene.gltf",
-    scale: 0.14,
-    position: [0, 0.04, 0],
+    scale: 0.18,
+    position: [0, 0, -0.5],
     rotation: [0, 0, 0],
   },
   lowPolyBuilding: {
+    // 心情日记模型
     path: "/models/low_poly_building/scene.gltf",
-    scale: 0.14,
-    position: [0, 0.04, 0],
+    scale: 0.29,
+    // x是左右，y是上下，z是前后（以左上至右下为正方向）
+    position: [0.35, 0, -1.8],
     rotation: [0, 0, 0],
   },
   coffeeShopIsometric: {
+    // 咖啡推荐模型
     path: "/models/coffee_shop_isometric/scene.gltf",
-    scale: 0.28,
-    position: [0, 0.015, 0],
+    scale: 0.3,
+    position: [0.19, 0.015, -0.3],
     rotation: [0, 0, 0],
   },
   isometricCinema: {
@@ -45,10 +51,11 @@ export const houseAssets = {
   isometricMall: {
     path: "/models/isometric_mall/scene.gltf",
     scale: 0.012,
-    position: [0, 0.066, 0],
+    position: [0, 0.066, -0.3],
     rotation: [0, 0, 0],
   },
   lowPolyMedievalHouse: {
+    // 歌单模型
     path: "/models/low_poly_medieval_house_1/scene.gltf",
     scale: 0.25,
     position: [0, 0.04, 0],
