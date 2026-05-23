@@ -20,7 +20,6 @@ const sceneGroupScale = 1.04;
 export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: WorldSceneProps) {
   return (
     <>
-      <color attach="background" args={["#acf5fa"]} />
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 7, 3]} intensity={2.2} castShadow />
       <group position={sceneGroupPosition} scale={sceneGroupScale}>

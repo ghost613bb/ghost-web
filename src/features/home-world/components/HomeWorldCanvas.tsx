@@ -18,7 +18,7 @@ export function HomeWorldCanvas({ activeModuleId, modules, onActiveModuleChange 
         camera={{ position: [0, 2.95, 7.05], fov: 44 }}
         dpr={[1, 1.6]}
         shadows
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
       >
         <Suspense fallback={null}>
           <WorldScene activeModuleId={activeModuleId} modules={modules} onActiveModuleChange={onActiveModuleChange} />

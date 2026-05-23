@@ -55,6 +55,12 @@ describe("WorldScene", () => {
     expect(source).not.toContain("preset=");
   });
 
+  it("does not paint a solid scene background over the page gradient", () => {
+    const source = readFileSync(path.join(process.cwd(), "src/features/home-world/components/WorldScene.tsx"), "utf8");
+
+    expect(source).not.toContain("<color attach=\"background\"");
+  });
+
   it("places the low-poly sun near the second left cloud facing the screen", () => {
     const source = readFileSync(path.join(process.cwd(), "src/features/home-world/components/WorldScene.tsx"), "utf8");
 
