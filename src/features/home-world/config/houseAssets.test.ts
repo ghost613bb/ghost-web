@@ -8,7 +8,7 @@ describe("houseAssets", () => {
     expect(houseAssets.fastFoodRestaurant).toEqual({
       path: "/models/fast_food_restaurant/scene.gltf",
       scale: 0.0115,
-      position: [0, 0.1, 0],
+      position: [0, 0.04, 0],
       rotation: [0, 0, 0],
     });
     expect(houseAssets.lowPolyCafe).toEqual({
