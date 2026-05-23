@@ -33,7 +33,7 @@ export const houseAssets = {
     scale: 0.29,
     // x是左右，y是上下，z是前后（以左上至右下为正方向）
     position: [0.35, 0, -1.8],
-    rotation: [0, 0, 0],
+    rotation: [0, Math.PI / 2, 0],
   },
   coffeeShopIsometric: {
     // 咖啡推荐模型
