@@ -22,7 +22,7 @@ export const houseAssets = {
   },
   houseBuildingLowPoly: {
     // 碎碎念模型
-    path: "/models/low_poly_cinema/scene.gltf",
+    path: "/models/house_building_low_poly/scene.gltf",
     scale: 0.18,
     position: [0, 0, -0.5],
     rotation: [0, 0, 0],
@@ -54,9 +54,9 @@ export const houseAssets = {
     position: [0, 0.066, -0.3],
     rotation: [0, 0, 0],
   },
-  lowPolyMedievalHouse: {
+  lowPolyApartmentBuilding3: {
     // 歌单模型
-    path: "/models/low_poly_medieval_house_1/scene.gltf",
+    path: "/models/low_poly_apartment_building_3/scene.gltf",
     scale: 0.25,
     position: [0, 0.04, 0],
     rotation: [0, 0, 0],

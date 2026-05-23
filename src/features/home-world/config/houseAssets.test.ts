@@ -34,9 +34,9 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the thoughts model with the new low poly cinema asset", () => {
+  it("registers the blog library house building model", () => {
     expect(houseAssets.houseBuildingLowPoly).toEqual({
-      path: "/models/low_poly_cinema/scene.gltf",
+      path: "/models/house_building_low_poly/scene.gltf",
       scale: 0.18,
       position: [0, 0, -0.5],
       rotation: [0, 0, 0],
@@ -61,9 +61,9 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the medieval house model large enough for the right-side empty lot", () => {
-    expect(houseAssets.lowPolyMedievalHouse).toEqual({
-      path: "/models/low_poly_medieval_house_1/scene.gltf",
+  it("registers the apartment building model for the playlist lot", () => {
+    expect(houseAssets.lowPolyApartmentBuilding3).toEqual({
+      path: "/models/low_poly_apartment_building_3/scene.gltf",
       scale: 0.25,
       position: [0, 0.04, 0],
       rotation: [0, 0, 0],
@@ -169,12 +169,12 @@ describe("houseAssets", () => {
     ).not.toContainEqual([0.33108273651581677, 1, 0.9460033963762664, 1]);
   });
 
-  it("keeps the low poly cinema model files available from public assets", () => {
+  it("keeps the blog library house building model files available from public assets", () => {
     expect(() =>
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/low_poly_cinema/scene.gltf",
+          "public/models/house_building_low_poly/scene.gltf",
         ),
         "utf8",
       ),
@@ -183,7 +183,7 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/low_poly_cinema/scene.bin",
+          "public/models/house_building_low_poly/scene.bin",
         ),
       ),
     ).not.toThrow();
@@ -191,15 +191,7 @@ describe("houseAssets", () => {
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/low_poly_cinema/textures/Texture_buildings1_baseColor.png",
-        ),
-      ),
-    ).not.toThrow();
-    expect(() =>
-      readFileSync(
-        path.join(
-          process.cwd(),
-          "public/models/low_poly_cinema/license.txt",
+          "public/models/house_building_low_poly/license.txt",
         ),
         "utf8",
       ),
@@ -227,10 +219,10 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_mall/license.txt"), "utf8")).not.toThrow();
   });
 
-  it("keeps the low poly medieval house model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/textures/Medieval_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/license.txt"), "utf8")).not.toThrow();
+  it("keeps the apartment building model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/textures/Pack3_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/license.txt"), "utf8")).not.toThrow();
   });
 });

@@ -39,7 +39,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#ffcf8f",
     houseStyle: "cottage",
     placeholderStyle: "cottage",
-    assetKey: "lowPolyMedievalHouse",
+    assetKey: "lowPolyApartmentBuilding3",
     visibility: "public",
     sortOrder: 3,
   },

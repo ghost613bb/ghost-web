@@ -62,7 +62,7 @@ describe("homeModules", () => {
     expect(homeModules.find((module) => module.id === "museum")).toMatchObject({
       title: "歌单",
       route: "/playlists",
-      assetKey: "lowPolyMedievalHouse",
+      assetKey: "lowPolyApartmentBuilding3",
     });
     expect(homeModules.find((module) => module.id === "album")).toMatchObject({
       title: "心情日记",
