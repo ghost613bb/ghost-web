@@ -27,7 +27,7 @@ export const houseAssets = {
   coffeeShopIsometric: {
     path: "/models/coffee_shop_isometric/scene.gltf",
     scale: 0.28,
-    position: [0, 0.06, 0],
+    position: [0, 0.015, 0],
     rotation: [0, 0, 0],
   },
   isometricCinema: {
