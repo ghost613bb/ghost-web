@@ -50,9 +50,9 @@ export const houseAssets = {
   },
   lowPolyHouse3: {
     path: "/models/low_poly_house_3/scene.gltf",
-    scale: 0.24,
-    position: [0, 0.02, -0.02],
-    rotation: [0, -Math.PI / 4, 0],
+    scale: 0.29,
+    position: [0.2, 0.02, -0.3],
+    rotation: [0, -Math.PI/2, 0],
   },
   lowPolyMedievalHouse: {
     // 歌单模型
