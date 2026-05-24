@@ -61,9 +61,9 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the medieval house model large enough for the right-side empty lot", () => {
-    expect(houseAssets.lowPolyMedievalHouse).toEqual({
-      path: "/models/low_poly_medieval_house_1/scene.gltf",
+  it("registers the burger restaurant model for the playlist lot", () => {
+    expect(houseAssets.lowPolyBurgerRestaurant).toEqual({
+      path: "/models/low_poly_burger_restaurant/scene.gltf",
       scale: 0.25,
       position: [0, 0.04, 0],
       rotation: [0, 0, 0],
@@ -219,10 +219,10 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_mall/license.txt"), "utf8")).not.toThrow();
   });
 
-  it("keeps the low poly medieval house model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/textures/Medieval_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_medieval_house_1/license.txt"), "utf8")).not.toThrow();
+  it("keeps the burger restaurant model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/textures/Texture_buildings1_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/license.txt"), "utf8")).not.toThrow();
   });
 });
