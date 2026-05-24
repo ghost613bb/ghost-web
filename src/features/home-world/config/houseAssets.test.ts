@@ -46,9 +46,9 @@ describe("houseAssets", () => {
   it("registers the generic shop model for mood diary", () => {
     expect(houseAssets.lowPolyBuilding).toEqual({
       path: "/models/low_poly_generic_shop/scene.gltf",
-      scale: 0.29,
-      position: [1.2, 0, -0.4],
-      rotation: [0, -Math.PI / 2, 0],
+      scale: 0.44,
+      position: [0.27, 0, -0.9],
+      rotation: [0, 0, 0],
     });
   });
 
