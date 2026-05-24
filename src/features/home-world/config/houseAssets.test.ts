@@ -234,5 +234,4 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/textures/Texture_buildings1_baseColor.png"))).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/license.txt"), "utf8")).not.toThrow();
   });
-  });
 });
