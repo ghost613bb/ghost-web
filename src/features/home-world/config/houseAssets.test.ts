@@ -4,17 +4,17 @@ import { describe, expect, it } from "vitest";
 import { houseAssets } from "./houseAssets";
 
 describe("houseAssets", () => {
-  it("registers the study notes and album house models with public GLTF paths", () => {
+  it("registers the study notes and album house models with the latest tuned placement", () => {
     expect(houseAssets.lowPolyPizzaRestaurant).toEqual({
       path: "/models/low_poly_pizza_restaurant/scene.gltf",
       scale: 0.35,
-      position: [0.2, 0.03, 0],
+      position: [0.2, 0.03, -0.5],
       rotation: [0, 0, 0],
     });
     expect(houseAssets.lowPolyHouse2).toEqual({
       path: "/models/low_poly_house_2/scene.gltf",
-      scale: 0.5,
-      position: [0.1, 0, -0.8],
+      scale: 0.35,
+      position: [-0.12, 0, -1.05],
       rotation: [0, -Math.PI / 2, 0],
     });
   });
@@ -34,38 +34,38 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the thoughts model with the new low poly cinema asset", () => {
+  it("registers the thoughts model with the latest tuned low poly cinema placement", () => {
     expect(houseAssets.houseBuildingLowPoly).toEqual({
       path: "/models/low_poly_cinema/scene.gltf",
-      scale: 0.18,
-      position: [0, 0, -0.5],
+      scale: 0.28,
+      position: [0, 0, -0.3],
       rotation: [0, 0, 0],
     });
   });
 
-  it("registers the generic shop model for mood diary", () => {
+  it("registers the mood diary model with the latest tuned burger restaurant placement", () => {
     expect(houseAssets.lowPolyBuilding).toEqual({
-      path: "/models/low_poly_generic_shop/scene.gltf",
-      scale: 0.44,
-      position: [0.27, 0, -0.9],
+      path: "/models/low_poly_burger_restaurant/scene.gltf",
+      scale: 0.33,
+      position: [-0.5, 0.04, -0.7],
       rotation: [0, 0, 0],
     });
   });
 
-  it("registers the low poly house model for life todo list", () => {
+  it("registers the low poly house model for life todo list with the latest tuned placement", () => {
     expect(houseAssets.lowPolyHouse3).toEqual({
       path: "/models/low_poly_house_3/scene.gltf",
       scale: 0.29,
-      position: [0.2, 0.02, -0.3],
+      position: [0.15, 0.02, -0.3],
       rotation: [0, -Math.PI / 2, 0],
     });
   });
 
-  it("registers the burger restaurant model for the playlist lot", () => {
+  it("registers the playlist lot model with the latest tuned generic shop placement", () => {
     expect(houseAssets.lowPolyBurgerRestaurant).toEqual({
-      path: "/models/low_poly_burger_restaurant/scene.gltf",
-      scale: 0.3,
-      position: [-0.95, 0.04, -0.6],
+      path: "/models/low_poly_generic_shop/scene.gltf",
+      scale: 0.44,
+      position: [-1.1, 0, -0.7],
       rotation: [0, Math.PI / 2, 0],
     });
   });
