@@ -77,7 +77,7 @@ describe("homeModules", () => {
     expect(homeModules.find((module) => module.id === "todo")).toMatchObject({
       title: "人生todolist",
       route: "/todo",
-      assetKey: "isometricMall",
+      assetKey: "lowPolyHouse3",
     });
     expect(homeModules.find((module) => module.id === "message")).toMatchObject({
       title: "学习笔记",
