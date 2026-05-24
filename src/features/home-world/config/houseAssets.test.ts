@@ -61,12 +61,12 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the apartment building model for the playlist lot", () => {
-    expect(houseAssets.lowPolyApartmentBuilding3).toEqual({
-      path: "/models/low_poly_apartment_building_3/scene.gltf",
-      scale: 0.25,
-      position: [0, 0.04, 0],
-      rotation: [0, 0, 0],
+  it("registers the burger restaurant model for the playlist lot", () => {
+    expect(houseAssets.lowPolyBurgerRestaurant).toEqual({
+      path: "/models/low_poly_burger_restaurant/scene.gltf",
+      scale: 0.3,
+      position: [-0.95, 0.04, -0.6],
+      rotation: [0, Math.PI / 2, 0],
     });
   });
 
@@ -228,10 +228,11 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_house_3/license.txt"), "utf8")).not.toThrow();
   });
 
-  it("keeps the apartment building model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/textures/Pack3_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_apartment_building_3/license.txt"), "utf8")).not.toThrow();
+  it("keeps the burger restaurant model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/textures/Texture_buildings1_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_burger_restaurant/license.txt"), "utf8")).not.toThrow();
+  });
   });
 });
