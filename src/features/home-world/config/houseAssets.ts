@@ -13,12 +13,12 @@ export const houseAssets = {
     position: [0.2, 0.03, 0],
     rotation: [0, 0, 0],
   },
-  lowPolyCafe: {
+  lowPolyHouse2: {
     // 个人相册模型
-    path: "/models/low_poly_cafe/scene.gltf",
-    scale: 0.0036,
-    position: [0, 0, -0.3],
-    rotation: [0, 0, 0],
+    path: "/models/low_poly_house_2/scene.gltf",
+    scale: 0.5,
+    position: [0.1, 0, -0.8],
+    rotation: [0, -Math.PI / 2, 0],
   },
   houseBuildingLowPoly: {
     // 碎碎念模型

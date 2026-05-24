@@ -4,18 +4,18 @@ import { describe, expect, it } from "vitest";
 import { houseAssets } from "./houseAssets";
 
 describe("houseAssets", () => {
-  it("registers the study notes and cafe models with public GLTF paths", () => {
+  it("registers the study notes and album house models with public GLTF paths", () => {
     expect(houseAssets.lowPolyPizzaRestaurant).toEqual({
       path: "/models/low_poly_pizza_restaurant/scene.gltf",
       scale: 0.35,
       position: [0.2, 0.03, 0],
       rotation: [0, 0, 0],
     });
-    expect(houseAssets.lowPolyCafe).toEqual({
-      path: "/models/low_poly_cafe/scene.gltf",
-      scale: 0.0036,
-      position: [0, 0, -0.3],
-      rotation: [0, 0, 0],
+    expect(houseAssets.lowPolyHouse2).toEqual({
+      path: "/models/low_poly_house_2/scene.gltf",
+      scale: 0.5,
+      position: [0.1, 0, -0.8],
+      rotation: [0, -Math.PI / 2, 0],
     });
   });
 
@@ -107,29 +107,29 @@ describe("houseAssets", () => {
     ).not.toThrow();
   });
 
-  it("keeps the low poly cafe model files available from public assets", () => {
+  it("keeps the low poly house 2 model files available from public assets", () => {
     expect(() =>
       readFileSync(
-        path.join(process.cwd(), "public/models/low_poly_cafe/scene.gltf"),
+        path.join(process.cwd(), "public/models/low_poly_house_2/scene.gltf"),
         "utf8",
       ),
     ).not.toThrow();
     expect(() =>
       readFileSync(
-        path.join(process.cwd(), "public/models/low_poly_cafe/scene.bin"),
+        path.join(process.cwd(), "public/models/low_poly_house_2/scene.bin"),
       ),
     ).not.toThrow();
     expect(() =>
       readFileSync(
         path.join(
           process.cwd(),
-          "public/models/low_poly_cafe/textures/Cafe_baseColor.jpeg",
+          "public/models/low_poly_house_2/textures/Pack3_baseColor.png",
         ),
       ),
     ).not.toThrow();
     expect(() =>
       readFileSync(
-        path.join(process.cwd(), "public/models/low_poly_cafe/license.txt"),
+        path.join(process.cwd(), "public/models/low_poly_house_2/license.txt"),
         "utf8",
       ),
     ).not.toThrow();

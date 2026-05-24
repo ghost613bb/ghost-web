@@ -52,7 +52,7 @@ describe("homeModules", () => {
     expect(homeModules.find((module) => module.id === "about")).toMatchObject({
       title: "个人相册",
       route: "/album",
-      assetKey: "lowPolyCafe",
+      assetKey: "lowPolyHouse2",
     });
     expect(homeModules.find((module) => module.id === "thoughts")).toMatchObject({
       title: "碎碎念",
