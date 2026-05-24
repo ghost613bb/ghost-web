@@ -64,9 +64,9 @@ describe("houseAssets", () => {
   it("registers the burger restaurant model for the playlist lot", () => {
     expect(houseAssets.lowPolyBurgerRestaurant).toEqual({
       path: "/models/low_poly_burger_restaurant/scene.gltf",
-      scale: 0.25,
-      position: [0, 0.04, 0],
-      rotation: [0, 0, 0],
+      scale: 0.3,
+      position: [-0.95, 0.04, -0.6],
+      rotation: [0, Math.PI / 2, 0],
     });
   });
 
