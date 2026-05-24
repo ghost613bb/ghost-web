@@ -52,11 +52,11 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the low poly car model for life todo list", () => {
-    expect(houseAssets.lowPolyCar2).toEqual({
-      path: "/models/low_poly_car_2/scene.gltf",
-      scale: 0.22,
-      position: [0, 0.02, -0.08],
+  it("registers the low poly house model for life todo list", () => {
+    expect(houseAssets.lowPolyHouse3).toEqual({
+      path: "/models/low_poly_house_3/scene.gltf",
+      scale: 0.24,
+      position: [0, 0.02, -0.02],
       rotation: [0, -Math.PI / 4, 0],
     });
   });
@@ -212,12 +212,11 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/license.txt"), "utf8")).not.toThrow();
   });
 
-  it("keeps the low poly car model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_car_2/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_car_2/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_car_2/textures/TransportPack_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_car_2/textures/TransportPack_tr_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_car_2/license.txt"), "utf8")).not.toThrow();
+  it("keeps the low poly house model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_house_3/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_house_3/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_house_3/textures/Pack3_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_house_3/license.txt"), "utf8")).not.toThrow();
   });
 
   it("keeps the low poly medieval house model files available from public assets", () => {

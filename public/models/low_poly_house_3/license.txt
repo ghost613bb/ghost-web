@@ -1,6 +1,6 @@
 Model Information:
-* title:	Low poly car 2
-* source:	https://sketchfab.com/3d-models/low-poly-car-2-54c63fa8d7864720afda5e568d7eb577
+* title:	Low poly house 3
+* source:	https://sketchfab.com/3d-models/low-poly-house-3-d7d42b52319d44cf89d6d6404970cd46
 * author:	assetfactory (https://sketchfab.com/assetfactory)
 
 Model License:

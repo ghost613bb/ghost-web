@@ -81,7 +81,7 @@ const unsortedHomeModules: HomeModule[] = [
     accentColor: "#ffcf8f",
     houseStyle: "cottage",
     placeholderStyle: "tower",
-    assetKey: "lowPolyCar2",
+    assetKey: "lowPolyHouse3",
     visibility: "public",
     sortOrder: 6,
   },
