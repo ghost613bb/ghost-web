@@ -22,7 +22,7 @@ export const houseAssets = {
   },
   houseBuildingLowPoly: {
     // 碎碎念模型
-    path: "/models/house_building_low_poly/scene.gltf",
+    path: "/models/low_poly_cinema/scene.gltf",
     scale: 0.18,
     position: [0, 0, -0.5],
     rotation: [0, 0, 0],
