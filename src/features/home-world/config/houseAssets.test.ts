@@ -7,8 +7,8 @@ describe("houseAssets", () => {
   it("registers the study notes and cafe models with public GLTF paths", () => {
     expect(houseAssets.lowPolyPizzaRestaurant).toEqual({
       path: "/models/low_poly_pizza_restaurant/scene.gltf",
-      scale: 0.012,
-      position: [0, 0.03, 0],
+      scale: 0.35,
+      position: [0.2, 0.03, 0],
       rotation: [0, 0, 0],
     });
     expect(houseAssets.lowPolyCafe).toEqual({

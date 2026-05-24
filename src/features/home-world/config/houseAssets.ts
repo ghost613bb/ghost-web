@@ -9,8 +9,8 @@ export const houseAssets = {
   lowPolyPizzaRestaurant: {
     // 学习笔记模型
     path: "/models/low_poly_pizza_restaurant/scene.gltf",
-    scale: 0.012,
-    position: [0, 0.03, 0],
+    scale: 0.35,
+    position: [0.2, 0.03, 0],
     rotation: [0, 0, 0],
   },
   lowPolyCafe: {
