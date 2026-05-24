@@ -20,10 +20,7 @@ function ModelHouse({ module }: { module: HomeModule & { assetKey: keyof typeof 
     const removableObjects: Object3D[] = [];
 
     scene.traverse((object) => {
-      if (
-        (module.assetKey === "coffeeShopIsometric" && object.name === "Object_121") ||
-        (module.assetKey === "lowPolyBuilding" && object.name === "Collider")
-      ) {
+      if (module.assetKey === "lowPolyBuilding" && object.name === "Collider") {
         removableObjects.push(object);
         return;
       }

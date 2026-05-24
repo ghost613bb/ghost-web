@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { HomeModule } from "@/features/home-world/types";
 import { HouseVisual } from "./HouseVisual";
 
-const { cloneMock, scene } = vi.hoisted(() => {
+const { cloneMock, useGLTFMock } = vi.hoisted(() => {
   const mockedScene = {
     removedNodes: [] as string[],
     traverse: (callback: (object: { name: string; parent?: { remove: (object: { name: string }) => void } }) => void) => {
@@ -12,8 +12,8 @@ const { cloneMock, scene } = vi.hoisted(() => {
           mockedScene.removedNodes.push(object.name);
         },
       };
-      const blueFloor = {
-        name: "Object_121",
+      const modelPart = {
+        name: "CafePart",
         parent: removableParent,
       };
       const colliderGroup = {
@@ -24,21 +24,23 @@ const { cloneMock, scene } = vi.hoisted(() => {
         name: "Collider_Collider_0",
         parent: removableParent,
       };
-      callback(blueFloor);
+      callback(modelPart);
       callback(colliderGroup);
       callback(colliderMesh);
     },
   };
 
+  const mockedUseGLTF = vi.fn(() => ({ scene: mockedScene }));
+
   return {
     cloneMock: vi.fn(({ object }) => <div data-removed-nodes={object.removedNodes.join(",")} data-testid="clone" />),
-    scene: mockedScene,
+    useGLTFMock: mockedUseGLTF,
   };
 });
 
 vi.mock("@react-three/drei", () => ({
   Clone: cloneMock,
-  useGLTF: Object.assign(() => ({ scene }), { preload: vi.fn() }),
+  useGLTF: Object.assign(useGLTFMock, { preload: vi.fn() }),
 }));
 
 const moduleWithCoffeeShopAsset = {
@@ -72,11 +74,17 @@ const moduleWithMoodDiaryAsset = {
 } satisfies HomeModule;
 
 describe("HouseVisual", () => {
-  it("removes the coffee shop model background floor from raycasting", () => {
+  it("loads the coffee recommendation visual from the dedicated low poly cafe asset", () => {
+    render(<HouseVisual module={moduleWithCoffeeShopAsset} active={false} emissiveIntensity={0.25} />);
+
+    expect(useGLTFMock).toHaveBeenCalledWith("/models/coffee_recommend_low_poly_cafe/scene.gltf");
+  });
+
+  it("renders the loaded coffee recommendation scene without removing legacy nodes", () => {
     render(<HouseVisual module={moduleWithCoffeeShopAsset} active={false} emissiveIntensity={0.25} />);
 
     expect(cloneMock).toHaveBeenCalled();
-    expect(cloneMock.mock.calls.at(-1)?.[0].object.removedNodes).toContain("Object_121");
+    expect(cloneMock.mock.calls.at(-1)?.[0].object.removedNodes).not.toContain("CafePart");
   });
 
   it("removes the mood diary generic shop collider mesh", () => {

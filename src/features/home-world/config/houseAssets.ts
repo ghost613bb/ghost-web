@@ -37,10 +37,10 @@ export const houseAssets = {
   },
   coffeeShopIsometric: {
     // 咖啡推荐模型
-    path: "/models/coffee_shop_isometric/scene.gltf",
-    scale: 0.3,
-    position: [0.19, 0.015, -0.3],
-    rotation: [0, 0, 0],
+    path: "/models/coffee_recommend_low_poly_cafe/scene.gltf",
+    scale: 0.35,
+    position: [0, 0, 0],
+    rotation: [0, -Math.PI / 4, 0],
   },
   isometricCinema: {
     path: "/models/isometric_cinema/scene.gltf",

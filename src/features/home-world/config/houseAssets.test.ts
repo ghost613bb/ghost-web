@@ -19,12 +19,12 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the coffee shop and cinema isometric models near the fast food restaurant visual size", () => {
+  it("registers the coffee recommendation model with the tuned low poly cafe asset and keeps the cinema config", () => {
     expect(houseAssets.coffeeShopIsometric).toEqual({
-      path: "/models/coffee_shop_isometric/scene.gltf",
-      scale: 0.3,
-      position: [0.19, 0.015, -0.3],
-      rotation: [0, 0, 0],
+      path: "/models/coffee_recommend_low_poly_cafe/scene.gltf",
+      scale: 0.35,
+      position: [0, 0, 0],
+      rotation: [0, -Math.PI / 4, 0],
     });
     expect(houseAssets.isometricCinema).toEqual({
       path: "/models/isometric_cinema/scene.gltf",
@@ -135,10 +135,11 @@ describe("houseAssets", () => {
     ).not.toThrow();
   });
 
-  it("keeps the coffee shop isometric model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_shop_isometric/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_shop_isometric/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_shop_isometric/license.txt"), "utf8")).not.toThrow();
+  it("keeps the coffee recommendation low poly cafe model files available from public assets", () => {
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_recommend_low_poly_cafe/scene.gltf"), "utf8")).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_recommend_low_poly_cafe/scene.bin"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_recommend_low_poly_cafe/textures/Texture_buildings1_baseColor.png"))).not.toThrow();
+    expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_recommend_low_poly_cafe/license.txt"), "utf8")).not.toThrow();
   });
 
   it("removes the blog library house building source base plane from the model asset", () => {
