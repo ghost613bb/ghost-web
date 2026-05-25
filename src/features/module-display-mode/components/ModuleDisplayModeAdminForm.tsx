@@ -63,10 +63,8 @@ export function ModuleDisplayModeAdminForm() {
         throw new Error("更新展示模式失败");
       }
 
-      setModes((current) => ({
-        ...current,
-        [moduleId]: displayMode,
-      }));
+      const data = (await response.json()) as { modes: DisplayModes };
+      setModes(data.modes);
     } catch (error) {
       setError(error instanceof Error ? error.message : "更新失败");
     } finally {

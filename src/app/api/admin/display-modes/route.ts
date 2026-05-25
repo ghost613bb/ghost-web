@@ -19,8 +19,7 @@ export async function PATCH(request: Request) {
     updateDisplayMode(moduleId, displayMode);
 
     return NextResponse.json({
-      moduleId,
-      displayMode,
+      modes: getDisplayModes(),
     });
   } catch (error) {
     return NextResponse.json(

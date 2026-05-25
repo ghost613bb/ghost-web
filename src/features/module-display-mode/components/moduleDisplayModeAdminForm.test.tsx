@@ -56,8 +56,15 @@ describe("ModuleDisplayModeAdminForm", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          moduleId: "thoughts",
-          displayMode: "demo",
+          modes: {
+            about: "real",
+            album: "real",
+            coffee: "real",
+            message: "real",
+            playlists: "real",
+            thoughts: "demo",
+            todo: "real",
+          },
         }),
       });
 

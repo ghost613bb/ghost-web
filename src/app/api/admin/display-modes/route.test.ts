@@ -40,8 +40,15 @@ describe("/api/admin/display-modes", () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual({
-      moduleId: "thoughts",
-      displayMode: "demo",
+      modes: {
+        about: "real",
+        album: "real",
+        coffee: "real",
+        message: "real",
+        playlists: "real",
+        thoughts: "demo",
+        todo: "real",
+      },
     });
     expect(nextData.modes.thoughts).toBe("demo");
   });
