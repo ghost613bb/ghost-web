@@ -33,12 +33,16 @@ export function ModuleDisplayModeAdminForm() {
         method: "GET",
       });
 
+      const data = (await response.json()) as {
+        modes?: DisplayModes;
+        error?: string;
+      };
+
       if (!response.ok) {
-        throw new Error("加载展示模式失败");
+        throw new Error(data.error ?? "加载展示模式失败");
       }
 
-      const data = (await response.json()) as { modes: DisplayModes };
-      setModes(data.modes);
+      setModes(data.modes as DisplayModes);
     } catch (error) {
       setError(error instanceof Error ? error.message : "加载失败");
     } finally {
@@ -59,12 +63,16 @@ export function ModuleDisplayModeAdminForm() {
         body: JSON.stringify({ moduleId, displayMode }),
       });
 
+      const data = (await response.json()) as {
+        modes?: DisplayModes;
+        error?: string;
+      };
+
       if (!response.ok) {
-        throw new Error("更新展示模式失败");
+        throw new Error(data.error ?? "更新展示模式失败");
       }
 
-      const data = (await response.json()) as { modes: DisplayModes };
-      setModes(data.modes);
+      setModes(data.modes as DisplayModes);
     } catch (error) {
       setError(error instanceof Error ? error.message : "更新失败");
     } finally {
@@ -95,6 +103,7 @@ export function ModuleDisplayModeAdminForm() {
                 <div className="space-y-1 text-sm text-white/70">
                   <p>路径：{module.route}</p>
                   <p>当前：{modeLabel}</p>
+                  {disabled ? <p className="text-amber-200">保存中...</p> : null}
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <label className="inline-flex items-center gap-2 text-sm text-white">

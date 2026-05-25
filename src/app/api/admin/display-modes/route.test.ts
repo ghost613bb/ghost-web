@@ -75,6 +75,44 @@ describe("/api/admin/display-modes", () => {
     });
   });
 
+  it("rejects malformed json body", async () => {
+    const response = await PATCH(
+      new Request("http://localhost/api/admin/display-modes", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: "{",
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({
+      error: "请求体必须是合法 JSON",
+    });
+  });
+
+  it("rejects non-object json body", async () => {
+    const response = await PATCH(
+      new Request("http://localhost/api/admin/display-modes", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify("demo"),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({
+      error: "请求体必须是对象",
+    });
+  });
+
   it("rejects unknown module ids", async () => {
     const response = await PATCH(
       new Request("http://localhost/api/admin/display-modes", {

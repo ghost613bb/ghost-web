@@ -14,6 +14,10 @@ export function parseDisplayModeUpdate(body: {
   moduleId?: unknown;
   displayMode?: unknown;
 }) {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new Error("请求体必须是对象");
+  }
+
   const { moduleId, displayMode } = body;
 
   if (!isModuleId(moduleId)) {
