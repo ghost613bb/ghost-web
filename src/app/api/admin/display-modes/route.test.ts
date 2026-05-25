@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resetDisplayModes } from "@/features/module-display-mode/service";
 import { GET, PATCH } from "./route";
 
 describe("/api/admin/display-modes", () => {
+  beforeEach(async () => {
+    await resetDisplayModes();
+  });
   it("returns the current display modes", async () => {
     const response = await GET();
     const data = await response.json();

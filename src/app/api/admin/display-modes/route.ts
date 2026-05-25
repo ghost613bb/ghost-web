@@ -4,7 +4,7 @@ import { parseDisplayModeUpdate } from "@/features/module-display-mode/validatio
 
 export async function GET() {
   return NextResponse.json({
-    modes: getDisplayModes(),
+    modes: await getDisplayModes(),
   });
 }
 
@@ -16,10 +16,10 @@ export async function PATCH(request: Request) {
     };
 
     const { moduleId, displayMode } = parseDisplayModeUpdate(body);
-    updateDisplayMode(moduleId, displayMode);
+    await updateDisplayMode(moduleId, displayMode);
 
     return NextResponse.json({
-      modes: getDisplayModes(),
+      modes: await getDisplayModes(),
     });
   } catch (error) {
     return NextResponse.json(

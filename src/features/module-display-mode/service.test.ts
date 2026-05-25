@@ -6,12 +6,12 @@ import {
 } from "./service";
 
 describe("module display mode service", () => {
-  beforeEach(() => {
-    resetDisplayModes();
+  beforeEach(async () => {
+    await resetDisplayModes();
   });
 
-  it("returns the default display modes", () => {
-    expect(getDisplayModes()).toEqual({
+  it("returns the default display modes", async () => {
+    await expect(getDisplayModes()).resolves.toEqual({
       about: "real",
       album: "real",
       coffee: "real",
@@ -22,10 +22,10 @@ describe("module display mode service", () => {
     });
   });
 
-  it("updates a single module mode while preserving others", () => {
-    updateDisplayMode("thoughts", "demo");
+  it("updates a single module mode while preserving others", async () => {
+    await updateDisplayMode("thoughts", "demo");
 
-    expect(getDisplayModes()).toEqual({
+    await expect(getDisplayModes()).resolves.toEqual({
       about: "real",
       album: "real",
       coffee: "real",
