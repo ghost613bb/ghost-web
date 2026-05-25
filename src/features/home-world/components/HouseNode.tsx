@@ -3,6 +3,7 @@
 import { Html } from "@react-three/drei";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { houseAssets } from "@/features/home-world/config/houseAssets";
 import type { HomeModule } from "@/features/home-world/types";
 import { HouseVisual } from "./HouseVisual";
 
@@ -13,6 +14,16 @@ type HouseNodeProps = {
 };
 
 const grassSurfaceY = 0.17;
+const hoverRingElevation = 0.02;
+
+function getHoverRingPosition(module: HomeModule): [number, number, number] {
+  if (!module.assetKey) {
+    return [0, hoverRingElevation, 0];
+  }
+
+  const asset = houseAssets[module.assetKey];
+  return [asset.position[0], hoverRingElevation, asset.position[2]];
+}
 
 export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
   const router = useRouter();
@@ -21,6 +32,7 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
   const scale = active ? 1.08 : 1;
   const y = grassSurfaceY + (active ? 0.14 : 0);
   const rotationY = module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
+  const hoverRingPosition = getHoverRingPosition(module);
 
   function handleClick() {
     if (typeof window !== "undefined" && window.matchMedia("(hover: none)").matches && !pressedOnce) {
@@ -52,7 +64,7 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
       }}
     >
       <HouseVisual module={module} active={active} emissiveIntensity={emissiveIntensity} />
-      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={hoverRingPosition} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.58, 0.64, 48]} />
         <meshBasicMaterial color={module.accentColor} transparent opacity={active ? 0.75 : 0.18} />
       </mesh>
