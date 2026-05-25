@@ -2,9 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type ModulePageShellProps = {
+  // 标题上方的小字说明
   eyebrow: string;
+  // 页面主标题
   title: string;
+  // 页面副标题或说明文案
   description: string;
+  // 页面主体内容
   children: ReactNode;
 };
 
