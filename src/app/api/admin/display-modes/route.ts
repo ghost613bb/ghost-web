@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  createDefaultDisplayModes,
-  moduleIds,
-  type DisplayMode,
-  type DisplayModes,
-  type ModuleId,
-} from "@/features/module-display-mode/configurableModules";
-
-const displayModes: DisplayModes = createDefaultDisplayModes();
+import { moduleIds, type DisplayMode, type ModuleId } from "@/features/module-display-mode/configurableModules";
+import { getDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
 
 function isModuleId(value: unknown): value is ModuleId {
   return typeof value === "string" && moduleIds.includes(value as ModuleId);
@@ -19,7 +12,7 @@ function isDisplayMode(value: unknown): value is DisplayMode {
 
 export async function GET() {
   return NextResponse.json({
-    modes: displayModes,
+    modes: getDisplayModes(),
   });
 }
 
@@ -44,7 +37,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  displayModes[moduleId] = displayMode;
+  updateDisplayMode(moduleId, displayMode);
 
   return NextResponse.json({
     moduleId,
