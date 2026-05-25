@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
+import {
+  createDefaultDisplayModes,
+  moduleIds,
+  type DisplayMode,
+  type DisplayModes,
+  type ModuleId,
+} from "@/features/module-display-mode/configurableModules";
 
-const moduleIds = ["about", "album", "coffee", "message", "playlists", "thoughts", "todo"] as const;
-type ModuleId = (typeof moduleIds)[number];
-type DisplayMode = "real" | "demo";
-type DisplayModes = Record<ModuleId, DisplayMode>;
-
-const displayModes: DisplayModes = {
-  about: "real",
-  album: "real",
-  coffee: "real",
-  message: "real",
-  playlists: "real",
-  thoughts: "real",
-  todo: "real",
-};
+const displayModes: DisplayModes = createDefaultDisplayModes();
 
 function isModuleId(value: unknown): value is ModuleId {
   return typeof value === "string" && moduleIds.includes(value as ModuleId);

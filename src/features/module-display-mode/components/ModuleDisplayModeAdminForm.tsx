@@ -1,30 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  configurableModules,
+  createDefaultDisplayModes,
+  type DisplayMode,
+  type DisplayModes,
+  type ModuleId,
+} from "@/features/module-display-mode/configurableModules";
 
-const modules = [
-  { id: "about", title: "心情日记", route: "/about" },
-  { id: "album", title: "个人相册", route: "/album" },
-  { id: "coffee", title: "咖啡推荐", route: "/coffee" },
-  { id: "message", title: "学习笔记", route: "/message" },
-  { id: "playlists", title: "歌单", route: "/playlists" },
-  { id: "thoughts", title: "碎碎念", route: "/thoughts" },
-  { id: "todo", title: "人生todolist", route: "/todo" },
-] as const;
-
-type ModuleId = (typeof modules)[number]["id"];
-type DisplayMode = "real" | "demo";
-type DisplayModes = Record<ModuleId, DisplayMode>;
-
-const emptyModes: DisplayModes = {
-  about: "real",
-  album: "real",
-  coffee: "real",
-  message: "real",
-  playlists: "real",
-  thoughts: "real",
-  todo: "real",
-};
+const emptyModes: DisplayModes = createDefaultDisplayModes();
 
 export function ModuleDisplayModeAdminForm() {
   const [modes, setModes] = useState<DisplayModes>(emptyModes);
@@ -101,7 +86,7 @@ export function ModuleDisplayModeAdminForm() {
 
       {!loading ? (
         <div className="space-y-4">
-          {modules.map((module) => {
+          {configurableModules.map((module) => {
             const mode = modes[module.id];
             const modeLabel = mode === "real" ? "真实内容" : "试玩模式";
             const disabled = savingModuleId === module.id;
