@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { thoughts } from "@/data/thoughts";
 import { resetStoredThoughts, upsertStoredThought } from "./repository";
-import { getLatestThought, listThoughts } from "./service";
+import { createThought, getLatestThought, listThoughts } from "./service";
 
 describe("thoughts service", () => {
   beforeEach(async () => {
@@ -38,5 +38,35 @@ describe("thoughts service", () => {
       createdAt: "2026-05-25",
       sortOrder: 1,
     });
+  });
+
+  it("creates a stored thought", async () => {
+    await createThought({
+      id: "thought-db-002",
+      title: "新写入的碎碎念",
+      slug: "new-thought",
+      description: "这是通过 service 新建的内容。",
+      body: "先把最小写入链路跑通。",
+      tags: ["写入", "service"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-26",
+      sortOrder: 2,
+    });
+
+    await expect(listThoughts()).resolves.toEqual([
+      {
+        id: "thought-db-002",
+        title: "新写入的碎碎念",
+        slug: "new-thought",
+        description: "这是通过 service 新建的内容。",
+        body: "先把最小写入链路跑通。",
+        tags: ["写入", "service"],
+        visibility: "public",
+        status: "published",
+        createdAt: "2026-05-26",
+        sortOrder: 2,
+      },
+    ]);
   });
 });
