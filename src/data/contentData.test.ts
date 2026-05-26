@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aboutProfile } from "./about";
-import { albumPhotos } from "./album";
+import { albumCollections } from "./album";
 import { playlistSongs } from "./playlists";
 import { thoughts } from "./thoughts";
 import { lifeTodos } from "./todo";
@@ -12,7 +12,7 @@ describe("local content data", () => {
   });
 
   it("defines public album, playlist, and todo content", () => {
-    expect(albumPhotos.every((photo) => photo.visibility === "public" && photo.status === "published")).toBe(true);
+    expect(albumCollections.every((album) => album.visibility === "public" && album.status === "published")).toBe(true);
     expect(playlistSongs.every((song) => song.visibility === "public" && song.status === "published")).toBe(true);
     expect(lifeTodos.map((item) => item.state)).toEqual(["planned", "planned"]);
   });

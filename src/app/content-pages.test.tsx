@@ -38,6 +38,17 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: "个人相册" })).toBeInTheDocument();
   });
 
+  it("renders album cards and actions in real mode", async () => {
+    render(await AlbumPage());
+
+    expect(screen.getByRole("button", { name: "新建相册" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "上传" })).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(6);
+    expect(screen.getAllByText("更多")).toHaveLength(6);
+    expect(screen.getByText("照片22个")).toBeInTheDocument();
+    expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。" )).toBeInTheDocument();
+  });
+
   it("renders the album demo page in demo mode", async () => {
     await updateDisplayMode("album", "demo");
 

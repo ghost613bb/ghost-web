@@ -1,34 +1,82 @@
 import type { BaseContent } from "@/features/content-modules/types";
 
-export type AlbumPhoto = BaseContent & {
-  location?: string;
-  story: string;
-  color: string;
+export type AlbumCollection = BaseContent & {
+  coverTone: string;
+  coverEmoji: string;
+  photoCount: number;
 };
 
-export const albumPhotos: AlbumPhoto[] = [
+export const albumCollections: AlbumCollection[] = [
   {
-    id: "photo-001",
-    title: "窗边的绿",
-    description: "某个下午光刚好落在叶子上。",
-    story: "这类照片适合放在网站里提醒自己：生活不是只有效率。",
-    location: "日常",
-    color: "from-emerald-300 to-cyan-400",
-    tags: ["生活", "植物"],
+    id: "album-001",
+    title: "我的相册",
+    description: "诗注：小妞写，图片，女孩子的碎片收藏。",
+    coverTone: "bg-rose-200",
+    coverEmoji: "👧🏻",
+    photoCount: 22,
     visibility: "public",
     status: "published",
+    createdAt: "2023-07-31",
     sortOrder: 1,
   },
   {
-    id: "photo-002",
-    title: "夜色里的霓虹",
-    description: "像首页小镇会用到的颜色参考。",
-    story: "多巴胺不一定要吵，也可以是黑夜里小面积的亮色。",
-    location: "城市",
-    color: "from-fuchsia-400 to-violet-500",
-    tags: ["灵感", "霓虹"],
+    id: "album-002",
+    title: "我的相册",
+    description: "诗注：小妞写，图片，女孩子的慢节奏角落。",
+    coverTone: "bg-orange-100",
+    coverEmoji: "🐷",
+    photoCount: 12,
     visibility: "public",
     status: "published",
+    createdAt: "2023-07-31",
     sortOrder: 2,
+  },
+  {
+    id: "album-003",
+    title: "我的相册",
+    description: "诗注：小妞写，图片，女孩子与编发的故事。",
+    coverTone: "bg-rose-100",
+    coverEmoji: "👧🏼",
+    photoCount: 12,
+    visibility: "public",
+    status: "published",
+    createdAt: "2023-07-31",
+    sortOrder: 3,
+  },
+  {
+    id: "album-004",
+    title: "我的相册",
+    description: "荷注：小妞呀，图片，女孩子的可爱存档。",
+    coverTone: "bg-red-100",
+    coverEmoji: "🐽",
+    photoCount: 18,
+    visibility: "public",
+    status: "published",
+    createdAt: "2023-07-31",
+    sortOrder: 4,
+  },
+  {
+    id: "album-005",
+    title: "我的相册",
+    description: "荷注：小妞呀，图片，今天也有好天气。",
+    coverTone: "bg-amber-100",
+    coverEmoji: "🐶",
+    photoCount: 16,
+    visibility: "public",
+    status: "published",
+    createdAt: "2023-07-31",
+    sortOrder: 5,
+  },
+  {
+    id: "album-006",
+    title: "我的相册",
+    description: "荷注：小妞呀，图片，兔兔一样软绵绵。",
+    coverTone: "bg-pink-100",
+    coverEmoji: "🐰",
+    photoCount: 9,
+    visibility: "public",
+    status: "published",
+    createdAt: "2023-07-31",
+    sortOrder: 6,
   },
 ];
