@@ -17,16 +17,34 @@ describe("content module pages", () => {
     await resetStoredThoughts();
   });
 
-  it("renders the about page heading", () => {
-    render(<AboutPage />);
+  it("renders the about page heading", async () => {
+    render(await AboutPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "心情日记" })).toBeInTheDocument();
   });
 
-  it("renders the album page heading", () => {
-    render(<AlbumPage />);
+  it("renders the about demo page in demo mode", async () => {
+    await updateDisplayMode("about", "demo");
+
+    render(await AboutPage());
+
+    expect(screen.getByRole("heading", { level: 1, name: "心情日记-演示模式" })).toBeInTheDocument();
+    expect(screen.getByText("这是心情日记模块的基础演示内容。")).toBeInTheDocument();
+  });
+
+  it("renders the album page heading", async () => {
+    render(await AlbumPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "个人相册" })).toBeInTheDocument();
+  });
+
+  it("renders the album demo page in demo mode", async () => {
+    await updateDisplayMode("album", "demo");
+
+    render(await AlbumPage());
+
+    expect(screen.getByRole("heading", { level: 1, name: "个人相册-演示模式" })).toBeInTheDocument();
+    expect(screen.getByText("这是个人相册模块的基础演示内容。")).toBeInTheDocument();
   });
 
   it("renders the latest stored thought in real mode", async () => {
@@ -70,27 +88,63 @@ describe("content module pages", () => {
     expect(screen.getByText("你可以先体验基础编辑交互，但这里不会展示我的真实内容。")).toBeInTheDocument();
   });
 
-  it("renders the playlists page heading", () => {
-    render(<PlaylistsPage />);
+  it("renders the playlists page heading", async () => {
+    render(await PlaylistsPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
   });
 
-  it("renders the coffee page heading", () => {
-    render(<CoffeePage />);
+  it("renders the playlists demo page in demo mode", async () => {
+    await updateDisplayMode("playlists", "demo");
+
+    render(await PlaylistsPage());
+
+    expect(screen.getByRole("heading", { level: 1, name: "歌单-演示模式" })).toBeInTheDocument();
+    expect(screen.getByText("这是歌单模块的基础演示内容。")).toBeInTheDocument();
+  });
+
+  it("renders the coffee page heading", async () => {
+    render(await CoffeePage());
 
     expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐" })).toBeInTheDocument();
   });
 
-  it("renders the todo page heading", () => {
-    render(<TodoPage />);
+  it("renders the coffee demo page in demo mode", async () => {
+    await updateDisplayMode("coffee", "demo");
+
+    render(await CoffeePage());
+
+    expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐-演示模式" })).toBeInTheDocument();
+    expect(screen.getByText("这是咖啡推荐模块的基础演示内容。")).toBeInTheDocument();
+  });
+
+  it("renders the todo page heading", async () => {
+    render(await TodoPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
   });
 
-  it("renders the message page heading", () => {
-    render(<MessagePage />);
+  it("renders the todo demo page in demo mode", async () => {
+    await updateDisplayMode("todo", "demo");
+
+    render(await TodoPage());
+
+    expect(screen.getByRole("heading", { level: 1, name: "人生todolist-演示模式" })).toBeInTheDocument();
+    expect(screen.getByText("这是人生todolist模块的基础演示内容。")).toBeInTheDocument();
+  });
+
+  it("renders the message page heading", async () => {
+    render(await MessagePage());
 
     expect(screen.getByRole("heading", { level: 1, name: "学习笔记" })).toBeInTheDocument();
+  });
+
+  it("renders the message demo page in demo mode", async () => {
+    await updateDisplayMode("message", "demo");
+
+    render(await MessagePage());
+
+    expect(screen.getByRole("heading", { level: 1, name: "学习笔记-演示模式" })).toBeInTheDocument();
+    expect(screen.getByText("这是学习笔记模块的基础演示内容。")).toBeInTheDocument();
   });
 });
