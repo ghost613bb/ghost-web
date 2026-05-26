@@ -4,6 +4,11 @@ import {
   resetDisplayModes,
   updateDisplayMode,
 } from "./service";
+import {
+  listStoredDisplayModes,
+  resetStoredDisplayModes,
+  upsertStoredDisplayMode,
+} from "./repository";
 
 describe("module display mode service", () => {
   beforeEach(async () => {
@@ -34,5 +39,18 @@ describe("module display mode service", () => {
       thoughts: "demo",
       todo: "real",
     });
+  });
+
+  it("persists only changed display modes in repository storage", async () => {
+    await upsertStoredDisplayMode("thoughts", "demo");
+
+    await expect(listStoredDisplayModes()).resolves.toEqual([{ moduleId: "thoughts", displayMode: "demo" }]);
+  });
+
+  it("clears repository storage when resetting stored display modes", async () => {
+    await upsertStoredDisplayMode("thoughts", "demo");
+    await resetStoredDisplayModes();
+
+    await expect(listStoredDisplayModes()).resolves.toEqual([]);
   });
 });
