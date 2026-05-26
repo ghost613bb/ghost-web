@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  getDisplayMode,
   getDisplayModes,
   resetDisplayModes,
   updateDisplayMode,
@@ -25,6 +26,16 @@ describe("module display mode service", () => {
       thoughts: "real",
       todo: "real",
     });
+  });
+
+  it("returns the default mode for a single module", async () => {
+    await expect(getDisplayMode("thoughts")).resolves.toBe("real");
+  });
+
+  it("returns the stored mode for a single module", async () => {
+    await updateDisplayMode("thoughts", "demo");
+
+    await expect(getDisplayMode("thoughts")).resolves.toBe("demo");
   });
 
   it("updates a single module mode while preserving others", async () => {

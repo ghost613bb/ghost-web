@@ -23,10 +23,15 @@ function mergeStoredModes(rows: Array<{ moduleId: string; displayMode: string }>
   return modes;
 }
 
-// 获取
+// 获取整个模块的显示模式
 export async function getDisplayModes(): Promise<DisplayModes> {
   const rows = await listStoredDisplayModes();
   return mergeStoredModes(rows);
+}
+
+// 获取单个模块的显示模式
+export async function getDisplayMode(moduleId: ModuleId): Promise<DisplayMode> {
+  return (await getDisplayModes())[moduleId];
 }
 // 更新
 export async function updateDisplayMode(moduleId: ModuleId, displayMode: DisplayMode) {
