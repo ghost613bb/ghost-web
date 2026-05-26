@@ -144,6 +144,59 @@ describe("ModuleDisplayModeAdminForm", () => {
     expect(await screen.findByText("暂时无法读取展示模式")).toBeInTheDocument();
   });
 
+  it("keeps the active tab text readable on hover", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          modes: {
+            about: "real",
+            album: "real",
+            coffee: "real",
+            message: "real",
+            playlists: "real",
+            thoughts: "real",
+            todo: "real",
+          },
+        }),
+      }),
+    );
+
+    render(<ModuleDisplayModeAdminForm />);
+
+    const aboutFieldset = await screen.findByRole("group", { name: "心情日记 展示模式" });
+    const activeTab = within(aboutFieldset).getByRole("radio", { name: "真实内容" }).closest("label");
+
+    expect(activeTab).toHaveClass("bg-stone-900");
+    expect(activeTab).toHaveClass("text-white");
+    expect(activeTab).not.toHaveClass("hover:text-stone-900");
+  });
+
+  it("uses smaller heading sizing for the admin form", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          modes: {
+            about: "real",
+            album: "real",
+            coffee: "real",
+            message: "real",
+            playlists: "real",
+            thoughts: "real",
+            todo: "real",
+          },
+        }),
+      }),
+    );
+
+    render(<ModuleDisplayModeAdminForm />);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "模块展示模式" })).toHaveClass("text-xl", "sm:text-2xl");
+  });
+
   it("disables only the saving module and shows saving text", async () => {
     let resolvePatch: ((value: { ok: boolean; json: () => Promise<{ modes: { about: string; album: string; coffee: string; message: string; playlists: string; thoughts: string; todo: string; }; }> }) => void) | undefined;
 

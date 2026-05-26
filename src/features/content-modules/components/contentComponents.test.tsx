@@ -19,6 +19,27 @@ describe("content module components", () => {
     expect(screen.getByText("页面内容")).toBeInTheDocument();
   });
 
+  it("hides the eyebrow when it is empty", () => {
+    render(
+      <ModulePageShell eyebrow="" title="关于我" description="页面描述">
+        <p>页面内容</p>
+      </ModulePageShell>,
+    );
+
+    expect(screen.queryByText("About")).not.toBeInTheDocument();
+  });
+
+  it("renders compact shell sizing classes", () => {
+    render(
+      <ModulePageShell eyebrow="" title="关于我" description="页面描述">
+        <p>页面内容</p>
+      </ModulePageShell>,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "关于我" })).toHaveClass("text-3xl", "sm:text-4xl");
+    expect(screen.getByText("页面描述")).toHaveClass("text-sm", "sm:text-base");
+  });
+
   it("renders linked content cards with metadata and tags", () => {
     render(<ContentCard title="一条内容" description="内容摘要" href="/thoughts/demo" meta="2026-05-13" tags={["网站"]} />);
 

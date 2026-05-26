@@ -81,14 +81,16 @@ export function ModuleDisplayModeAdminForm() {
   }
 
   return (
-    <section className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-white">模块展示模式</h2>
-        <p className="text-sm text-white/65">当前改成接口版读取与保存，后面再继续替换成真实数据库。</p>
+    <section className="space-y-5 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-[0_20px_60px_rgba(28,25,23,0.06)] sm:p-8">
+      <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-stone-900 sm:text-2xl">模块展示模式</h2>
+          <p className="text-sm leading-6 text-stone-600">在这里切换每个模块展示真实内容还是试玩模式，改动会立即保存。</p>
+        </div>
       </div>
 
-      {loading ? <p className="text-sm text-white/70">加载中...</p> : null}
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {loading ? <p className="text-sm text-stone-500">加载中...</p> : null}
+      {error ? <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
       {!loading ? (
         <div className="space-y-4">
@@ -98,34 +100,62 @@ export function ModuleDisplayModeAdminForm() {
             const disabled = savingModuleId === module.id;
 
             return (
-              <fieldset key={module.id} className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                <legend className="px-1 text-base font-medium text-white">{module.title} 展示模式</legend>
-                <div className="space-y-1 text-sm text-white/70">
-                  <p>路径：{module.route}</p>
-                  <p>当前：{modeLabel}</p>
-                  {disabled ? <p className="text-amber-200">保存中...</p> : null}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <label className="inline-flex items-center gap-2 text-sm text-white">
-                    <input
-                      type="radio"
-                      name={`${module.id}-display-mode`}
-                      checked={mode === "real"}
-                      disabled={disabled}
-                      onChange={() => void handleModeChange(module.id, "real")}
-                    />
-                    真实内容
-                  </label>
-                  <label className="inline-flex items-center gap-2 text-sm text-white">
-                    <input
-                      type="radio"
-                      name={`${module.id}-display-mode`}
-                      checked={mode === "demo"}
-                      disabled={disabled}
-                      onChange={() => void handleModeChange(module.id, "demo")}
-                    />
-                    试玩模式
-                  </label>
+              <fieldset
+                key={module.id}
+                className="rounded-3xl border border-stone-200 bg-stone-50/80 p-5 transition hover:border-stone-300 hover:bg-stone-50"
+              >
+                <legend className="sr-only">{module.title} 展示模式</legend>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-medium text-stone-900">{module.title}</h3>
+                      <p className="text-sm text-stone-500">路径：{module.route}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-stone-600">
+                      <span>当前模式</span>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                          mode === "real" ? "bg-stone-200 text-stone-700" : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        <span className="sr-only">当前：{modeLabel}</span>
+                        {modeLabel}
+                      </span>
+                      {disabled ? <span className="text-xs text-stone-500">保存中...</span> : null}
+                    </div>
+                  </div>
+                  <div className="inline-flex w-full rounded-full border border-stone-200 bg-white p-1 sm:w-auto">
+                    <label
+                      className={`flex-1 cursor-pointer rounded-full px-4 py-2 text-center text-sm transition sm:flex-none ${
+                        mode === "real" ? "bg-stone-900 text-white" : "text-stone-600 hover:text-stone-900"
+                      } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+                    >
+                      <input
+                        className="sr-only"
+                        type="radio"
+                        name={`${module.id}-display-mode`}
+                        checked={mode === "real"}
+                        disabled={disabled}
+                        onChange={() => void handleModeChange(module.id, "real")}
+                      />
+                      真实内容
+                    </label>
+                    <label
+                      className={`flex-1 cursor-pointer rounded-full px-4 py-2 text-center text-sm transition sm:flex-none ${
+                        mode === "demo" ? "bg-stone-900 text-white" : "text-stone-600 hover:text-stone-900"
+                      } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+                    >
+                      <input
+                        className="sr-only"
+                        type="radio"
+                        name={`${module.id}-display-mode`}
+                        checked={mode === "demo"}
+                        disabled={disabled}
+                        onChange={() => void handleModeChange(module.id, "demo")}
+                      />
+                      试玩模式
+                    </label>
+                  </div>
                 </div>
               </fieldset>
             );

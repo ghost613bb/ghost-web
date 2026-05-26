@@ -14,17 +14,20 @@ type ModulePageShellProps = {
 
 export function ModulePageShell({ eyebrow, title, description, children }: ModulePageShellProps) {
   return (
-    <main className="min-h-dvh bg-[radial-gradient(circle_at_top_left,rgba(0,245,212,0.16),transparent_32%),linear-gradient(135deg,#020617,#111827_55%,#1e1b4b)] px-5 py-8 text-slate-100 sm:px-8">
-      <div className="mx-auto max-w-6xl">
-        <Link className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition hover:bg-white/10" href="/">
+    <main className="min-h-dvh bg-stone-100 px-5 py-8 text-stone-900 sm:px-8">
+      <div className="mx-auto max-w-5xl">
+        <Link
+          className="inline-flex items-center rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-600 transition hover:border-stone-400 hover:text-stone-900"
+          href="/"
+        >
           返回首页小镇
         </Link>
-        <header className="py-12">
-          <p className="text-sm uppercase tracking-[0.35em] text-cyan-200/70">{eyebrow}</p>
-          <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">{title}</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-white/70">{description}</p>
+        <header className="border-b border-stone-200 py-8 sm:py-10">
+          {eyebrow ? <p className="text-xs uppercase tracking-[0.28em] text-stone-500">{eyebrow}</p> : null}
+          <h1 className={`${eyebrow ? "mt-3" : "mt-0"} text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl`}>{title}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-600 sm:text-base">{description}</p>
         </header>
-        {children}
+        <div className="py-8 sm:py-10">{children}</div>
       </div>
     </main>
   );
