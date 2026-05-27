@@ -126,7 +126,7 @@ export function AlbumPageView() {
     "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
   return (
-    <main className="min-h-dvh bg-[#f7f1e8] text-stone-900">
+    <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <header className="border-b-2 border-stone-700/60 bg-[#f6b8c2]">
         <div className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <Link className={topActionClass} href="/">
@@ -142,10 +142,6 @@ export function AlbumPageView() {
       </header>
 
       <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-3 sm:px-6">
-        <div className="mb-3 flex justify-end">
-          <p className="text-right text-xs text-stone-600">先用静态卡片搭一版轻量结构，后续再替换真实封面。</p>
-        </div>
-
         <section className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {albumCollections.map((album, index) => (
             <article
@@ -154,10 +150,9 @@ export function AlbumPageView() {
             >
               <div
                 aria-hidden="true"
-                className={`mb-1 flex h-40 items-center justify-center rounded-[1.3rem] ${album.coverTone} text-5xl shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-44 sm:text-[3.25rem]`}
-              >
-                <span>{album.coverEmoji}</span>
-              </div>
+                className="mb-1 h-40 rounded-[1.3rem] bg-[#d8d4dc] bg-cover bg-center shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-44"
+                style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)" }}
+              />
 
               <div
                 aria-hidden="true"

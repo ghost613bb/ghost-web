@@ -48,10 +48,12 @@ describe("content module pages", () => {
     expect(backHomeLink).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "上传" })).not.toBeInTheDocument();
     expect(screen.queryByText("先用静态卡片搭一版轻量结构，后续再替换真实封面。")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(6);
-    expect(screen.getAllByText("更多")).toHaveLength(6);
+    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto");
+    expect(screen.getAllByRole("article")).toHaveLength(7);
+    expect(screen.getAllByText("更多")).toHaveLength(7);
     expect(screen.getByText("照片22个")).toBeInTheDocument();
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。" )).toBeInTheDocument();
+    expect(screen.getByText("荷注：小妞呀，图片，新收进来的封面占位练习。" )).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("min-h-[268px]", "sm:min-h-[282px]", "p-3");
     expect(backHomeLink).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
     expect(createAlbumButton).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");

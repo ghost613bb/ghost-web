@@ -79,4 +79,16 @@ export const albumCollections: AlbumCollection[] = [
     createdAt: "2023-07-31",
     sortOrder: 6,
   },
+  {
+    id: "album-007",
+    title: "我的相册",
+    description: "荷注：小妞呀，图片，新收进来的封面占位练习。",
+    coverTone: "bg-stone-100",
+    coverEmoji: "🪞",
+    photoCount: 14,
+    visibility: "public",
+    status: "published",
+    createdAt: "2023-07-31",
+    sortOrder: 7,
+  },
 ];
