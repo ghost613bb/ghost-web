@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { albumCollections } from "@/data/album";
 import { AlbumDetailPageView } from "@/features/album/AlbumDetailPage";
+import { getAlbumById } from "@/features/album/service";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 type AlbumDetailPageProps = {
@@ -20,7 +20,7 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
   }
 
   const { albumId } = await params;
-  const album = albumCollections.find((item) => item.id === albumId);
+  const album = await getAlbumById(albumId);
 
   if (!album) {
     notFound();

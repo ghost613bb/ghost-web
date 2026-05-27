@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { aboutProfile } from "./about";
 import { albumCollections } from "./album";
+import {
+  albumPhotos,
+  getAdjacentAlbumPhotoIds,
+  getAlbumPhotoById,
+  getAlbumPhotosByAlbumId,
+} from "./albumPhotos";
 import { playlistSongs } from "./playlists";
 import { thoughts } from "./thoughts";
 import { lifeTodos } from "./todo";
@@ -20,5 +26,40 @@ describe("local content data", () => {
   it("defines thoughts for public, interview-hidden, and masked visibility", () => {
     expect(thoughts.map((thought) => thought.slug)).toEqual(["glowing-town", "interview-mode", "masked-note"]);
     expect(thoughts.map((thought) => thought.visibility)).toEqual(["public", "interview_hidden", "masked"]);
+  });
+
+  it("defines album photo records and adjacent navigation helpers", () => {
+    expect(albumPhotos).toHaveLength(7);
+    expect(getAlbumPhotosByAlbumId("album-001").map((photo) => photo.id)).toEqual([
+      "photo-001",
+      "photo-002",
+      "photo-003",
+      "photo-004",
+      "photo-005",
+      "photo-006",
+      "photo-007",
+    ]);
+
+    expect(getAlbumPhotoById("album-001", "photo-001")).toMatchObject({
+      id: "photo-001",
+      albumId: "album-001",
+      title: "Sleepy head...",
+      uploadedAt: "Oct 24, 2023 / 4:30",
+    });
+
+    expect(getAdjacentAlbumPhotoIds("album-001", "photo-001")).toEqual({
+      previousPhotoId: null,
+      nextPhotoId: "photo-002",
+    });
+
+    expect(getAdjacentAlbumPhotoIds("album-001", "photo-004")).toEqual({
+      previousPhotoId: "photo-003",
+      nextPhotoId: "photo-005",
+    });
+
+    expect(getAdjacentAlbumPhotoIds("album-001", "photo-007")).toEqual({
+      previousPhotoId: "photo-006",
+      nextPhotoId: null,
+    });
   });
 });

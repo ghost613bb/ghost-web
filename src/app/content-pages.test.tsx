@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Album } from "@/features/album/types";
 import AboutPage from "./about/page";
 import AlbumDetailPage from "./album/[albumId]/page";
+import AlbumPhotoDetailPage from "./album/[albumId]/[photoId]/page";
 import AlbumPage from "./album/page";
 import CoffeePage from "./coffee/page";
 import MessagePage from "./message/page";
@@ -10,17 +12,38 @@ import ThoughtsPage from "./thoughts/page";
 import TodoPage from "./todo/page";
 import { thoughts } from "@/data/thoughts";
 import { resetDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
+import { resetStoredAlbums, upsertStoredAlbum } from "@/features/album/repository";
+import * as albumService from "@/features/album/service";
 import { resetStoredThoughts, upsertStoredThought } from "@/features/thoughts/repository";
+
+type JsonResponse = {
+  json: () => Promise<unknown>;
+  ok: boolean;
+};
+
+const albumServiceFallbackAlbum: Album = {
+  id: "album-001",
+  title: "我的相册",
+  description: "诗注：小妞写，图片，女孩子的碎片收藏。",
+  photoCount: 22,
+  visibility: "public",
+  status: "published",
+  createdAt: "2023-07-31",
+  sortOrder: 1,
+};
 
 describe("content module pages", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
+    vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-001" ? albumServiceFallbackAlbum : null));
     await resetDisplayModes();
+    await resetStoredAlbums();
     await resetStoredThoughts();
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -69,7 +92,7 @@ describe("content module pages", () => {
     const firstAlbumCard = screen.getAllByRole("article")[0];
     const firstAlbumCover = firstAlbumCard.firstElementChild as HTMLElement;
     expect(firstAlbumCover).toHaveClass("h-48", "sm:h-52");
-    expect(firstAlbumCover).toHaveStyle({ backgroundImage: "url(/album-cover-placeholder.jpeg)" });
+    expect(firstAlbumCover.querySelector("img")).not.toBeNull();
     expect(firstAlbumCover.querySelector("span")).toBeNull();
     expect(firstAlbumCard.querySelector("a[href='/album/album-001']")).not.toBeNull();
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" })[0]).toHaveClass("text-[1.2rem]");
@@ -89,6 +112,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("textbox", { name: "备注/留言" })).toBeInTheDocument();
     expect(screen.getByText("封面上传")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "点击上传" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "封面预览占位" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
@@ -96,7 +120,26 @@ describe("content module pages", () => {
     expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
   });
 
-  it("creates a new album card with a selected local cover image", async () => {
+  it("creates a stored album card with a selected local cover image", async () => {
+    vi.useRealTimers();
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        album: {
+          id: "album-created-001",
+          title: "夏日收藏夹",
+          description: "把傍晚和风景先放进这里。",
+          coverImage: "/uploads/albums/summer-cover.png",
+          photoCount: 0,
+          visibility: "public",
+          status: "published",
+          createdAt: "2026-05-26",
+          sortOrder: 1,
+        },
+      }),
+    } satisfies JsonResponse);
+
     render(await AlbumPage());
 
     fireEvent.click(screen.getByRole("button", { name: "新建相册" }));
@@ -106,9 +149,32 @@ describe("content module pages", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "相册名称" }), { target: { value: "夏日收藏夹" } });
     fireEvent.change(screen.getByRole("textbox", { name: "备注/留言" }), { target: { value: "把傍晚和风景先放进这里。" } });
     fireEvent.change(screen.getByLabelText("上传本地封面"), { target: { files: [coverFile] } });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("img", { name: "封面预览占位" })).not.toBeInTheDocument();
+      expect(screen.getByAltText("封面本地预览")).toBeInTheDocument();
+    });
+
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
-    expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/albums",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.any(FormData),
+        }),
+      );
+      expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
+    });
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(request?.body).toBeInstanceOf(FormData);
+
+    const formData = request?.body as FormData;
+    expect(formData.get("title")).toBe("夏日收藏夹");
+    expect(formData.get("description")).toBe("把傍晚和风景先放进这里。");
+    expect(formData.get("coverFileName")).toBe("summer-cover.png");
     expect(screen.getAllByRole("article")).toHaveLength(8);
     expect(screen.getByRole("heading", { level: 2, name: "夏日收藏夹" })).toBeInTheDocument();
     expect(screen.getByText("把傍晚和风景先放进这里。")).toBeInTheDocument();
@@ -116,6 +182,7 @@ describe("content module pages", () => {
     expect(screen.getByText("创建日期： 2026-05-26")).toBeInTheDocument();
     expect(screen.getByLabelText("夏日收藏夹详情")).toHaveAttribute("href", "/album/album-created-001");
     expect(screen.getByText("summer-cover.png")).toBeInTheDocument();
+    expect(screen.getByAltText("夏日收藏夹封面")).toHaveAttribute("src", "/uploads/albums/summer-cover.png");
   });
 
   it("blocks submit when the album name is empty", async () => {
@@ -130,8 +197,53 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("article")).toHaveLength(7);
   });
 
+  it("renders stored albums before fallback cards", async () => {
+    await upsertStoredAlbum({
+      id: "album-db-001",
+      title: "数据库相册",
+      description: "这张封面应该来自持久化数据。",
+      coverImage: "/uploads/albums/db-cover.png",
+      photoCount: 3,
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-20",
+      sortOrder: 1,
+    });
+
+    vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) =>
+      id === "album-db-001"
+        ? {
+            id: "album-db-001",
+            title: "数据库相册",
+            description: "这张封面应该来自持久化数据。",
+            coverImage: "/uploads/albums/db-cover.png",
+            photoCount: 3,
+            visibility: "public",
+            status: "published",
+            createdAt: "2026-05-20",
+            sortOrder: 1,
+          }
+        : id === "album-001"
+          ? albumServiceFallbackAlbum
+          : null,
+    );
+
+    render(await AlbumPage());
+
+    expect(screen.getByRole("heading", { level: 2, name: "数据库相册" })).toBeInTheDocument();
+    expect(screen.getByAltText("数据库相册封面")).toHaveAttribute("src", "/uploads/albums/db-cover.png");
+    expect(screen.getAllByRole("article")).toHaveLength(8);
+
+    const storedDetailPage = render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-db-001" }) }));
+
+    const storedDetailCover = screen.getByRole("img", { name: "数据库相册封面背景" });
+    expect(storedDetailCover).toHaveAttribute("src", "/uploads/albums/db-cover.png");
+    expect(storedDetailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-cover");
+    expect(storedDetailPage.container.querySelectorAll("article img")).toHaveLength(1);
+  });
+
   it("renders the album detail page for a collection route", async () => {
-    render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-001" }) }));
+    const detailPage = render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-001" }) }));
 
     const uploadPhotosButton = screen.getByRole("button", { name: "Upload Photos" });
     const editAlbumButton = screen.getByRole("button", { name: "Edit Album" });
@@ -140,6 +252,10 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: "我的相册" })).toBeInTheDocument();
     expect(screen.getByText("Created: 2023-07-31")).toBeInTheDocument();
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
+    const detailCover = screen.getByRole("img", { name: "我的相册封面背景" });
+    expect(detailCover).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
+    expect(detailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-cover");
+    expect(detailPage.container.querySelectorAll("article img")).toHaveLength(1);
     expect(uploadPhotosButton).toBeInTheDocument();
     expect(editAlbumButton).toBeInTheDocument();
     expect(deleteAlbumButton).toBeInTheDocument();
@@ -148,17 +264,38 @@ describe("content module pages", () => {
     expect(deleteAlbumButton.querySelector("svg")).not.toBeNull();
     expect(screen.getByText("Photos (22) - Sorted by Date")).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(8);
-    expect(screen.getAllByText("Oct 26, 2023")).toHaveLength(7);
     expect(screen.getAllByText("Sleepy head...")).toHaveLength(7);
-    const photoPreviewButtons = screen.getAllByRole("button", { name: "查看照片" });
+    const photoDetailLinks = screen.getAllByRole("link", { name: "查看照片详情" });
     const photoEditButtons = screen.getAllByRole("button", { name: "编辑照片" });
     const photoDeleteButtons = screen.getAllByRole("button", { name: "删除照片" });
-    expect(photoPreviewButtons).toHaveLength(7);
+    expect(photoDetailLinks).toHaveLength(7);
+    expect(photoDetailLinks[0]).toHaveAttribute("href", "/album/album-001/photo-001");
+    expect(photoDetailLinks[6]).toHaveAttribute("href", "/album/album-001/photo-007");
     expect(photoEditButtons).toHaveLength(7);
     expect(photoDeleteButtons).toHaveLength(7);
-    expect(photoPreviewButtons[0]?.querySelector("svg")).not.toBeNull();
     expect(photoEditButtons[0]?.querySelector("svg")).not.toBeNull();
     expect(photoDeleteButtons[0]?.querySelector("svg")).not.toBeNull();
+  });
+
+  it("renders the first album photo detail page with next navigation only", async () => {
+    render(await AlbumPhotoDetailPage({ params: Promise.resolve({ albumId: "album-001", photoId: "photo-001" }) }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "Sleepy head..." })).toBeInTheDocument();
+    expect(screen.getByText("Upload Time")).toBeInTheDocument();
+    expect(screen.getByText("Oct 24, 2023 / 4:30")).toBeInTheDocument();
+    expect(screen.getByText(/和猫咪的下午茶时光/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回相册" })).toHaveAttribute("href", "/album/album-001");
+    expect(screen.getByRole("button", { name: "编辑备注" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "删除照片" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "下一张" })).toHaveAttribute("href", "/album/album-001/photo-002");
+    expect(screen.getByRole("button", { name: "上一张" })).toBeDisabled();
+  });
+
+  it("renders the last album photo detail page with previous navigation only", async () => {
+    render(await AlbumPhotoDetailPage({ params: Promise.resolve({ albumId: "album-001", photoId: "photo-007" }) }));
+
+    expect(screen.getByRole("link", { name: "上一张" })).toHaveAttribute("href", "/album/album-001/photo-006");
+    expect(screen.getByRole("button", { name: "下一张" })).toBeDisabled();
   });
 
   it("renders the album demo page in demo mode", async () => {

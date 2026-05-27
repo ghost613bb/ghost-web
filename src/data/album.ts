@@ -1,9 +1,8 @@
-import type { BaseContent } from "@/features/content-modules/types";
+import type { Album } from "@/features/album/types";
 
-export type AlbumCollection = BaseContent & {
-  coverTone: string;
+export type AlbumCollection = Album & {
   coverEmoji: string;
-  photoCount: number;
+  coverTone: string;
 };
 
 export const albumCollections: AlbumCollection[] = [

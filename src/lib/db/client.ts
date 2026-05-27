@@ -9,6 +9,38 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { env } from "@/lib/env";
 
-const sqlite = new Database(env.DATABASE_URL);
+export const sqlite = new Database(env.DATABASE_URL);
+
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS display_modes (
+    module_id text PRIMARY KEY NOT NULL,
+    display_mode text NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS thoughts (
+    id text PRIMARY KEY NOT NULL,
+    title text NOT NULL,
+    slug text NOT NULL,
+    description text,
+    body text NOT NULL,
+    tags text NOT NULL,
+    visibility text NOT NULL,
+    status text NOT NULL,
+    created_at text,
+    sort_order integer
+  );
+
+  CREATE TABLE IF NOT EXISTS albums (
+    id text PRIMARY KEY NOT NULL,
+    title text NOT NULL,
+    description text,
+    cover_image text,
+    photo_count integer NOT NULL,
+    visibility text NOT NULL,
+    status text NOT NULL,
+    created_at text,
+    sort_order integer
+  );
+`);
 
 export const db = drizzle(sqlite);

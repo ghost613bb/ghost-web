@@ -1,22 +1,19 @@
 import { Camera, Pencil, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
-import type { AlbumCollection } from "@/data/album";
+import { getAlbumPhotosByAlbumId } from "@/data/albumPhotos";
+import type { Album } from "./types";
 
-const albumPhotoCards = [
-  { id: "photo-001", date: "Oct 26, 2023", title: "Sleepy head...", position: "center 18%" },
-  { id: "photo-002", date: "Oct 26, 2023", title: "Sleepy head...", position: "36% center" },
-  { id: "photo-003", date: "Oct 26, 2023", title: "Sleepy head...", position: "60% center" },
-  { id: "photo-004", date: "Oct 26, 2023", title: "Sleepy head...", position: "80% center" },
-  { id: "photo-005", date: "Oct 26, 2023", title: "Sleepy head...", position: "22% 70%" },
-  { id: "photo-006", date: "Oct 26, 2023", title: "Sleepy head...", position: "50% 76%" },
-  { id: "photo-007", date: "Oct 26, 2023", title: "Sleepy head...", position: "74% 26%" },
-];
+function coverImageFromAlbum(album: Album) {
+  return album.coverImage ?? "/album-cover-placeholder.jpeg";
+}
 
 type AlbumDetailPageViewProps = {
-  album: AlbumCollection;
+  album: Album;
 };
 
 export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
+  const photos = getAlbumPhotosByAlbumId(album.id);
+
   return (
     <main className="min-h-dvh bg-[linear-gradient(180deg,#fbf8f0_0%,#f7f1e8_100%)] px-4 py-5 text-[#4c2b2d] sm:px-6 sm:py-7">
       <div className="mx-auto max-w-[1320px]">
@@ -30,19 +27,14 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
         </div>
 
         <article className="relative overflow-hidden rounded-[2rem] border-[2.5px] border-[#d8cec0] bg-[#fcf8ef] shadow-[0_20px_42px_rgba(145,118,118,0.12)]">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-cover bg-center opacity-28"
-            style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)" }}
+          <img
+            alt={`${album.title}封面背景`}
+            className="absolute inset-0 h-full w-full object-cover"
+            src={coverImageFromAlbum(album)}
           />
           <div
             aria-hidden="true"
-            className="absolute inset-0 bg-[linear-gradient(90deg,rgba(252,248,239,0.95)_0%,rgba(252,248,239,0.9)_38%,rgba(252,248,239,0.42)_66%,rgba(252,248,239,0.12)_100%)]"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute inset-y-0 right-0 hidden w-[42%] bg-cover bg-center opacity-72 lg:block"
-            style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)", backgroundPosition: "center 30%" }}
+            className="absolute inset-0 bg-[linear-gradient(90deg,rgba(252,248,239,0.92)_0%,rgba(252,248,239,0.84)_34%,rgba(252,248,239,0.5)_64%,rgba(252,248,239,0.22)_100%)]"
           />
           <div aria-hidden="true" className="absolute left-3 top-1 h-7 w-16 -rotate-[28deg] rounded-sm bg-[#efe0be]/75 shadow-sm" />
           <div aria-hidden="true" className="absolute right-2 top-4 h-7 w-16 rotate-[26deg] rounded-sm bg-[#efe0be]/70 shadow-sm" />
@@ -70,7 +62,7 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
                 Edit Album
               </button>
               <button
-                className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_ rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa]"
+                className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa]"
                 type="button"
               >
                 <Trash2 aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
@@ -83,7 +75,7 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
         <section className="mt-5 rounded-[2rem] border-[2px] border-[#ece3d7] bg-[#fffdf8] px-4 py-5 shadow-[0_16px_36px_rgba(144,118,118,0.08)] sm:px-6 sm:py-6">
           <h2 className="text-[1.6rem] font-black tracking-tight text-[#4c2b2d]">Photos ({album.photoCount}) - Sorted by Date</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {albumPhotoCards.map((photo, index) => (
+            {photos.map((photo, index) => (
               <article
                 key={photo.id}
                 className="relative rounded-[1.45rem] border border-[#e7ddd1] bg-white p-3 shadow-[0_10px_26px_rgba(149,116,121,0.08)]"
@@ -93,20 +85,23 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
                   className={`absolute ${index % 2 === 0 ? "right-5 top-[-0.35rem] rotate-[7deg]" : "left-6 top-[-0.25rem] -rotate-[6deg]"} h-4 w-14 rounded-sm bg-[#e9dec9]/85`}
                 />
                 <div className="flex gap-3">
-                  <div
-                    aria-hidden="true"
-                    className="h-25 w-25 shrink-0 rounded-[1.1rem] bg-[#e7deda] bg-cover bg-center"
-                    style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)", backgroundPosition: photo.position }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[1rem] font-semibold text-[#5b4347]">{photo.date}</p>
-                    <p className="mt-1 line-clamp-2 text-[1rem] font-medium text-[#4c2b2d]">{photo.title}</p>
-                  </div>
+                  <Link
+                    aria-label="查看照片详情"
+                    className="flex min-w-0 flex-1 gap-3 rounded-[1.1rem] transition hover:bg-[#fdf7ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b9898f] focus-visible:ring-offset-2"
+                    href={`/album/${album.id}/${photo.id}`}
+                  >
+                    <div
+                      aria-hidden="true"
+                      className="h-25 w-25 shrink-0 rounded-[1.1rem] bg-[#e7deda] bg-cover bg-center"
+                      style={{ backgroundImage: `url(${photo.imageUrl})`, backgroundPosition: photo.imagePosition }}
+                    />
+                    <div className="min-w-0 flex-1 py-0.5">
+                      <p className="text-[1rem] font-semibold text-[#5b4347]">{photo.uploadedAt.split(" /")[0]}</p>
+                      <p className="mt-1 line-clamp-2 text-[1rem] font-medium text-[#4c2b2d]">{photo.title}</p>
+                    </div>
+                  </Link>
                 </div>
                 <div className="mt-3 flex justify-end gap-2 text-[#4c2b2d]">
-                  <button aria-label="查看照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
-                    <Search aria-hidden="true" className="h-[0.95rem] w-[0.95rem] stroke-[1.9]" />
-                  </button>
                   <button aria-label="编辑照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
                     <Pencil aria-hidden="true" className="h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                   </button>

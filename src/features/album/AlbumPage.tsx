@@ -1,23 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
-import { albumCollections, type AlbumCollection } from "@/data/album";
-
-type CreateAlbumPayload = {
-  coverFileName?: string;
-  description: string;
-  title: string;
-};
-
-type AlbumCard = AlbumCollection & {
-  coverBadge?: string;
-};
+import { useEffect, useId, useState } from "react";
+import type { Album } from "./types";
 
 type CreateAlbumDialogProps = {
   onClose: () => void;
-  onCreate: (payload: CreateAlbumPayload) => void;
+  onCreate: (payload: { coverFile?: File; description: string; title: string }) => Promise<void>;
 };
+
+type AlbumCard = Album & {
+  coverBadge?: string;
+};
+
+type AlbumPageViewProps = {
+  initialAlbums: Album[];
+};
+
+function albumToCard(album: Album): AlbumCard {
+  return {
+    ...album,
+    coverBadge: album.coverImage?.split("/").pop(),
+  };
+}
+
+function coverImageFromAlbum(album: AlbumCard) {
+  return album.coverImage ?? "/album-cover-placeholder.jpeg";
+}
+
+function coverBadgeFromAlbum(album: AlbumCard) {
+  return album.coverBadge;
+}
 
 function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
   const titleId = useId();
@@ -25,8 +38,25 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
   const noteId = useId();
   const [albumName, setAlbumName] = useState("");
   const [albumNote, setAlbumNote] = useState("");
-  const [coverFileName, setCoverFileName] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [nameError, setNameError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(coverFile);
+    setCoverPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [coverFile]);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#6b3f49]/22 px-4 py-6 backdrop-blur-[2px]">
@@ -35,7 +65,7 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
         aria-labelledby={titleId}
         aria-modal="true"
         className="relative z-10 w-full max-w-[640px] rounded-[2rem] border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-5 shadow-[0_24px_60px_rgba(111,52,59,0.16)] sm:px-8 sm:py-7"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
 
           const trimmedName = albumName.trim();
@@ -46,11 +76,19 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
             return;
           }
 
-          onCreate({
-            title: trimmedName,
-            description: trimmedNote,
-            coverFileName: coverFileName || undefined,
-          });
+          setSubmitError("");
+          setIsSubmitting(true);
+
+          try {
+            await onCreate({
+              title: trimmedName,
+              description: trimmedNote,
+              coverFile: coverFile ?? undefined,
+            });
+          } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : "新建相册失败");
+            setIsSubmitting(false);
+          }
         }}
         role="dialog"
       >
@@ -127,8 +165,8 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
           <div>
             <p className="mb-2 text-[1.05rem] font-black sm:text-[1.15rem]">封面上传</p>
             <label
-              aria-label={coverFileName ? "重新选择封面" : "点击上传"}
-              className="flex min-h-30 w-full cursor-pointer flex-col items-center justify-center rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-white"
+              aria-label={coverFile ? "重新选择封面" : "点击上传"}
+              className="block cursor-pointer"
               htmlFor="album-cover-upload"
               role="button"
               tabIndex={0}
@@ -139,26 +177,43 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
                 className="sr-only"
                 id="album-cover-upload"
                 onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  setCoverFileName(file?.name ?? "");
+                  const file = event.target.files?.[0] ?? null;
+                  setCoverFile(file);
                 }}
                 type="file"
               />
-              <span aria-hidden="true" className="text-[2.7rem] leading-none">
-                {coverFileName ? "🖼️" : "📷"}
-              </span>
-              <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{coverFileName ? "重新选择" : "点击上传"}</span>
-              <span className="mt-2 text-sm font-medium text-[#8d6368]">{coverFileName ? coverFileName : "选择本地图片作为相册封面。"}</span>
+              <div className="relative min-h-30 overflow-hidden rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] transition hover:-translate-y-0.5 hover:bg-white">
+                {coverPreviewUrl ? (
+                  <img alt="封面本地预览" className="absolute inset-0 h-full w-full object-cover" src={coverPreviewUrl} />
+                ) : (
+                  <img
+                    alt="封面预览占位"
+                    className="absolute inset-0 h-full w-full object-cover opacity-55"
+                    src="/album-cover-placeholder.jpeg"
+                  />
+                )}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.12)_0%,rgba(255,253,247,0.72)_68%,rgba(255,253,247,0.96)_100%)]" />
+                <div className="relative flex min-h-30 flex-col items-center justify-center px-4 py-5 text-center text-[#6f343b]">
+                  <span aria-hidden="true" className="text-[2.7rem] leading-none">
+                    {coverFile ? "🖼️" : "📷"}
+                  </span>
+                  <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{coverFile ? "重新选择" : "点击上传"}</span>
+                  <span className="mt-2 text-sm font-medium text-[#8d6368]">{coverFile ? coverFile.name : "选择本地图片作为相册封面。"}</span>
+                </div>
+              </div>
             </label>
           </div>
         </div>
 
+        {submitError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{submitError}</p> : null}
+
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
           <button
-            className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#f6bec8] sm:text-[1.25rem]"
+            className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#f6bec8] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[1.25rem]"
+            disabled={isSubmitting}
             type="submit"
           >
-            保存
+            {isSubmitting ? "保存中" : "保存"}
           </button>
           <button
             className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] sm:text-[1.25rem]"
@@ -173,10 +228,9 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
   );
 }
 
-export function AlbumPageView() {
-  const [albums, setAlbums] = useState<AlbumCard[]>(albumCollections);
+export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
+  const [albums, setAlbums] = useState<AlbumCard[]>(initialAlbums.map(albumToCard));
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [createdAlbumCount, setCreatedAlbumCount] = useState(0);
   const topActionClass =
     "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
@@ -203,22 +257,15 @@ export function AlbumPageView() {
               key={album.id}
               className="relative flex min-h-[288px] flex-col rounded-[1.6rem] border-[2.5px] border-stone-700/80 bg-white p-3 shadow-[0_12px_24px_rgba(112,84,84,0.08)] sm:min-h-[304px]"
             >
-              <div
-                aria-hidden="true"
-                className="mb-1 h-48 rounded-[1.3rem] bg-[#d8d4dc] bg-cover bg-center shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-52"
-                style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)" }}
-              >
-                {album.coverBadge ? (
-                  <span className="ml-3 mt-3 inline-flex rounded-full bg-[#fff7dd] px-2.5 py-1 text-[11px] font-black text-[#6f343b] shadow-[0_4px_10px_rgba(111,52,59,0.08)]">
-                    {album.coverBadge}
-                  </span>
-                ) : null}
+              <div className="mb-1 h-48 overflow-hidden rounded-[1.3rem] bg-[#d8d4dc] shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-52">
+                <img alt={`${album.title}封面`} className="h-full w-full object-cover" src={coverImageFromAlbum(album)} />
               </div>
-              <Link
-                aria-label={`${album.title}详情`}
-                className="absolute inset-0 z-10 rounded-[1.6rem]"
-                href={`/album/${album.id}`}
-              />
+              {coverBadgeFromAlbum(album) ? (
+                <span className="absolute left-6 top-6 z-20 inline-flex max-w-[70%] rounded-full bg-[#fff7dd] px-2.5 py-1 text-[11px] font-black text-[#6f343b] shadow-[0_4px_10px_rgba(111,52,59,0.08)]">
+                  {coverBadgeFromAlbum(album)}
+                </span>
+              ) : null}
+              <Link aria-label={`${album.title}详情`} className="absolute inset-0 z-10 rounded-[1.6rem]" href={`/album/${album.id}`} />
 
               <div
                 aria-hidden="true"
@@ -249,26 +296,32 @@ export function AlbumPageView() {
       {isCreateDialogOpen ? (
         <CreateAlbumDialog
           onClose={() => setIsCreateDialogOpen(false)}
-          onCreate={({ title, description, coverFileName }) => {
-            const nextAlbumIndex = createdAlbumCount + 1;
+          onCreate={async ({ title, description, coverFile }) => {
+            const formData = new FormData();
+            formData.set("title", title);
+            formData.set("description", description);
 
-            setAlbums((currentAlbums) => [
-              {
-                id: `album-created-${String(nextAlbumIndex).padStart(3, "0")}`,
-                title,
-                description: description || "先留一个新的相册位置。",
-                coverTone: coverFileName ? "bg-pink-100" : "bg-stone-100",
-                coverEmoji: coverFileName ? "📷" : "🫧",
-                photoCount: 0,
-                visibility: "public",
-                status: "published",
-                createdAt: new Date().toISOString().slice(0, 10),
-                sortOrder: currentAlbums.length + 1,
-                coverBadge: coverFileName,
-              },
-              ...currentAlbums,
-            ]);
-            setCreatedAlbumCount(nextAlbumIndex);
+            if (coverFile) {
+              formData.set("coverFileName", coverFile.name);
+              formData.append("coverFile", coverFile, coverFile.name);
+            }
+
+            const response = await fetch("/api/albums", {
+              method: "POST",
+              body: formData,
+            });
+            const data = (await response.json()) as {
+              album?: Album;
+              error?: string;
+            };
+
+            const createdAlbum = data.album;
+
+            if (!response.ok || !createdAlbum) {
+              throw new Error(data.error ?? "新建相册失败");
+            }
+
+            setAlbums((currentAlbums) => [albumToCard(createdAlbum), ...currentAlbums]);
             setIsCreateDialogOpen(false);
           }}
         />

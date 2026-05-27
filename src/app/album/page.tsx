@@ -1,4 +1,5 @@
 import { AlbumPageView } from "@/features/album/AlbumPage";
+import { listAlbums } from "@/features/album/service";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 export default async function AlbumPage() {
@@ -11,5 +12,5 @@ export default async function AlbumPage() {
     );
   }
 
-  return <AlbumPageView />;
+  return <AlbumPageView initialAlbums={await listAlbums()} />;
 }

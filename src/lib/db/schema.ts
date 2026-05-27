@@ -18,3 +18,15 @@ export const thoughts = sqliteTable("thoughts", {
   createdAt: text("created_at"), // 创建时间
   sortOrder: integer("sort_order"), // 排序权重/顺序
 });
+
+export const albums = sqliteTable("albums", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  coverImage: text("cover_image"),
+  photoCount: integer("photo_count").notNull(),
+  visibility: text("visibility", { enum: ["public", "private", "interview_hidden", "masked"] }).notNull(),
+  status: text("status", { enum: ["draft", "published"] }).notNull(),
+  createdAt: text("created_at"),
+  sortOrder: integer("sort_order"),
+});

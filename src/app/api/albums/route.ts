@@ -1,0 +1,71 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { NextResponse } from "next/server";
+import { createAlbum, listAlbums } from "@/features/album/service";
+import { parseCreateAlbum } from "@/features/album/validation";
+
+function sanitizeFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
+}
+
+function isUploadedFile(value: FormDataEntryValue | null): value is File {
+  return (
+    value !== null &&
+    typeof value !== "string" &&
+    typeof value.arrayBuffer === "function" &&
+    typeof value.name === "string" &&
+    typeof value.size === "number"
+  );
+}
+
+export async function GET() {
+  return NextResponse.json({
+    albums: await listAlbums(),
+  });
+}
+
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
+    const rawTitle = formData.get("title");
+    const rawDescription = formData.get("description");
+    const rawCoverFile = formData.get("coverFile");
+    const rawCoverFileName = formData.get("coverFileName");
+
+    const albumDraft = parseCreateAlbum({
+      title: typeof rawTitle === "string" ? rawTitle : "",
+      description: typeof rawDescription === "string" ? rawDescription : undefined,
+    });
+
+    const albumId = `album-created-${String((await listAlbums()).filter((album) => album.id.startsWith("album-created-")).length + 1).padStart(3, "0")}`;
+
+    let coverImage: string | undefined;
+
+    if (isUploadedFile(rawCoverFile) && rawCoverFile.size > 0) {
+      const requestedFileName = typeof rawCoverFileName === "string" && rawCoverFileName.trim().length > 0 ? rawCoverFileName.trim() : rawCoverFile.name;
+      const safeFileName = sanitizeFileName(requestedFileName || "cover");
+      const finalFileName = `${albumId}-${safeFileName}`;
+      const uploadDir = path.join(process.cwd(), "public/uploads/albums");
+      const outputPath = path.join(uploadDir, finalFileName);
+
+      await mkdir(uploadDir, { recursive: true });
+      await writeFile(outputPath, Buffer.from(await rawCoverFile.arrayBuffer()));
+      coverImage = `/uploads/albums/${finalFileName}`;
+    }
+
+    return NextResponse.json({
+      album: await createAlbum({
+        ...albumDraft,
+        id: albumId,
+        coverImage,
+      }),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "album 参数不合法",
+      },
+      { status: 400 },
+    );
+  }
+}
