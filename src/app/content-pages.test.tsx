@@ -93,16 +93,32 @@ describe("content module pages", () => {
   it("renders the album detail page for a collection route", async () => {
     render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-001" }) }));
 
+    const uploadPhotosButton = screen.getByRole("button", { name: "Upload Photos" });
+    const editAlbumButton = screen.getByRole("button", { name: "Edit Album" });
+    const deleteAlbumButton = screen.getByRole("button", { name: "Delete Album" });
+
     expect(screen.getByRole("heading", { level: 1, name: "我的相册" })).toBeInTheDocument();
     expect(screen.getByText("Created: 2023-07-31")).toBeInTheDocument();
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload Photos" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit Album" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete Album" })).toBeInTheDocument();
+    expect(uploadPhotosButton).toBeInTheDocument();
+    expect(editAlbumButton).toBeInTheDocument();
+    expect(deleteAlbumButton).toBeInTheDocument();
+    expect(uploadPhotosButton.querySelector("svg")).not.toBeNull();
+    expect(editAlbumButton.querySelector("svg")).not.toBeNull();
+    expect(deleteAlbumButton.querySelector("svg")).not.toBeNull();
     expect(screen.getByText("Photos (22) - Sorted by Date")).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(8);
     expect(screen.getAllByText("Oct 26, 2023")).toHaveLength(7);
     expect(screen.getAllByText("Sleepy head...")).toHaveLength(7);
+    const photoPreviewButtons = screen.getAllByRole("button", { name: "查看照片" });
+    const photoEditButtons = screen.getAllByRole("button", { name: "编辑照片" });
+    const photoDeleteButtons = screen.getAllByRole("button", { name: "删除照片" });
+    expect(photoPreviewButtons).toHaveLength(7);
+    expect(photoEditButtons).toHaveLength(7);
+    expect(photoDeleteButtons).toHaveLength(7);
+    expect(photoPreviewButtons[0]?.querySelector("svg")).not.toBeNull();
+    expect(photoEditButtons[0]?.querySelector("svg")).not.toBeNull();
+    expect(photoDeleteButtons[0]?.querySelector("svg")).not.toBeNull();
   });
 
   it("renders the album demo page in demo mode", async () => {

@@ -1,3 +1,4 @@
+import { Camera, Pencil, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { AlbumCollection } from "@/data/album";
 
@@ -55,24 +56,24 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
 
             <div className="flex flex-col gap-3">
               <button
-                className="rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3]"
+                className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3]"
                 type="button"
               >
-                <span aria-hidden="true" className="mr-2">📷</span>
+                <Camera aria-hidden="true" className="mr-2 h-[1.05rem] w-[1.05rem] stroke-[1.9]" />
                 Upload Photos
               </button>
               <button
-                className="rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4]"
+                className="inline-flex items-center rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4]"
                 type="button"
               >
-                <span aria-hidden="true" className="mr-2">✎</span>
+                <Pencil aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
                 Edit Album
               </button>
               <button
-                className="rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa]"
+                className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_ rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa]"
                 type="button"
               >
-                <span aria-hidden="true" className="mr-2">🗑</span>
+                <Trash2 aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
                 Delete Album
               </button>
             </div>
@@ -103,14 +104,14 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
                   </div>
                 </div>
                 <div className="mt-3 flex justify-end gap-2 text-[#4c2b2d]">
-                  <button className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
-                    <span aria-hidden="true">⌕</span>
+                  <button aria-label="查看照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
+                    <Search aria-hidden="true" className="h-[0.95rem] w-[0.95rem] stroke-[1.9]" />
                   </button>
-                  <button className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
-                    <span aria-hidden="true">✎</span>
+                  <button aria-label="编辑照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
+                    <Pencil aria-hidden="true" className="h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                   </button>
-                  <button className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
-                    <span aria-hidden="true">🗑</span>
+                  <button aria-label="删除照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
+                    <Trash2 aria-hidden="true" className="h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                   </button>
                 </div>
               </article>
