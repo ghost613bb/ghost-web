@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import AboutPage from "./about/page";
+import AlbumDetailPage from "./album/[albumId]/page";
 import AlbumPage from "./album/page";
 import CoffeePage from "./coffee/page";
 import MessagePage from "./message/page";
@@ -54,14 +55,17 @@ describe("content module pages", () => {
     expect(screen.getByText("照片22个")).toBeInTheDocument();
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。" )).toBeInTheDocument();
     expect(screen.getByText("荷注：小妞呀，图片，新收进来的封面占位练习。" )).toBeInTheDocument();
-    expect(screen.getAllByRole("article")[0]).toHaveClass("min-h-[268px]", "sm:min-h-[282px]", "p-3");
+    expect(screen.getAllByRole("article")[0]).toHaveClass("min-h-[288px]", "sm:min-h-[304px]", "p-3");
     expect(backHomeLink).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
     expect(createAlbumButton).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
     expect(backHomeLink.closest("header")).toContainElement(createAlbumButton);
-    const firstAlbumCover = screen.getAllByRole("article")[0].firstElementChild as HTMLElement;
-    expect(firstAlbumCover).toHaveClass("h-40", "sm:h-44");
+    expect(backHomeLink.parentElement).toHaveClass("py-4.5");
+    const firstAlbumCard = screen.getAllByRole("article")[0];
+    const firstAlbumCover = firstAlbumCard.firstElementChild as HTMLElement;
+    expect(firstAlbumCover).toHaveClass("h-48", "sm:h-52");
     expect(firstAlbumCover).toHaveStyle({ backgroundImage: "url(/album-cover-placeholder.jpeg)" });
     expect(firstAlbumCover.querySelector("span")).toBeNull();
+    expect(firstAlbumCard.querySelector("a[href='/album/album-001']")).not.toBeNull();
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" })[0]).toHaveClass("text-[1.2rem]");
     expect(screen.getByText("照片22个")).toHaveClass("text-[11px]");
     expect(screen.getAllByRole("button", { name: /更多/ })[0]).toHaveClass("px-1.5", "py-0.5");
@@ -84,6 +88,21 @@ describe("content module pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
 
     expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
+  });
+
+  it("renders the album detail page for a collection route", async () => {
+    render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-001" }) }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "我的相册" })).toBeInTheDocument();
+    expect(screen.getByText("Created: 2023-07-31")).toBeInTheDocument();
+    expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload Photos" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Album" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete Album" })).toBeInTheDocument();
+    expect(screen.getByText("Photos (22) - Sorted by Date")).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(8);
+    expect(screen.getAllByText("Oct 26, 2023")).toHaveLength(7);
+    expect(screen.getAllByText("Sleepy head...")).toHaveLength(7);
   });
 
   it("renders the album demo page in demo mode", async () => {

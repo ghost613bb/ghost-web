@@ -128,7 +128,7 @@ export function AlbumPageView() {
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <header className="border-b-2 border-stone-700/60 bg-[#f6b8c2]">
-        <div className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+        <div className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-4 py-4.5 sm:px-6">
           <Link className={topActionClass} href="/">
             返回首页小镇
           </Link>
@@ -146,12 +146,17 @@ export function AlbumPageView() {
           {albumCollections.map((album, index) => (
             <article
               key={album.id}
-              className="relative flex min-h-[268px] flex-col rounded-[1.6rem] border-[2.5px] border-stone-700/80 bg-white p-3 shadow-[0_12px_24px_rgba(112,84,84,0.08)] sm:min-h-[282px]"
+              className="relative flex min-h-[288px] flex-col rounded-[1.6rem] border-[2.5px] border-stone-700/80 bg-white p-3 shadow-[0_12px_24px_rgba(112,84,84,0.08)] sm:min-h-[304px]"
             >
               <div
                 aria-hidden="true"
-                className="mb-1 h-40 rounded-[1.3rem] bg-[#d8d4dc] bg-cover bg-center shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-44"
+                className="mb-1 h-48 rounded-[1.3rem] bg-[#d8d4dc] bg-cover bg-center shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-52"
                 style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)" }}
+              />
+              <Link
+                aria-label={`${album.title}详情`}
+                className="absolute inset-0 z-10 rounded-[1.6rem]"
+                href={`/album/${album.id}`}
               />
 
               <div
@@ -166,7 +171,7 @@ export function AlbumPageView() {
                 <p className="line-clamp-2 text-[11px] text-stone-700">{album.description}</p>
               </div>
 
-              <div className="mt-1 flex justify-end">
+              <div className="relative z-20 mt-1 flex justify-end">
                 <button
                   className="rounded-[0.95rem] border-[2.5px] border-stone-700/80 bg-[#ee9eaa] px-1.5 py-0.5 text-right text-[10px] font-black leading-tight text-stone-900 shadow-[0_4px_0_rgba(109,76,76,0.18)] transition hover:-translate-y-0.5 hover:bg-[#f2abb5] sm:px-2"
                   type="button"
