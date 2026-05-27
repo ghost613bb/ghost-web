@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AboutPage from "./about/page";
 import AlbumDetailPage from "./album/[albumId]/page";
 import AlbumPage from "./album/page";
@@ -14,8 +14,14 @@ import { resetStoredThoughts, upsertStoredThought } from "@/features/thoughts/re
 
 describe("content module pages", () => {
   beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
     await resetDisplayModes();
     await resetStoredThoughts();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("renders the about page heading", async () => {
@@ -53,8 +59,8 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("article")).toHaveLength(7);
     expect(screen.getAllByText("更多")).toHaveLength(7);
     expect(screen.getByText("照片22个")).toBeInTheDocument();
-    expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。" )).toBeInTheDocument();
-    expect(screen.getByText("荷注：小妞呀，图片，新收进来的封面占位练习。" )).toBeInTheDocument();
+    expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
+    expect(screen.getByText("荷注：小妞呀，图片，新收进来的封面占位练习。")).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("min-h-[288px]", "sm:min-h-[304px]", "p-3");
     expect(backHomeLink).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
     expect(createAlbumButton).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
@@ -88,6 +94,40 @@ describe("content module pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
 
     expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
+  });
+
+  it("creates a new album card with a selected local cover image", async () => {
+    render(await AlbumPage());
+
+    fireEvent.click(screen.getByRole("button", { name: "新建相册" }));
+
+    const coverFile = new File(["cover"], "summer-cover.png", { type: "image/png" });
+
+    fireEvent.change(screen.getByRole("textbox", { name: "相册名称" }), { target: { value: "夏日收藏夹" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "备注/留言" }), { target: { value: "把傍晚和风景先放进这里。" } });
+    fireEvent.change(screen.getByLabelText("上传本地封面"), { target: { files: [coverFile] } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(8);
+    expect(screen.getByRole("heading", { level: 2, name: "夏日收藏夹" })).toBeInTheDocument();
+    expect(screen.getByText("把傍晚和风景先放进这里。")).toBeInTheDocument();
+    expect(screen.getByText("照片0个")).toBeInTheDocument();
+    expect(screen.getByText("创建日期： 2026-05-26")).toBeInTheDocument();
+    expect(screen.getByLabelText("夏日收藏夹详情")).toHaveAttribute("href", "/album/album-created-001");
+    expect(screen.getByText("summer-cover.png")).toBeInTheDocument();
+  });
+
+  it("blocks submit when the album name is empty", async () => {
+    render(await AlbumPage());
+
+    fireEvent.click(screen.getByRole("button", { name: "新建相册" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "备注/留言" }), { target: { value: "只写备注不该创建成功。" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(screen.getByText("请先填写相册名称")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "新建相册" })).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(7);
   });
 
   it("renders the album detail page for a collection route", async () => {

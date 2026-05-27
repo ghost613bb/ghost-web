@@ -2,16 +2,31 @@
 
 import Link from "next/link";
 import { useId, useState } from "react";
-import { albumCollections } from "@/data/album";
+import { albumCollections, type AlbumCollection } from "@/data/album";
+
+type CreateAlbumPayload = {
+  coverFileName?: string;
+  description: string;
+  title: string;
+};
+
+type AlbumCard = AlbumCollection & {
+  coverBadge?: string;
+};
 
 type CreateAlbumDialogProps = {
   onClose: () => void;
+  onCreate: (payload: CreateAlbumPayload) => void;
 };
 
-function CreateAlbumDialog({ onClose }: CreateAlbumDialogProps) {
+function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
   const titleId = useId();
   const nameId = useId();
   const noteId = useId();
+  const [albumName, setAlbumName] = useState("");
+  const [albumNote, setAlbumNote] = useState("");
+  const [coverFileName, setCoverFileName] = useState("");
+  const [nameError, setNameError] = useState("");
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#6b3f49]/22 px-4 py-6 backdrop-blur-[2px]">
@@ -22,7 +37,20 @@ function CreateAlbumDialog({ onClose }: CreateAlbumDialogProps) {
         className="relative z-10 w-full max-w-[640px] rounded-[2rem] border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-5 shadow-[0_24px_60px_rgba(111,52,59,0.16)] sm:px-8 sm:py-7"
         onSubmit={(event) => {
           event.preventDefault();
-          onClose();
+
+          const trimmedName = albumName.trim();
+          const trimmedNote = albumNote.trim();
+
+          if (!trimmedName) {
+            setNameError("请先填写相册名称");
+            return;
+          }
+
+          onCreate({
+            title: trimmedName,
+            description: trimmedNote,
+            coverFileName: coverFileName || undefined,
+          });
         }}
         role="dialog"
       >
@@ -35,32 +63,42 @@ function CreateAlbumDialog({ onClose }: CreateAlbumDialogProps) {
 
         <div className="space-y-4 text-[#6f343b]">
           <div>
-            <label className="block text-[1.05rem] font-black sm:text-[1.25rem]" htmlFor={nameId}>
+            <label className="block text-[1.05rem] font-black sm:text-[1.15rem]" htmlFor={nameId}>
               相册名称
             </label>
             <div className="relative mt-2">
               <input
                 className="h-14 w-full rounded-full border-[3px] border-[#6f343b] bg-[linear-gradient(90deg,#fff5f6_0%,#fdecef_100%)] px-5 pr-14 text-base text-[#6f343b] outline-none placeholder:text-[#c7a9af] focus:bg-white"
                 id={nameId}
+                onChange={(event) => {
+                  setAlbumName(event.target.value);
+                  if (nameError) {
+                    setNameError("");
+                  }
+                }}
                 placeholder="请输入相册名称"
                 type="text"
+                value={albumName}
               />
               <span aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[1.65rem]">
                 🌥️
               </span>
             </div>
+            {nameError ? <p className="mt-2 text-sm font-semibold text-[#b14f5d]">{nameError}</p> : null}
           </div>
 
           <div>
-            <label className="block text-[1.05rem] font-black sm:text-[1.25rem]" htmlFor={noteId}>
+            <label className="block text-[1.05rem] font-black sm:text-[1.15rem]" htmlFor={noteId}>
               备注/留言
             </label>
             <div className="relative mt-2">
               <textarea
                 className="min-h-36 w-full rounded-[1.75rem] border-[3px] border-[#6f343b] bg-[linear-gradient(180deg,#fff6f6_0%,#fdeef0_100%)] px-5 py-4 text-sm text-[#6f343b] outline-none placeholder:text-[#c7a9af] focus:bg-white sm:text-base"
                 id={noteId}
+                onChange={(event) => setAlbumNote(event.target.value)}
                 placeholder="写点想留在相册里的话吧"
                 rows={4}
+                value={albumNote}
               />
               <span aria-hidden="true" className="absolute -left-4 top-13 text-[1.8rem] drop-shadow-[0_3px_0_rgba(255,255,255,0.7)]">
                 ⭐
@@ -87,28 +125,43 @@ function CreateAlbumDialog({ onClose }: CreateAlbumDialogProps) {
           </div>
 
           <div>
-            <p className="mb-2 text-[1.05rem] font-black sm:text-[1.25rem]">封面上传</p>
-            <button
-              className="flex min-h-30 w-full flex-col items-center justify-center rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-white"
-              type="button"
+            <p className="mb-2 text-[1.05rem] font-black sm:text-[1.15rem]">封面上传</p>
+            <label
+              aria-label={coverFileName ? "重新选择封面" : "点击上传"}
+              className="flex min-h-30 w-full cursor-pointer flex-col items-center justify-center rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-white"
+              htmlFor="album-cover-upload"
+              role="button"
+              tabIndex={0}
             >
+              <input
+                accept="image/*"
+                aria-label="上传本地封面"
+                className="sr-only"
+                id="album-cover-upload"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  setCoverFileName(file?.name ?? "");
+                }}
+                type="file"
+              />
               <span aria-hidden="true" className="text-[2.7rem] leading-none">
-                📷
+                {coverFileName ? "🖼️" : "📷"}
               </span>
-              <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.45rem]">点击上传</span>
-            </button>
+              <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{coverFileName ? "重新选择" : "点击上传"}</span>
+              <span className="mt-2 text-sm font-medium text-[#8d6368]">{coverFileName ? coverFileName : "选择本地图片作为相册封面。"}</span>
+            </label>
           </div>
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
           <button
-            className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-6 py-2.5 text-[1.25rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#f6bec8] sm:text-[1.35rem]"
+            className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#f6bec8] sm:text-[1.25rem]"
             type="submit"
           >
             保存
           </button>
           <button
-            className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-6 py-2.5 text-[1.25rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] sm:text-[1.35rem]"
+            className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] sm:text-[1.25rem]"
             onClick={onClose}
             type="button"
           >
@@ -121,7 +174,9 @@ function CreateAlbumDialog({ onClose }: CreateAlbumDialogProps) {
 }
 
 export function AlbumPageView() {
+  const [albums, setAlbums] = useState<AlbumCard[]>(albumCollections);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createdAlbumCount, setCreatedAlbumCount] = useState(0);
   const topActionClass =
     "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
@@ -143,7 +198,7 @@ export function AlbumPageView() {
 
       <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-3 sm:px-6">
         <section className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
-          {albumCollections.map((album, index) => (
+          {albums.map((album, index) => (
             <article
               key={album.id}
               className="relative flex min-h-[288px] flex-col rounded-[1.6rem] border-[2.5px] border-stone-700/80 bg-white p-3 shadow-[0_12px_24px_rgba(112,84,84,0.08)] sm:min-h-[304px]"
@@ -152,7 +207,13 @@ export function AlbumPageView() {
                 aria-hidden="true"
                 className="mb-1 h-48 rounded-[1.3rem] bg-[#d8d4dc] bg-cover bg-center shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-52"
                 style={{ backgroundImage: "url(/album-cover-placeholder.jpeg)" }}
-              />
+              >
+                {album.coverBadge ? (
+                  <span className="ml-3 mt-3 inline-flex rounded-full bg-[#fff7dd] px-2.5 py-1 text-[11px] font-black text-[#6f343b] shadow-[0_4px_10px_rgba(111,52,59,0.08)]">
+                    {album.coverBadge}
+                  </span>
+                ) : null}
+              </div>
               <Link
                 aria-label={`${album.title}详情`}
                 className="absolute inset-0 z-10 rounded-[1.6rem]"
@@ -185,7 +246,33 @@ export function AlbumPageView() {
         </section>
       </div>
 
-      {isCreateDialogOpen ? <CreateAlbumDialog onClose={() => setIsCreateDialogOpen(false)} /> : null}
+      {isCreateDialogOpen ? (
+        <CreateAlbumDialog
+          onClose={() => setIsCreateDialogOpen(false)}
+          onCreate={({ title, description, coverFileName }) => {
+            const nextAlbumIndex = createdAlbumCount + 1;
+
+            setAlbums((currentAlbums) => [
+              {
+                id: `album-created-${String(nextAlbumIndex).padStart(3, "0")}`,
+                title,
+                description: description || "先留一个新的相册位置。",
+                coverTone: coverFileName ? "bg-pink-100" : "bg-stone-100",
+                coverEmoji: coverFileName ? "📷" : "🫧",
+                photoCount: 0,
+                visibility: "public",
+                status: "published",
+                createdAt: new Date().toISOString().slice(0, 10),
+                sortOrder: currentAlbums.length + 1,
+                coverBadge: coverFileName,
+              },
+              ...currentAlbums,
+            ]);
+            setCreatedAlbumCount(nextAlbumIndex);
+            setIsCreateDialogOpen(false);
+          }}
+        />
+      ) : null}
     </main>
   );
 }
