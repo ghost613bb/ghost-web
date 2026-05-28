@@ -12,9 +12,17 @@ import ThoughtsPage from "./thoughts/page";
 import TodoPage from "./todo/page";
 import { thoughts } from "@/data/thoughts";
 import { resetDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
-import { resetStoredAlbums, upsertStoredAlbum } from "@/features/album/repository";
+import { resetStoredAlbums, upsertStoredAlbum, upsertStoredAlbumPhoto } from "@/features/album/repository";
 import * as albumService from "@/features/album/service";
 import { resetStoredThoughts, upsertStoredThought } from "@/features/thoughts/repository";
+
+vi.mock("next/navigation", async () => {
+  const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
+  return {
+    ...actual,
+    useRouter: () => ({ push: vi.fn() }),
+  };
+});
 
 type JsonResponse = {
   json: () => Promise<unknown>;
@@ -193,7 +201,7 @@ describe("content module pages", () => {
     expect(screen.getByText("照片0个")).toBeInTheDocument();
     expect(screen.getByText("创建日期： 2026-05-26")).toBeInTheDocument();
     expect(screen.getByLabelText("夏日收藏夹详情")).toHaveAttribute("href", "/album/album-created-001");
-    expect(screen.getByText("summer-cover.png")).toBeInTheDocument();
+    expect(screen.queryByText("summer-cover.png")).not.toBeInTheDocument();
     expect(screen.getByAltText("夏日收藏夹封面")).toHaveAttribute("src", "/uploads/albums/summer-cover.png");
   });
 
@@ -287,6 +295,41 @@ describe("content module pages", () => {
     expect(photoDeleteButtons).toHaveLength(7);
     expect(photoEditButtons[0]?.querySelector("svg")).not.toBeNull();
     expect(photoDeleteButtons[0]?.querySelector("svg")).not.toBeNull();
+  });
+
+  it("renders stored uploaded photos on the album detail page", async () => {
+    const albumWithStoredPhotos: Album = {
+      ...albumServiceFallbackAlbum,
+      id: "album-created-001",
+      title: "可上传相册",
+      photoCount: 1,
+      coverImage: "/uploads/albums/album-created-001-cover.png",
+      createdAt: "2026-05-28",
+    };
+
+    vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-created-001" ? albumWithStoredPhotos : null));
+
+    await upsertStoredAlbum(albumWithStoredPhotos);
+    await upsertStoredAlbumPhoto(
+      {
+        id: "album-created-001-photo-001",
+        albumId: "album-created-001",
+        title: "雨天窗口",
+        uploadedAt: "2026-05-28 / 10:00",
+        note: "刚上传到新相册的第一张。",
+        imageUrl: "/uploads/albums/album-created-001-photo-001-window.png",
+        imagePosition: "center center",
+      },
+      1,
+    );
+
+    const detailPage = render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-created-001" }) }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "可上传相册" })).toBeInTheDocument();
+    expect(screen.getByText("Photos (1) - Sorted by Date")).toBeInTheDocument();
+    expect(screen.getByText("雨天窗口")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "查看照片详情" })).toHaveAttribute("href", "/album/album-created-001/album-created-001-photo-001");
+    expect(detailPage.container.querySelectorAll("article img")).toHaveLength(1);
   });
 
   it("renders the first album photo detail page with next navigation only", async () => {

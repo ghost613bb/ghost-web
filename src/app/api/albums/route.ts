@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       const requestedFileName = typeof rawCoverFileName === "string" && rawCoverFileName.trim().length > 0 ? rawCoverFileName.trim() : rawCoverFile.name;
       const safeFileName = sanitizeFileName(requestedFileName || "cover");
       const finalFileName = `${albumId}-${safeFileName}`;
-      const uploadDir = path.join(process.cwd(), "public/uploads/albums");
+      const uploadDir = process.env.ALBUM_UPLOAD_DIR ?? path.join(process.cwd(), "public/uploads/albums");
       const outputPath = path.join(uploadDir, finalFileName);
 
       await mkdir(uploadDir, { recursive: true });

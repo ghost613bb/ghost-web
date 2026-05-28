@@ -41,6 +41,17 @@ sqlite.exec(`
     created_at text,
     sort_order integer
   );
+
+  CREATE TABLE IF NOT EXISTS album_photos (
+    id text PRIMARY KEY NOT NULL,
+    album_id text NOT NULL,
+    title text NOT NULL,
+    uploaded_at text NOT NULL,
+    note text,
+    image_url text NOT NULL,
+    image_position text NOT NULL,
+    sort_order integer NOT NULL
+  );
 `);
 
 export const db = drizzle(sqlite);

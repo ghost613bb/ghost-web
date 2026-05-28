@@ -4,8 +4,9 @@ import { Camera, Pencil, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { getAlbumPhotosByAlbumId } from "@/data/albumPhotos";
+import type { AlbumPhoto } from "@/data/albumPhotos";
 import { AlbumFormDialog, type AlbumFormPayload } from "./AlbumFormDialog";
+import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
 import type { Album } from "./types";
 
 function coverImageFromAlbum(album: Album) {
@@ -14,16 +15,18 @@ function coverImageFromAlbum(album: Album) {
 
 type AlbumDetailPageViewProps = {
   album: Album;
+  initialPhotos: AlbumPhoto[];
 };
 
-export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
+export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageViewProps) {
   const router = useRouter();
   const [currentAlbum, setCurrentAlbum] = useState(album);
+  const [photos, setPhotos] = useState(initialPhotos);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
   const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
-  const photos = getAlbumPhotosByAlbumId(currentAlbum.id);
 
   return (
     <>
@@ -61,6 +64,7 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
               <div className="flex flex-col gap-3">
                 <button
                   className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3]"
+                  onClick={() => setIsUploadDialogOpen(true)}
                   type="button"
                 >
                   <Camera aria-hidden="true" className="mr-2 h-[1.05rem] w-[1.05rem] stroke-[1.9]" />
@@ -132,6 +136,38 @@ export function AlbumDetailPageView({ album }: AlbumDetailPageViewProps) {
           </section>
         </div>
       </main>
+
+      {isUploadDialogOpen ? (
+        <AlbumPhotoUploadDialog
+          onClose={() => setIsUploadDialogOpen(false)}
+          onSubmit={async ({ title, note, photoFile }) => {
+            const formData = new FormData();
+            formData.set("title", title);
+            formData.set("note", note);
+            formData.set("photoFileName", photoFile.name);
+            formData.append("photoFile", photoFile, photoFile.name);
+
+            const response = await fetch(`/api/albums/${currentAlbum.id}/photos`, {
+              method: "POST",
+              body: formData,
+            });
+            const data = (await response.json()) as {
+              album?: Album;
+              photos?: AlbumPhoto[];
+              error?: string;
+            };
+
+            if (!response.ok || !data.album || !data.photos) {
+              throw new Error(data.error ?? "上传照片失败");
+            }
+
+            setCurrentAlbum(data.album);
+            setPhotos(data.photos);
+            setIsUploadDialogOpen(false);
+          }}
+          submitErrorMessage="上传照片失败"
+        />
+      ) : null}
 
       {isEditDialogOpen ? (
         <AlbumFormDialog

@@ -30,3 +30,14 @@ export const albums = sqliteTable("albums", {
   createdAt: text("created_at"),
   sortOrder: integer("sort_order"),
 });
+
+export const albumPhotos = sqliteTable("album_photos", {
+  id: text("id").primaryKey(),
+  albumId: text("album_id").notNull(),
+  title: text("title").notNull(),
+  uploadedAt: text("uploaded_at").notNull(),
+  note: text("note"),
+  imageUrl: text("image_url").notNull(),
+  imagePosition: text("image_position").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+});

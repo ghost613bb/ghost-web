@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AlbumDetailPageView } from "@/features/album/AlbumDetailPage";
-import { getAlbumById } from "@/features/album/service";
+import { getAlbumById, listAlbumPhotos } from "@/features/album/service";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 type AlbumDetailPageProps = {
@@ -26,5 +26,7 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
     notFound();
   }
 
-  return <AlbumDetailPageView album={album} />;
+  const photos = await listAlbumPhotos(albumId);
+
+  return <AlbumDetailPageView album={album} initialPhotos={photos} />;
 }

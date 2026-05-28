@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
-import { getAdjacentAlbumPhotoIds, getAlbumPhotoById } from "@/data/albumPhotos";
 import { AlbumPhotoDetailPageView } from "@/features/album/AlbumPhotoDetailPage";
-import { getAlbumById } from "@/features/album/service";
+import { getAdjacentAlbumPhotoIds, getAlbumById, getAlbumPhotoById } from "@/features/album/service";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 type AlbumPhotoDetailPageProps = {
@@ -28,13 +27,13 @@ export default async function AlbumPhotoDetailPage({ params }: AlbumPhotoDetailP
     notFound();
   }
 
-  const photo = getAlbumPhotoById(albumId, photoId);
+  const photo = await getAlbumPhotoById(albumId, photoId);
 
   if (!photo) {
     notFound();
   }
 
-  const { previousPhotoId, nextPhotoId } = getAdjacentAlbumPhotoIds(albumId, photoId);
+  const { previousPhotoId, nextPhotoId } = await getAdjacentAlbumPhotoIds(albumId, photoId);
 
   return <AlbumPhotoDetailPageView album={album} nextPhotoId={nextPhotoId} photo={photo} previousPhotoId={previousPhotoId} />;
 }

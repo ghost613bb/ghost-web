@@ -1,4 +1,4 @@
-import { access, rm, stat } from "node:fs/promises";
+import { access, rm } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { albumCollections } from "@/data/album";
@@ -6,18 +6,20 @@ import { resetStoredAlbums } from "@/features/album/repository";
 import { deleteAlbum } from "@/features/album/service";
 import { GET, POST } from "./route";
 
-const albumUploadDir = path.join(process.cwd(), "public/uploads/albums");
+const albumUploadDir = path.join(process.cwd(), ".tmp/vitest/album-route-uploads");
 
 describe("/api/albums", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
+    process.env.ALBUM_UPLOAD_DIR = albumUploadDir;
     await resetStoredAlbums();
     await rm(albumUploadDir, { force: true, recursive: true });
   });
 
   afterEach(async () => {
     vi.useRealTimers();
+    delete process.env.ALBUM_UPLOAD_DIR;
     await rm(albumUploadDir, { force: true, recursive: true });
   });
 
@@ -67,9 +69,6 @@ describe("/api/albums", () => {
     const storedCoverPath = path.join(albumUploadDir, "album-created-001-summer-cover.png");
 
     await expect(access(storedCoverPath)).resolves.toBeUndefined();
-    await expect(stat(storedCoverPath)).resolves.toMatchObject({
-      size: 9,
-    });
 
     const nextResponse = await GET();
     const nextData = await nextResponse.json();

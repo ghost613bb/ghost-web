@@ -20,6 +20,17 @@ describe("AlbumDetailPageView", () => {
     createdAt: "2023-07-31",
     sortOrder: 1,
   };
+  const initialPhotos = [
+    {
+      id: "photo-001",
+      albumId: "album-001",
+      title: "Sleepy head...",
+      uploadedAt: "Oct 24, 2023 / 4:30",
+      note: "原始备注",
+      imageUrl: "/album-cover-placeholder.jpeg",
+      imagePosition: "center 18%",
+    },
+  ];
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -41,7 +52,7 @@ describe("AlbumDetailPageView", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AlbumDetailPageView album={album} />);
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit Album" }));
 
@@ -81,6 +92,77 @@ describe("AlbumDetailPageView", () => {
     expect(screen.getByAltText("编辑后的相册封面背景")).toHaveAttribute("src", "/uploads/albums/album-001-detail-cover.png");
   });
 
+  it("uploads photos from the detail actions and adds them to the page", async () => {
+    const photoFile = new File(["detail-photo"], "detail-photo.png", { type: "image/png" });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        album: {
+          ...album,
+          photoCount: 23,
+        },
+        photos: [
+          {
+            id: "photo-001",
+            albumId: "album-001",
+            title: "Sleepy head...",
+            uploadedAt: "Oct 24, 2023 / 4:30",
+            note: "原始备注",
+            imageUrl: "/album-cover-placeholder.jpeg",
+            imagePosition: "center 18%",
+          },
+          {
+            id: "photo-008",
+            albumId: "album-001",
+            title: "detail-photo",
+            uploadedAt: "2026-05-28 / 10:00",
+            note: "新上传的照片",
+            imageUrl: "/uploads/albums/album-001-photo-008-detail-photo.png",
+            imagePosition: "center center",
+          },
+        ],
+      }),
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload Photos" }));
+
+    const titleInput = await screen.findByLabelText("照片标题");
+    const noteInput = screen.getByLabelText("照片备注");
+    const fileInput = screen.getByLabelText("上传照片文件");
+
+    fireEvent.change(titleInput, { target: { value: "detail-photo" } });
+    fireEvent.change(noteInput, { target: { value: "新上传的照片" } });
+    fireEvent.change(fileInput, { target: { files: [photoFile] } });
+    fireEvent.click(screen.getByRole("button", { name: "上传照片" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/albums/album-001/photos",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.any(FormData),
+        }),
+      );
+    });
+
+    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const formData = requestInit.body as FormData;
+
+    expect(formData.get("title")).toBe("detail-photo");
+    expect(formData.get("note")).toBe("新上传的照片");
+    expect(formData.get("photoFileName")).toBe("detail-photo.png");
+    expect(formData.get("photoFile")).toBeInstanceOf(File);
+
+    await waitFor(() => {
+      expect(screen.getByText("Photos (23) - Sorted by Date")).toBeInTheDocument();
+      expect(screen.getByText("detail-photo")).toBeInTheDocument();
+    });
+  });
+
   it("deletes an album from the detail actions and returns to album list", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -89,7 +171,7 @@ describe("AlbumDetailPageView", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AlbumDetailPageView album={album} />);
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Delete Album" }));
     fireEvent.click(await screen.findByRole("button", { name: "确认删除" }));
@@ -111,7 +193,7 @@ describe("AlbumDetailPageView", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AlbumDetailPageView album={album} />);
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Delete Album" }));
     fireEvent.click(await screen.findByRole("button", { name: "确认删除" }));

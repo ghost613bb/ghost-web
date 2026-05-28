@@ -1,13 +1,21 @@
 import { albumCollections as fallbackAlbums } from "@/data/album";
 import {
+  getAlbumPhotoById as getFallbackAlbumPhotoById,
+  getAlbumPhotosByAlbumId as getFallbackAlbumPhotosByAlbumId,
+  type AlbumPhoto,
+} from "@/data/albumPhotos";
+import {
   deleteStoredAlbum,
   getStoredAlbumById,
   getStoredAlbumIds,
+  getStoredAlbumPhotoById,
+  listStoredAlbumPhotosByAlbumId,
   listStoredAlbums,
   listVisibleStoredAlbums,
   upsertStoredAlbum,
+  upsertStoredAlbumPhoto,
 } from "./repository";
-import type { Album, CreateAlbumInput } from "./types";
+import type { Album, CreateAlbumInput, CreateAlbumPhotoInput } from "./types";
 
 function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
   return {
@@ -21,6 +29,14 @@ function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
     createdAt: album.createdAt,
     sortOrder: album.sortOrder,
   };
+}
+
+function formatUploadedAt(date: Date) {
+  return `${date.toISOString().slice(0, 10)} / ${date.toISOString().slice(11, 16)}`;
+}
+
+function buildStoredAlbumPhotoId(albumId: string, index: number) {
+  return `${albumId}-photo-${String(index).padStart(3, "0")}`;
 }
 
 export async function getNextCreatedAlbumId(): Promise<string> {
@@ -91,6 +107,75 @@ export async function updateAlbum(id: string, input: CreateAlbumInput): Promise<
 
   await upsertStoredAlbum(updatedAlbum);
   return updatedAlbum;
+}
+
+export async function listAlbumPhotos(albumId: string): Promise<AlbumPhoto[]> {
+  const [storedPhotos, fallbackPhotos] = await Promise.all([
+    listStoredAlbumPhotosByAlbumId(albumId),
+    Promise.resolve(getFallbackAlbumPhotosByAlbumId(albumId)),
+  ]);
+
+  return [...fallbackPhotos, ...storedPhotos];
+}
+
+export async function getAlbumPhotoById(albumId: string, photoId: string): Promise<AlbumPhoto | null> {
+  const fallbackPhoto = getFallbackAlbumPhotoById(albumId, photoId);
+
+  if (fallbackPhoto) {
+    return fallbackPhoto;
+  }
+
+  return getStoredAlbumPhotoById(albumId, photoId);
+}
+
+export async function getAdjacentAlbumPhotoIds(albumId: string, photoId: string) {
+  const photos = await listAlbumPhotos(albumId);
+  const index = photos.findIndex((photo) => photo.id === photoId);
+
+  if (index === -1) {
+    return { previousPhotoId: null, nextPhotoId: null };
+  }
+
+  return {
+    previousPhotoId: photos[index - 1]?.id ?? null,
+    nextPhotoId: photos[index + 1]?.id ?? null,
+  };
+}
+
+export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoInput) {
+  const currentAlbum = await getAlbumById(albumId);
+
+  if (!currentAlbum) {
+    throw new Error("相册不存在");
+  }
+
+  const currentPhotos = await listAlbumPhotos(albumId);
+  const nextIndex = currentPhotos.length + 1;
+  const nextPhoto = {
+    id: buildStoredAlbumPhotoId(albumId, nextIndex),
+    albumId,
+    title: input.title || "还没有标题",
+    uploadedAt: formatUploadedAt(new Date()),
+    note: input.note || "先记下这一刻。",
+    imageUrl: input.imageUrl,
+    imagePosition: input.imagePosition ?? "center center",
+  } satisfies AlbumPhoto;
+
+  await upsertStoredAlbumPhoto(nextPhoto, nextIndex);
+
+  const updatedAlbum: Album = {
+    ...currentAlbum,
+    photoCount: currentAlbum.photoCount + 1,
+    status: "published",
+  };
+
+  await upsertStoredAlbum(updatedAlbum);
+
+  return {
+    album: updatedAlbum,
+    photo: nextPhoto,
+    photos: [...currentPhotos, nextPhoto],
+  };
 }
 
 export async function deleteAlbum(id: string): Promise<void> {
