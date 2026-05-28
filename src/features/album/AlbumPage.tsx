@@ -28,10 +28,6 @@ function coverImageFromAlbum(album: AlbumCard) {
   return album.coverImage ?? "/album-cover-placeholder.jpeg";
 }
 
-function coverBadgeFromAlbum(album: AlbumCard) {
-  return album.coverBadge;
-}
-
 function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
   const titleId = useId();
   const nameId = useId();
@@ -194,9 +190,6 @@ function CreateAlbumDialog({ onClose, onCreate }: CreateAlbumDialogProps) {
                 )}
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.12)_0%,rgba(255,253,247,0.72)_68%,rgba(255,253,247,0.96)_100%)]" />
                 <div className="relative flex min-h-30 flex-col items-center justify-center px-4 py-5 text-center text-[#6f343b]">
-                  <span aria-hidden="true" className="text-[2.7rem] leading-none">
-                    {coverFile ? "🖼️" : "📷"}
-                  </span>
                   <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{coverFile ? "重新选择" : "点击上传"}</span>
                   <span className="mt-2 text-sm font-medium text-[#8d6368]">{coverFile ? coverFile.name : "选择本地图片作为相册封面。"}</span>
                 </div>
@@ -260,13 +253,6 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
               <div className="mb-1 h-48 overflow-hidden rounded-[1.3rem] bg-[#d8d4dc] shadow-[inset_0_10px_24px_rgba(255,255,255,0.28)] sm:h-52">
                 <img alt={`${album.title}封面`} className="h-full w-full object-cover" src={coverImageFromAlbum(album)} />
               </div>
-              {coverBadgeFromAlbum(album) ? (
-                <span className="absolute left-6 top-6 z-20 inline-flex max-w-[70%] rounded-full bg-[#fff7dd] px-2.5 py-1 text-[11px] font-black text-[#6f343b] shadow-[0_4px_10px_rgba(111,52,59,0.08)]">
-                  {coverBadgeFromAlbum(album)}
-                </span>
-              ) : null}
-              <Link aria-label={`${album.title}详情`} className="absolute inset-0 z-10 rounded-[1.6rem]" href={`/album/${album.id}`} />
-
               <div
                 aria-hidden="true"
                 className={`absolute ${index % 3 === 0 ? "-left-1 top-2 -rotate-[36deg]" : index % 3 === 2 ? "right-1 top-2 rotate-[24deg]" : "hidden"} h-6 w-13 rounded-sm border border-[#d0b1b5] bg-[linear-gradient(135deg,rgba(255,255,255,0.28)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.28)_50%,rgba(255,255,255,0.28)_75%,transparent_75%,transparent)] bg-[length:12px_12px] bg-[#efcfd4] opacity-90 shadow-sm`}
