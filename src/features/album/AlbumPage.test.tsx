@@ -105,4 +105,125 @@ describe("AlbumPageView", () => {
     expect(screen.getByRole("button", { name: "确认删除" })).toBeInTheDocument();
     expect(screen.getByText("我的相册")).toBeInTheDocument();
   });
+
+  it("positions the more menu above the trigger when there is not enough space below", async () => {
+    const originalInnerHeight = window.innerHeight;
+    const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+
+    try {
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: 640,
+      });
+
+      HTMLElement.prototype.getBoundingClientRect = vi.fn(function (this: HTMLElement) {
+        if (this.getAttribute("aria-haspopup") === "menu") {
+          return {
+            bottom: 620,
+            height: 32,
+            left: 0,
+            right: 80,
+            top: 588,
+            width: 80,
+            x: 0,
+            y: 588,
+            toJSON: () => ({}),
+          };
+        }
+
+        if (this.textContent?.includes("编辑相册") && this.textContent?.includes("删除相册")) {
+          return {
+            bottom: 760,
+            height: 140,
+            left: 0,
+            right: 152,
+            top: 620,
+            width: 152,
+            x: 0,
+            y: 620,
+            toJSON: () => ({}),
+          };
+        }
+
+        return originalGetBoundingClientRect.call(this);
+      });
+
+      render(<AlbumPageView initialAlbums={[album]} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /更多/i }));
+
+      const menu = screen.getByText("编辑相册").closest("div") as HTMLDivElement;
+
+      await waitFor(() => {
+        expect(menu.className).toContain("bottom-");
+        expect(menu.className).not.toContain("top-[calc(100%+0.45rem)]");
+      });
+    } finally {
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: originalInnerHeight,
+      });
+      HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+  });
+
+  it("limits the menu height when neither side has enough space", async () => {
+    const originalInnerHeight = window.innerHeight;
+    const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+
+    try {
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: 200,
+      });
+
+      HTMLElement.prototype.getBoundingClientRect = vi.fn(function (this: HTMLElement) {
+        if (this.getAttribute("aria-haspopup") === "menu") {
+          return {
+            bottom: 140,
+            height: 32,
+            left: 0,
+            right: 80,
+            top: 108,
+            width: 80,
+            x: 0,
+            y: 108,
+            toJSON: () => ({}),
+          };
+        }
+
+        if (this.textContent?.includes("编辑相册") && this.textContent?.includes("删除相册")) {
+          return {
+            bottom: 320,
+            height: 180,
+            left: 0,
+            right: 152,
+            top: 140,
+            width: 152,
+            x: 0,
+            y: 140,
+            toJSON: () => ({}),
+          };
+        }
+
+        return originalGetBoundingClientRect.call(this);
+      });
+
+      render(<AlbumPageView initialAlbums={[album]} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /更多/i }));
+
+      const menu = screen.getByText("编辑相册").closest("div") as HTMLDivElement;
+
+      await waitFor(() => {
+        expect(menu.style.maxHeight).toBe("100px");
+      });
+    } finally {
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: originalInnerHeight,
+      });
+      HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+  });
 });

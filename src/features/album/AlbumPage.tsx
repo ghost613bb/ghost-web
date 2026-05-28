@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { Album } from "./types";
 
 type AlbumFormPayload = {
@@ -278,10 +278,14 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
   const [editingAlbumId, setEditingAlbumId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [menuAlbumId, setMenuAlbumId] = useState<string | null>(null);
+  const [menuVerticalPosition, setMenuVerticalPosition] = useState<"bottom" | "top">("bottom");
+  const [menuMaxHeight, setMenuMaxHeight] = useState<number | null>(null);
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
   const [pendingDeleteAlbumId, setPendingDeleteAlbumId] = useState<string | null>(null);
   const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const topActionClass =
     "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
   const editingAlbum = editingAlbumId ? albums.find((album) => album.id === editingAlbumId) ?? null : null;
@@ -299,6 +303,47 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
       document.removeEventListener("mousedown", handlePointerDown);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!menuAlbumId || !menuButtonRef.current || !menuPanelRef.current) {
+      return;
+    }
+
+    function updateMenuVerticalPosition() {
+      const triggerRect = menuButtonRef.current?.getBoundingClientRect();
+      const menuRect = menuPanelRef.current?.getBoundingClientRect();
+
+      if (!triggerRect || !menuRect) {
+        return;
+      }
+
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const viewportMargin = 8;
+      const spaceBelow = viewportHeight - triggerRect.bottom - viewportMargin;
+      const spaceAbove = triggerRect.top - viewportMargin;
+      const hasEnoughSpaceBelow = spaceBelow >= menuRect.height;
+      const openUpward = !hasEnoughSpaceBelow && spaceAbove > spaceBelow;
+      const availableSpace = Math.max(openUpward ? spaceAbove : spaceBelow, 0);
+
+      setMenuVerticalPosition(openUpward ? "top" : "bottom");
+      setMenuMaxHeight(availableSpace > 0 ? availableSpace : null);
+    }
+
+    const viewport = window.visualViewport;
+
+    updateMenuVerticalPosition();
+    window.addEventListener("resize", updateMenuVerticalPosition);
+    document.addEventListener("scroll", updateMenuVerticalPosition, true);
+    viewport?.addEventListener("resize", updateMenuVerticalPosition);
+    viewport?.addEventListener("scroll", updateMenuVerticalPosition);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuVerticalPosition);
+      document.removeEventListener("scroll", updateMenuVerticalPosition, true);
+      viewport?.removeEventListener("resize", updateMenuVerticalPosition);
+      viewport?.removeEventListener("scroll", updateMenuVerticalPosition);
+    };
+  }, [menuAlbumId]);
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
@@ -359,6 +404,7 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
                     event.stopPropagation();
                     setMenuAlbumId((currentAlbumId) => (currentAlbumId === album.id ? null : album.id));
                   }}
+                  ref={menuAlbumId === album.id ? menuButtonRef : null}
                   type="button"
                 >
                   <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
@@ -366,7 +412,11 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
                   <span className="block text-[11px] font-semibold">(编辑/删除)</span>
                 </button>
                 {menuAlbumId === album.id ? (
-                  <div className="absolute right-0 top-[calc(100%+0.45rem)] z-30 min-w-[9.5rem] rounded-[1rem] border-[2px] border-stone-700/80 bg-[#fffaf3] p-1.5 shadow-[0_12px_24px_rgba(112,84,84,0.16)]">
+                  <div
+                    className={`absolute right-0 z-30 min-w-[9.5rem] overflow-y-auto rounded-[1rem] border-[2px] border-stone-700/80 bg-[#fffaf3] p-1.5 shadow-[0_12px_24px_rgba(112,84,84,0.16)] ${menuVerticalPosition === "top" ? "bottom-[calc(100%+0.45rem)]" : "top-[calc(100%+0.45rem)]"}`}
+                    ref={menuPanelRef}
+                    style={menuMaxHeight ? { maxHeight: `${menuMaxHeight}px` } : undefined}
+                  >
                     <button
                       className="flex w-full items-center gap-2 rounded-[0.8rem] px-3 py-2 text-left text-sm font-black text-stone-900 transition hover:bg-[#f8e6ea]"
                       onClick={(event) => {
