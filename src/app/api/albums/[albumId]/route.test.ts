@@ -7,17 +7,17 @@ describe("/api/albums/[albumId]", () => {
     await resetStoredAlbums();
   });
 
-  it("updates fallback album fields through patch", async () => {
+  it("updates fallback album fields and cover through patch multipart form data", async () => {
+    const formData = new FormData();
+    formData.set("title", "编辑后的相册");
+    formData.set("description", "更新后的备注");
+    formData.set("coverFileName", "updated-cover.png");
+    formData.append("coverFile", new Blob(["updated-cover"], { type: "image/png" }), "updated-cover.png");
+
     const response = await PATCH(
       new Request("http://localhost/api/albums/album-001", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: "编辑后的相册",
-          description: "更新后的备注",
-        }),
+        body: formData,
       }),
       {
         params: Promise.resolve({
@@ -33,6 +33,7 @@ describe("/api/albums/[albumId]", () => {
       id: "album-001",
       title: "编辑后的相册",
       description: "更新后的备注",
+      coverImage: "/uploads/albums/album-001-updated-cover.png",
     });
   });
 

@@ -90,15 +90,16 @@ describe("content module pages", () => {
     expect(backHomeLink.closest("header")).toContainElement(createAlbumButton);
     expect(backHomeLink.parentElement).toHaveClass("py-4.5");
     const firstAlbumCard = screen.getAllByRole("article")[0];
-    const firstAlbumCover = firstAlbumCard.firstElementChild as HTMLElement;
+    const firstAlbumDetailLink = firstAlbumCard.querySelector("a[href='/album/album-001']") as HTMLElement;
+    const firstAlbumCover = firstAlbumDetailLink.firstElementChild as HTMLElement;
+    expect(firstAlbumDetailLink).not.toBeNull();
     expect(firstAlbumCover).toHaveClass("h-48", "sm:h-52");
     expect(firstAlbumCover.querySelector("img")).not.toBeNull();
     expect(firstAlbumCover.querySelector("span")).toBeNull();
-    expect(firstAlbumCard.querySelector("a[href='/album/album-001']")).not.toBeNull();
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" })[0]).toHaveClass("text-[1.2rem]");
     expect(screen.getByText("照片22个")).toHaveClass("text-[11px]");
-    expect(screen.getAllByRole("button", { name: /更多/ })[0]).toHaveClass("px-1.5", "py-0.5");
-    expect(screen.getAllByText("更多")[0]).toHaveClass("text-[0.95rem]");
+    expect(screen.getAllByRole("button", { name: /更多/ })[0]).toHaveClass("px-2", "py-1", "gap-1");
+    expect(screen.getAllByText("更多")[0]).toHaveClass("sr-only");
 
     fireEvent.click(createAlbumButton);
 
@@ -118,6 +119,17 @@ describe("content module pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
 
     expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
+  });
+
+  it("uses the album detail link as the visible card container", async () => {
+    render(await AlbumPage());
+
+    const firstAlbumDetailLink = screen.getAllByLabelText("我的相册详情")[0];
+    const firstAlbumTitle = screen.getAllByRole("heading", { level: 2, name: "我的相册" })[0];
+    const firstAlbumCover = screen.getAllByAltText("我的相册封面")[0];
+
+    expect(firstAlbumDetailLink).toContainElement(firstAlbumTitle);
+    expect(firstAlbumDetailLink).toContainElement(firstAlbumCover);
   });
 
   it("creates a stored album card with a selected local cover image", async () => {

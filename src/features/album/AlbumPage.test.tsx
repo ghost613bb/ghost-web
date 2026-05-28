@@ -19,7 +19,7 @@ describe("AlbumPageView", () => {
     vi.restoreAllMocks();
   });
 
-  it("edits an album from the more menu and updates the card", async () => {
+  it("edits an album from the more menu, uploads a new cover, and updates the card", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -27,6 +27,7 @@ describe("AlbumPageView", () => {
           ...album,
           title: "编辑后的相册",
           description: "新的相册描述",
+          coverImage: "/uploads/albums/album-001-replacement-cover.png",
         },
       }),
     });
@@ -40,9 +41,12 @@ describe("AlbumPageView", () => {
 
     const titleInput = await screen.findByLabelText("相册名称");
     const noteInput = screen.getByLabelText("备注/留言");
+    const coverInput = screen.getByLabelText("上传本地封面");
+    const coverFile = new File(["replacement-cover"], "replacement-cover.png", { type: "image/png" });
 
     fireEvent.change(titleInput, { target: { value: "编辑后的相册" } });
     fireEvent.change(noteInput, { target: { value: "新的相册描述" } });
+    fireEvent.change(coverInput, { target: { files: [coverFile] } });
     fireEvent.click(screen.getByRole("button", { name: "保存修改" }));
 
     await waitFor(() => {
@@ -50,13 +54,23 @@ describe("AlbumPageView", () => {
         "/api/albums/album-001",
         expect.objectContaining({
           method: "PATCH",
+          body: expect.any(FormData),
         }),
       );
     });
 
+    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const formData = requestInit.body as FormData;
+
+    expect(formData.get("title")).toBe("编辑后的相册");
+    expect(formData.get("description")).toBe("新的相册描述");
+    expect(formData.get("coverFileName")).toBe("replacement-cover.png");
+    expect(formData.get("coverFile")).toBeInstanceOf(File);
+
     await waitFor(() => {
       expect(screen.getByText("编辑后的相册")).toBeInTheDocument();
       expect(screen.getByText("新的相册描述")).toBeInTheDocument();
+      expect(screen.queryByText("album-001-replacement-cover.png")).not.toBeInTheDocument();
     });
   });
 
