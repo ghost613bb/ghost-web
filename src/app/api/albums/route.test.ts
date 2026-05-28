@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { albumCollections } from "@/data/album";
 import { resetStoredAlbums } from "@/features/album/repository";
+import { deleteAlbum } from "@/features/album/service";
 import { GET, POST } from "./route";
 
 const albumUploadDir = path.join(process.cwd(), "public/uploads/albums");
@@ -84,6 +85,44 @@ describe("/api/albums", () => {
       createdAt: "2026-05-26",
       sortOrder: 1,
     });
+  });
+
+  it("creates a new album id after deleting another stored album", async () => {
+    const firstFormData = new FormData();
+    firstFormData.set("title", "第一个相册");
+
+    const secondFormData = new FormData();
+    secondFormData.set("title", "第二个相册");
+
+    const firstResponse = await POST(
+      new Request("http://localhost/api/albums", {
+        method: "POST",
+        body: firstFormData,
+      }),
+    );
+    const secondResponse = await POST(
+      new Request("http://localhost/api/albums", {
+        method: "POST",
+        body: secondFormData,
+      }),
+    );
+
+    const firstAlbum = (await firstResponse.json()).album;
+    const secondAlbum = (await secondResponse.json()).album;
+
+    await deleteAlbum(firstAlbum.id);
+
+    const recreatedFirstResponse = await POST(
+      new Request("http://localhost/api/albums", {
+        method: "POST",
+        body: firstFormData,
+      }),
+    );
+    const recreatedFirstAlbum = (await recreatedFirstResponse.json()).album;
+
+    expect(firstAlbum.id).toBe("album-created-001");
+    expect(secondAlbum.id).toBe("album-created-002");
+    expect(recreatedFirstAlbum.id).toBe("album-created-003");
   });
 
   it("rejects multipart form data when the album title is empty", async () => {

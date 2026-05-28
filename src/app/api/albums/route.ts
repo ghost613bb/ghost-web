@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { createAlbum, listAlbums } from "@/features/album/service";
+import { createAlbum, getNextCreatedAlbumId, listAlbums } from "@/features/album/service";
 import { parseCreateAlbum } from "@/features/album/validation";
 
 function sanitizeFileName(fileName: string) {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       description: typeof rawDescription === "string" ? rawDescription : undefined,
     });
 
-    const albumId = `album-created-${String((await listAlbums()).filter((album) => album.id.startsWith("album-created-")).length + 1).padStart(3, "0")}`;
+    const albumId = await getNextCreatedAlbumId();
 
     let coverImage: string | undefined;
 

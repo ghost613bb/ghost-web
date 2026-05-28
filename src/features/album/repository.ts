@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, ne } from "drizzle-orm";
 import type { Album } from "./types";
 import { db } from "@/lib/db/client";
 import { albums as albumsTable } from "@/lib/db/schema";
@@ -67,6 +67,25 @@ export async function getStoredAlbumById(id: string): Promise<Album | null> {
   const [row] = await db.select().from(albumsTable).where(eq(albumsTable.id, id)).limit(1);
 
   return row ? toAlbum(row) : null;
+}
+
+export async function deleteStoredAlbum(id: string) {
+  await db.delete(albumsTable).where(eq(albumsTable.id, id));
+}
+
+export async function getStoredAlbumIds(): Promise<Set<string>> {
+  const rows = await db.select({ id: albumsTable.id }).from(albumsTable);
+  return new Set(rows.map((row) => row.id));
+}
+
+export async function listVisibleStoredAlbums(): Promise<Album[]> {
+  const rows = await db
+    .select()
+    .from(albumsTable)
+    .where(ne(albumsTable.status, "draft"))
+    .orderBy(asc(albumsTable.sortOrder), desc(albumsTable.createdAt));
+
+  return rows.map((row) => toAlbum(row));
 }
 
 export async function resetStoredAlbums() {
