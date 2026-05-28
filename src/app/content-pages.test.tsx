@@ -282,7 +282,7 @@ describe("content module pages", () => {
     expect(uploadPhotosButton.querySelector("svg")).not.toBeNull();
     expect(editAlbumButton.querySelector("svg")).not.toBeNull();
     expect(deleteAlbumButton.querySelector("svg")).not.toBeNull();
-    expect(screen.getByText("Photos (22) - Sorted by Date")).toBeInTheDocument();
+    expect(screen.getByText("Photos (7) - Sorted by Date")).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(8);
     expect(screen.getAllByText("Sleepy head...")).toHaveLength(7);
     const photoDetailLinks = screen.getAllByRole("link", { name: "查看照片详情" });

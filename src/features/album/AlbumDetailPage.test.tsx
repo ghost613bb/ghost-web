@@ -92,6 +92,13 @@ describe("AlbumDetailPageView", () => {
     expect(screen.getByAltText("编辑后的相册封面背景")).toHaveAttribute("src", "/uploads/albums/album-001-detail-cover.png");
   });
 
+  it("uses the rendered photo list length for the photo count", () => {
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
+
+    expect(screen.getByText("Photos (1) - Sorted by Date")).toBeInTheDocument();
+    expect(screen.queryByText("Photos (22) - Sorted by Date")).not.toBeInTheDocument();
+  });
+
   it("uploads photos from the detail actions and adds them to the page", async () => {
     const photoFile = new File(["detail-photo"], "detail-photo.png", { type: "image/png" });
     const fetchMock = vi.fn().mockResolvedValue({
@@ -99,7 +106,7 @@ describe("AlbumDetailPageView", () => {
       json: async () => ({
         album: {
           ...album,
-          photoCount: 23,
+          photoCount: 2,
         },
         photos: [
           {
@@ -158,8 +165,81 @@ describe("AlbumDetailPageView", () => {
     expect(formData.get("photoFile")).toBeInstanceOf(File);
 
     await waitFor(() => {
-      expect(screen.getByText("Photos (23) - Sorted by Date")).toBeInTheDocument();
+      expect(screen.getByText("Photos (2) - Sorted by Date")).toBeInTheDocument();
       expect(screen.getByText("detail-photo")).toBeInTheDocument();
+    });
+  });
+
+  it("edits a photo from its card action and updates the page", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        photo: {
+          ...initialPhotos[0],
+          title: "改名后的照片",
+          note: "更新后的备注",
+        },
+      }),
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "编辑照片" })[0]);
+
+    const titleInput = await screen.findByLabelText("照片标题");
+    const noteInput = screen.getByLabelText("照片备注");
+
+    fireEvent.change(titleInput, { target: { value: "改名后的照片" } });
+    fireEvent.change(noteInput, { target: { value: "更新后的备注" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存修改" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/albums/album-001/photos/photo-001",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            title: "改名后的照片",
+            note: "更新后的备注",
+          }),
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("改名后的照片")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Photos (1) - Sorted by Date")).toBeInTheDocument();
+  });
+
+  it("deletes a photo from its card action and updates the page count", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        album: {
+          ...album,
+          photoCount: 0,
+        },
+        photos: [],
+      }),
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AlbumDetailPageView album={album} initialPhotos={initialPhotos} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "删除照片" })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "确认删除照片" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/albums/album-001/photos/photo-001", { method: "DELETE" });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Sleepy head...")).not.toBeInTheDocument();
+      expect(screen.getByText("Photos (0) - Sorted by Date")).toBeInTheDocument();
     });
   });
 

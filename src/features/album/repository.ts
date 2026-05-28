@@ -1,7 +1,7 @@
-import { asc, desc, eq, ne } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import type { AlbumPhoto } from "@/data/albumPhotos";
 import { db } from "@/lib/db/client";
-import { albumPhotos as albumPhotosTable, albums as albumsTable } from "@/lib/db/schema";
+import { albumPhotoDeletions as albumPhotoDeletionsTable, albumPhotos as albumPhotosTable, albums as albumsTable } from "@/lib/db/schema";
 import type { Album } from "./types";
 
 type StoredAlbumRow = {
@@ -87,6 +87,11 @@ export async function upsertStoredAlbum(album: Album) {
     });
 }
 
+export async function listDeletedAlbumPhotoIds(albumId: string): Promise<Set<string>> {
+  const rows = await db.select({ photoId: albumPhotoDeletionsTable.photoId }).from(albumPhotoDeletionsTable).where(eq(albumPhotoDeletionsTable.albumId, albumId));
+  return new Set(rows.map((row) => row.photoId));
+}
+
 export async function listStoredAlbumPhotosByAlbumId(albumId: string): Promise<AlbumPhoto[]> {
   const rows = await db
     .select()
@@ -134,20 +139,30 @@ export async function getStoredAlbumPhotoById(albumId: string, photoId: string):
   const [row] = await db
     .select()
     .from(albumPhotosTable)
-    .where(eq(albumPhotosTable.albumId, albumId))
-    .limit(1000);
+    .where(and(eq(albumPhotosTable.albumId, albumId), eq(albumPhotosTable.id, photoId)))
+    .limit(1);
 
-  if (!row) {
-    return null;
-  }
+  return row ? toAlbumPhoto(row) : null;
+}
 
-  const photos = await listStoredAlbumPhotosByAlbumId(albumId);
-  return photos.find((photo) => photo.id === photoId) ?? null;
+export async function deleteStoredAlbumPhoto(albumId: string, photoId: string) {
+  await db.delete(albumPhotosTable).where(and(eq(albumPhotosTable.albumId, albumId), eq(albumPhotosTable.id, photoId)));
+}
+
+export async function markFallbackAlbumPhotoDeleted(albumId: string, photoId: string) {
+  await db
+    .insert(albumPhotoDeletionsTable)
+    .values({ albumId, photoId })
+    .onConflictDoUpdate({
+      target: albumPhotoDeletionsTable.photoId,
+      set: { albumId, photoId },
+    });
 }
 
 export async function deleteStoredAlbum(id: string) {
   await db.delete(albumsTable).where(eq(albumsTable.id, id));
   await db.delete(albumPhotosTable).where(eq(albumPhotosTable.albumId, id));
+  await db.delete(albumPhotoDeletionsTable).where(eq(albumPhotoDeletionsTable.albumId, id));
 }
 
 export async function getStoredAlbumIds(): Promise<Set<string>> {
@@ -166,6 +181,7 @@ export async function listVisibleStoredAlbums(): Promise<Album[]> {
 }
 
 export async function resetStoredAlbums() {
+  await db.delete(albumPhotoDeletionsTable).where(eq(albumPhotoDeletionsTable.photoId, albumPhotoDeletionsTable.photoId));
   await db.delete(albumPhotosTable).where(eq(albumPhotosTable.id, albumPhotosTable.id));
   await db.delete(albumsTable).where(eq(albumsTable.id, albumsTable.id));
 }

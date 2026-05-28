@@ -6,16 +6,19 @@ import {
 } from "@/data/albumPhotos";
 import {
   deleteStoredAlbum,
+  deleteStoredAlbumPhoto,
   getStoredAlbumById,
   getStoredAlbumIds,
   getStoredAlbumPhotoById,
+  listDeletedAlbumPhotoIds,
   listStoredAlbumPhotosByAlbumId,
   listStoredAlbums,
   listVisibleStoredAlbums,
+  markFallbackAlbumPhotoDeleted,
   upsertStoredAlbum,
   upsertStoredAlbumPhoto,
 } from "./repository";
-import type { Album, CreateAlbumInput, CreateAlbumPhotoInput } from "./types";
+import type { Album, CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
 
 function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
   return {
@@ -110,22 +113,30 @@ export async function updateAlbum(id: string, input: CreateAlbumInput): Promise<
 }
 
 export async function listAlbumPhotos(albumId: string): Promise<AlbumPhoto[]> {
-  const [storedPhotos, fallbackPhotos] = await Promise.all([
+  const [storedPhotos, fallbackPhotos, deletedFallbackPhotoIds] = await Promise.all([
     listStoredAlbumPhotosByAlbumId(albumId),
     Promise.resolve(getFallbackAlbumPhotosByAlbumId(albumId)),
+    listDeletedAlbumPhotoIds(albumId),
   ]);
 
-  return [...fallbackPhotos, ...storedPhotos];
+  const storedPhotoIds = new Set(storedPhotos.map((photo) => photo.id));
+  return [...fallbackPhotos.filter((photo) => !deletedFallbackPhotoIds.has(photo.id) && !storedPhotoIds.has(photo.id)), ...storedPhotos];
 }
 
 export async function getAlbumPhotoById(albumId: string, photoId: string): Promise<AlbumPhoto | null> {
-  const fallbackPhoto = getFallbackAlbumPhotoById(albumId, photoId);
+  const storedPhoto = await getStoredAlbumPhotoById(albumId, photoId);
 
-  if (fallbackPhoto) {
-    return fallbackPhoto;
+  if (storedPhoto) {
+    return storedPhoto;
   }
 
-  return getStoredAlbumPhotoById(albumId, photoId);
+  const deletedFallbackPhotoIds = await listDeletedAlbumPhotoIds(albumId);
+
+  if (deletedFallbackPhotoIds.has(photoId)) {
+    return null;
+  }
+
+  return getFallbackAlbumPhotoById(albumId, photoId);
 }
 
 export async function getAdjacentAlbumPhotoIds(albumId: string, photoId: string) {
@@ -175,6 +186,66 @@ export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoI
     album: updatedAlbum,
     photo: nextPhoto,
     photos: [...currentPhotos, nextPhoto],
+  };
+}
+
+export async function updateAlbumPhoto(albumId: string, photoId: string, input: UpdateAlbumPhotoInput): Promise<AlbumPhoto> {
+  const currentPhoto = await getAlbumPhotoById(albumId, photoId);
+
+  if (!currentPhoto) {
+    throw new Error("照片不存在");
+  }
+
+  const updatedPhoto = {
+    ...currentPhoto,
+    title: input.title,
+    note: input.note ?? "",
+  } satisfies AlbumPhoto;
+  const photos = await listAlbumPhotos(albumId);
+  const sortOrder = Math.max(
+    1,
+    photos.findIndex((photo) => photo.id === photoId) + 1,
+  );
+
+  await upsertStoredAlbumPhoto(updatedPhoto, sortOrder);
+  return updatedPhoto;
+}
+
+export async function deleteAlbumPhoto(albumId: string, photoId: string) {
+  const currentAlbum = await getAlbumById(albumId);
+
+  if (!currentAlbum) {
+    throw new Error("相册不存在");
+  }
+
+  const currentPhoto = await getAlbumPhotoById(albumId, photoId);
+
+  if (!currentPhoto) {
+    throw new Error("照片不存在");
+  }
+
+  const [fallbackPhoto, storedPhoto] = await Promise.all([Promise.resolve(getFallbackAlbumPhotoById(albumId, photoId)), getStoredAlbumPhotoById(albumId, photoId)]);
+
+  if (storedPhoto) {
+    await deleteStoredAlbumPhoto(albumId, photoId);
+  }
+
+  if (fallbackPhoto) {
+    await markFallbackAlbumPhotoDeleted(albumId, photoId);
+  }
+
+  const photos = await listAlbumPhotos(albumId);
+  const updatedAlbum: Album = {
+    ...currentAlbum,
+    photoCount: photos.length,
+    status: "published",
+  };
+
+  await upsertStoredAlbum(updatedAlbum);
+
+  return {
+    album: updatedAlbum,
+    photos,
   };
 }
 

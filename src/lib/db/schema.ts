@@ -41,3 +41,8 @@ export const albumPhotos = sqliteTable("album_photos", {
   imagePosition: text("image_position").notNull(),
   sortOrder: integer("sort_order").notNull(),
 });
+
+export const albumPhotoDeletions = sqliteTable("album_photo_deletions", {
+  albumId: text("album_id").notNull(),
+  photoId: text("photo_id").primaryKey().notNull(),
+});

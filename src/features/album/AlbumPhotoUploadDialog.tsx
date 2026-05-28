@@ -4,27 +4,43 @@ import { useEffect, useId, useState } from "react";
 
 export type AlbumPhotoUploadPayload = {
   note: string;
-  photoFile: File;
+  photoFile?: File;
   title: string;
 };
 
 type AlbumPhotoUploadDialogProps = {
+  initialNote?: string;
+  initialTitle?: string;
   onClose: () => void;
   onSubmit: (payload: AlbumPhotoUploadPayload) => Promise<void>;
+  requireFile?: boolean;
+  showFileInput?: boolean;
   submitErrorMessage: string;
+  submitLabel?: string;
+  title: string;
 };
 
 function fileNameToTitle(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "");
 }
 
-export function AlbumPhotoUploadDialog({ onClose, onSubmit, submitErrorMessage }: AlbumPhotoUploadDialogProps) {
+export function AlbumPhotoUploadDialog({
+  initialNote = "",
+  initialTitle = "",
+  onClose,
+  onSubmit,
+  requireFile = true,
+  showFileInput = true,
+  submitErrorMessage,
+  submitLabel = "上传照片",
+  title,
+}: AlbumPhotoUploadDialogProps) {
   const titleId = useId();
   const nameId = useId();
   const noteId = useId();
   const uploadId = useId();
-  const [photoTitle, setPhotoTitle] = useState("");
-  const [photoNote, setPhotoNote] = useState("");
+  const [photoTitle, setPhotoTitle] = useState(initialTitle);
+  const [photoNote, setPhotoNote] = useState(initialNote);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState("");
@@ -54,7 +70,7 @@ export function AlbumPhotoUploadDialog({ onClose, onSubmit, submitErrorMessage }
         onSubmit={async (event) => {
           event.preventDefault();
 
-          if (!photoFile) {
+          if (requireFile && !photoFile) {
             setSubmitError("请先选择照片");
             return;
           }
@@ -64,9 +80,9 @@ export function AlbumPhotoUploadDialog({ onClose, onSubmit, submitErrorMessage }
 
           try {
             await onSubmit({
-              title: photoTitle.trim() || fileNameToTitle(photoFile.name) || "还没有标题",
+              title: photoTitle.trim() || (photoFile ? fileNameToTitle(photoFile.name) : "") || "还没有标题",
               note: photoNote.trim(),
-              photoFile,
+              photoFile: photoFile ?? undefined,
             });
           } catch (error) {
             setSubmitError(error instanceof Error ? error.message : submitErrorMessage);
@@ -78,7 +94,7 @@ export function AlbumPhotoUploadDialog({ onClose, onSubmit, submitErrorMessage }
         <div className="relative mb-5 text-center">
           <div aria-hidden="true" className="absolute left-1/2 top-[62%] h-5 w-42 -translate-x-1/2 rounded-full bg-[#f6d6da] sm:h-6 sm:w-52" />
           <h2 id={titleId} className="relative text-[1.95rem] font-black tracking-tight text-[#6f343b] sm:text-[2.75rem]">
-            上传照片
+            {title}
           </h2>
         </div>
 
@@ -115,37 +131,39 @@ export function AlbumPhotoUploadDialog({ onClose, onSubmit, submitErrorMessage }
             </div>
           </div>
 
-          <div>
-            <p className="mb-2 text-[1.05rem] font-black sm:text-[1.15rem]">照片文件</p>
-            <label className="block cursor-pointer" htmlFor={uploadId}>
-              <input
-                accept="image/*"
-                aria-label="上传照片文件"
-                className="sr-only"
-                id={uploadId}
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setPhotoFile(file);
-                  if (file && !photoTitle.trim()) {
-                    setPhotoTitle(fileNameToTitle(file.name));
-                  }
-                }}
-                type="file"
-              />
-              <div className="relative min-h-40 overflow-hidden rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] transition hover:-translate-y-0.5 hover:bg-white">
-                {photoPreviewUrl ? (
-                  <img alt="照片本地预览" className="absolute inset-0 h-full w-full object-cover" src={photoPreviewUrl} />
-                ) : (
-                  <img alt="照片预览占位" className="absolute inset-0 h-full w-full object-cover opacity-55" src="/album-cover-placeholder.jpeg" />
-                )}
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.18)_0%,rgba(255,253,247,0.74)_68%,rgba(255,253,247,0.96)_100%)]" />
-                <div className="relative flex min-h-40 flex-col items-center justify-center px-4 py-5 text-center text-[#6f343b]">
-                  <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{photoFile ? "重新选择" : "点击上传"}</span>
-                  <span className="mt-2 text-sm font-medium text-[#8d6368]">{photoFile ? photoFile.name : "选择本地图片添加到相册。"}</span>
+          {showFileInput ? (
+            <div>
+              <p className="mb-2 text-[1.05rem] font-black sm:text-[1.15rem]">照片文件{requireFile ? "" : "（可选）"}</p>
+              <label className="block cursor-pointer" htmlFor={uploadId}>
+                <input
+                  accept="image/*"
+                  aria-label="上传照片文件"
+                  className="sr-only"
+                  id={uploadId}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setPhotoFile(file);
+                    if (file && !photoTitle.trim()) {
+                      setPhotoTitle(fileNameToTitle(file.name));
+                    }
+                  }}
+                  type="file"
+                />
+                <div className="relative min-h-40 overflow-hidden rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] transition hover:-translate-y-0.5 hover:bg-white">
+                  {photoPreviewUrl ? (
+                    <img alt="照片本地预览" className="absolute inset-0 h-full w-full object-cover" src={photoPreviewUrl} />
+                  ) : (
+                    <img alt="照片预览占位" className="absolute inset-0 h-full w-full object-cover opacity-55" src="/album-cover-placeholder.jpeg" />
+                  )}
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.18)_0%,rgba(255,253,247,0.74)_68%,rgba(255,253,247,0.96)_100%)]" />
+                  <div className="relative flex min-h-40 flex-col items-center justify-center px-4 py-5 text-center text-[#6f343b]">
+                    <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{photoFile ? "重新选择" : "点击上传"}</span>
+                    <span className="mt-2 text-sm font-medium text-[#8d6368]">{photoFile ? photoFile.name : "选择本地图片添加到相册。"}</span>
+                  </div>
                 </div>
-              </div>
-            </label>
-          </div>
+              </label>
+            </div>
+          ) : null}
         </div>
 
         {submitError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{submitError}</p> : null}
@@ -156,7 +174,7 @@ export function AlbumPhotoUploadDialog({ onClose, onSubmit, submitErrorMessage }
             disabled={isSubmitting}
             type="submit"
           >
-            {isSubmitting ? "上传中" : "上传照片"}
+            {isSubmitting ? "保存中" : submitLabel}
           </button>
           <button
             className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] sm:text-[1.25rem]"
