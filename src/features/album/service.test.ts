@@ -1,13 +1,32 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { albumCollections } from "@/data/album";
 import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
-import { getAlbumById, listAlbums } from "./service";
+import { createAlbumPhoto, getAlbumById, listAlbums } from "./service";
 
 describe("album service", () => {
   const fallbackAlbum = albumCollections[0]!;
 
   beforeEach(async () => {
+    vi.useRealTimers();
+    process.env.TZ = "America/Los_Angeles";
     await resetStoredAlbums();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    process.env.TZ = "America/Los_Angeles";
+  });
+
+  it("uses local clock hours and minutes for uploaded photo time", async () => {
+    vi.setSystemTime(new Date(2026, 4, 28, 10, 5));
+
+    const result = await createAlbumPhoto(fallbackAlbum.id, {
+      title: "本地时间照片",
+      note: "小时和分钟应跟随本地时间",
+      imageUrl: "/uploads/albums/local-time.png",
+    });
+
+    expect(result.photo.uploadedAt).toBe("2026-05-28 / 10:05");
   });
 
   it("uses a stored album to override fallback album content without duplicating the card", async () => {

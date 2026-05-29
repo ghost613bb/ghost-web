@@ -35,7 +35,9 @@ function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
 }
 
 function formatUploadedAt(date: Date) {
-  return `${date.toISOString().slice(0, 10)} / ${date.toISOString().slice(11, 16)}`;
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} / ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function buildStoredAlbumPhotoId(albumId: string, index: number) {
