@@ -128,4 +128,10 @@ describe("AlbumPhotoDetailPageView", () => {
 
     expect(screen.getByLabelText("照片备注内容")).toHaveClass("h-[180px]", "overflow-y-auto");
   });
+
+  it("centers the previous and next navigation buttons inside their container", () => {
+    render(<AlbumPhotoDetailPageView album={album} nextPhotoId="photo-002" photo={photo} previousPhotoId={null} />);
+
+    expect(screen.getByLabelText("照片翻页导航")).toHaveClass("justify-center");
+  });
 });

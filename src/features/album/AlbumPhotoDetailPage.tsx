@@ -143,7 +143,7 @@ export function AlbumPhotoDetailPageView({ album, nextPhotoId, photo, previousPh
                 </button>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3 border-t border-[#efe4d7] pt-5">
+              <div aria-label="照片翻页导航" className="mt-6 flex flex-wrap justify-center gap-3 border-t border-[#efe4d7] pt-5">
                 <PhotoNavigationButton albumId={album.id} direction="previous" photoId={previousPhotoId} />
                 <PhotoNavigationButton albumId={album.id} direction="next" photoId={nextPhotoId} />
               </div>
