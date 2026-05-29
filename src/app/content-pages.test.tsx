@@ -89,7 +89,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto");
     expect(screen.getAllByRole("article")).toHaveLength(7);
     expect(screen.getAllByText("更多")).toHaveLength(7);
-    expect(screen.getByText("照片22个")).toBeInTheDocument();
+    expect(screen.getByText("照片7个")).toBeInTheDocument();
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
     expect(screen.getByText("荷注：小妞呀，图片，新收进来的封面占位练习。")).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("min-h-[288px]", "sm:min-h-[304px]", "p-3");
@@ -105,7 +105,7 @@ describe("content module pages", () => {
     expect(firstAlbumCover.querySelector("img")).not.toBeNull();
     expect(firstAlbumCover.querySelector("span")).toBeNull();
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" })[0]).toHaveClass("text-[1.2rem]");
-    expect(screen.getByText("照片22个")).toHaveClass("text-[11px]");
+    expect(screen.getByText("照片7个")).toHaveClass("text-[11px]");
     expect(screen.getAllByRole("button", { name: /更多/ })[0]).toHaveClass("px-2", "py-1", "gap-1");
     expect(screen.getAllByText("更多")[0]).toHaveClass("sr-only");
 
@@ -198,7 +198,7 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("article")).toHaveLength(8);
     expect(screen.getByRole("heading", { level: 2, name: "夏日收藏夹" })).toBeInTheDocument();
     expect(screen.getByText("把傍晚和风景先放进这里。")).toBeInTheDocument();
-    expect(screen.getByText("照片0个")).toBeInTheDocument();
+    expect(screen.getAllByText("照片0个").length).toBeGreaterThan(0);
     expect(screen.getByText("创建日期： 2026-05-26")).toBeInTheDocument();
     expect(screen.getByLabelText("夏日收藏夹详情")).toHaveAttribute("href", "/album/album-created-001");
     expect(screen.queryByText("summer-cover.png")).not.toBeInTheDocument();

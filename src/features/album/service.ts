@@ -53,13 +53,21 @@ export async function getNextCreatedAlbumId(): Promise<string> {
   return `album-created-${String(nextAlbumIndex).padStart(3, "0")}`;
 }
 
+async function withActualPhotoCount(album: Album): Promise<Album> {
+  const photos = await listAlbumPhotos(album.id);
+  return {
+    ...album,
+    photoCount: photos.length,
+  };
+}
+
 export async function listAlbums(): Promise<Album[]> {
   const [storedAlbumIds, storedAlbums] = await Promise.all([getStoredAlbumIds(), listVisibleStoredAlbums()]);
   const visibleFallbackAlbums = fallbackAlbums
     .filter((album) => !storedAlbumIds.has(album.id))
     .map(normalizeFallbackAlbum);
 
-  return [...storedAlbums, ...visibleFallbackAlbums];
+  return Promise.all([...storedAlbums, ...visibleFallbackAlbums].map(withActualPhotoCount));
 }
 
 export async function getAlbumById(id: string): Promise<Album | null> {
