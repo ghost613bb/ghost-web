@@ -1,4 +1,4 @@
-import type { CreateAlbumInput, CreateAlbumPhotoInput } from "./types";
+import type { CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
 
 export function parseCreateAlbum(body: unknown): CreateAlbumInput {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
@@ -59,5 +59,26 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
     note: photo.note?.trim() || undefined,
     imageUrl: photo.imageUrl.trim(),
     imagePosition: photo.imagePosition?.trim() || undefined,
+  };
+}
+
+export function parseUpdateAlbumPhoto(body: unknown): UpdateAlbumPhotoInput {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new Error("请求体必须是对象");
+  }
+
+  const photo = body as Partial<UpdateAlbumPhotoInput>;
+
+  if (typeof photo.title !== "string" || photo.title.trim().length === 0) {
+    throw new Error("请先填写照片标题");
+  }
+
+  if (photo.note !== undefined && photo.note !== null && typeof photo.note !== "string") {
+    throw new Error("photo 参数不合法");
+  }
+
+  return {
+    title: photo.title.trim(),
+    note: photo.note?.trim() || undefined,
   };
 }

@@ -90,6 +90,98 @@ describe("/api/albums/[albumId]", () => {
     await expect(stat(storedPhotoPath)).resolves.toMatchObject({ size: 9 });
   });
 
+  it("updates a stored photo through patch json", async () => {
+    const formData = new FormData();
+    formData.set("title", "雨天小猫");
+    formData.set("note", "窗边打盹的照片");
+    formData.append("photoFile", new Blob(["photo-binary"], { type: "image/png" }), "cat-window.png");
+
+    const createResponse = await POST(
+      new Request("http://localhost/api/albums/album-001/photos", {
+        method: "POST",
+        body: formData,
+      }),
+      {
+        params: Promise.resolve({
+          albumId: "album-001",
+        }),
+      },
+    );
+    const createdPhoto = (await createResponse.json()).photo;
+
+    const { PATCH: PATCH_PHOTO } = await import("./photos/[photoId]/route");
+    const response = await PATCH_PHOTO(
+      new Request(`http://localhost/api/albums/album-001/photos/${createdPhoto.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "改名后的照片",
+          note: "更新后的备注",
+        }),
+      }),
+      {
+        params: Promise.resolve({
+          albumId: "album-001",
+          photoId: createdPhoto.id,
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.photo).toMatchObject({
+      id: createdPhoto.id,
+      title: "改名后的照片",
+      note: "更新后的备注",
+      imageUrl: createdPhoto.imageUrl,
+    });
+  });
+
+  it("deletes a stored photo through delete and returns the updated list", async () => {
+    const formData = new FormData();
+    formData.set("title", "雨天小猫");
+    formData.append("photoFile", new Blob(["photo-binary"], { type: "image/png" }), "cat-window.png");
+
+    const createResponse = await POST(
+      new Request("http://localhost/api/albums/album-001/photos", {
+        method: "POST",
+        body: formData,
+      }),
+      {
+        params: Promise.resolve({
+          albumId: "album-001",
+        }),
+      },
+    );
+    const createdPhoto = (await createResponse.json()).photo;
+
+    const { DELETE: DELETE_PHOTO } = await import("./photos/[photoId]/route");
+    const response = await DELETE_PHOTO(
+      new Request(`http://localhost/api/albums/album-001/photos/${createdPhoto.id}`, {
+        method: "DELETE",
+      }),
+      {
+        params: Promise.resolve({
+          albumId: "album-001",
+          photoId: createdPhoto.id,
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.album).toMatchObject({
+      id: "album-001",
+      photoCount: 7,
+    });
+    expect(data.photos).toHaveLength(7);
+    expect(data.photos.some((photo: { id: string }) => photo.id === createdPhoto.id)).toBe(false);
+  });
+
   it("hides a fallback album through delete", async () => {
     const response = await DELETE(
       new Request("http://localhost/api/albums/album-001", {

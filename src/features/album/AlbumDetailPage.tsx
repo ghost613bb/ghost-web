@@ -23,10 +23,14 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
   const [currentAlbum, setCurrentAlbum] = useState(album);
   const [photos, setPhotos] = useState(initialPhotos);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [editingPhoto, setEditingPhoto] = useState<AlbumPhoto | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState<AlbumPhoto | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
+  const [pendingDeletePhotoError, setPendingDeletePhotoError] = useState("");
   const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
 
   return (
     <>
@@ -94,7 +98,7 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
           </article>
 
           <section className="mt-5 rounded-[2rem] border-[2px] border-[#ece3d7] bg-[#fffdf8] px-4 py-5 shadow-[0_16px_36px_rgba(144,118,118,0.08)] sm:px-6 sm:py-6">
-            <h2 className="text-[1.6rem] font-black tracking-tight text-[#4c2b2d]">Photos ({currentAlbum.photoCount}) - Sorted by Date</h2>
+            <h2 className="text-[1.6rem] font-black tracking-tight text-[#4c2b2d]">Photos ({photos.length}) - Sorted by Date</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {photos.map((photo, index) => (
                 <article
@@ -123,10 +127,23 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
                     </Link>
                   </div>
                   <div className="mt-3 flex justify-end gap-2 text-[#4c2b2d]">
-                    <button aria-label="编辑照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
+                    <button
+                      aria-label="编辑照片"
+                      className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]"
+                      onClick={() => setEditingPhoto(photo)}
+                      type="button"
+                    >
                       <Pencil aria-hidden="true" className="h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                     </button>
-                    <button aria-label="删除照片" className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]" type="button">
+                    <button
+                      aria-label="删除照片"
+                      className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]"
+                      onClick={() => {
+                        setPendingDeletePhotoError("");
+                        setDeletingPhoto(photo);
+                      }}
+                      type="button"
+                    >
                       <Trash2 aria-hidden="true" className="h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                     </button>
                   </div>
@@ -141,6 +158,10 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
         <AlbumPhotoUploadDialog
           onClose={() => setIsUploadDialogOpen(false)}
           onSubmit={async ({ title, note, photoFile }) => {
+            if (!photoFile) {
+              throw new Error("请先选择照片");
+            }
+
             const formData = new FormData();
             formData.set("title", title);
             formData.set("note", note);
@@ -166,6 +187,41 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
             setIsUploadDialogOpen(false);
           }}
           submitErrorMessage="上传照片失败"
+          submitLabel="上传照片"
+          title="上传照片"
+        />
+      ) : null}
+
+      {editingPhoto ? (
+        <AlbumPhotoUploadDialog
+          initialNote={editingPhoto.note}
+          initialTitle={editingPhoto.title}
+          onClose={() => setEditingPhoto(null)}
+          onSubmit={async ({ title, note }) => {
+            const response = await fetch(`/api/albums/${currentAlbum.id}/photos/${editingPhoto.id}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ title, note }),
+            });
+            const data = (await response.json()) as {
+              photo?: AlbumPhoto;
+              error?: string;
+            };
+
+            if (!response.ok || !data.photo) {
+              throw new Error(data.error ?? "编辑照片失败");
+            }
+
+            setPhotos((currentPhotos) => currentPhotos.map((photo) => (photo.id === data.photo?.id ? data.photo : photo)));
+            setEditingPhoto(null);
+          }}
+          requireFile={false}
+          showFileInput={false}
+          submitErrorMessage="编辑照片失败"
+          submitLabel="保存修改"
+          title="编辑照片"
         />
       ) : null}
 
@@ -203,6 +259,68 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
           submitErrorMessage="编辑相册失败"
           submitLabel="保存修改"
         />
+      ) : null}
+
+      {deletingPhoto ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#6b3f49]/22 px-4 py-6 backdrop-blur-[2px]">
+          <button
+            aria-label="关闭删除照片确认弹窗"
+            className="absolute inset-0"
+            onClick={() => {
+              setPendingDeletePhotoError("");
+              setDeletingPhoto(null);
+            }}
+            type="button"
+          />
+          <div className="relative z-10 w-full max-w-[420px] rounded-[2rem] border-[3px] border-[#6f343b] bg-[#fcf8ef] px-6 py-6 text-[#6f343b] shadow-[0_24px_60px_rgba(111,52,59,0.16)]">
+            <h2 className="text-[1.7rem] font-black tracking-tight">删除照片</h2>
+            <p className="mt-3 text-sm font-semibold leading-6 text-[#7d5960]">确认删除“{deletingPhoto.title}”吗？删除后会从当前相册中移除。</p>
+            {pendingDeletePhotoError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{pendingDeletePhotoError}</p> : null}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                className="rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-2 text-[1rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isDeletingPhoto}
+                onClick={() => {
+                  setPendingDeletePhotoError("");
+                  setDeletingPhoto(null);
+                }}
+                type="button"
+              >
+                取消
+              </button>
+              <button
+                className="rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-5 py-2 text-[1rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isDeletingPhoto}
+                onClick={async () => {
+                  setPendingDeletePhotoError("");
+                  setIsDeletingPhoto(true);
+
+                  try {
+                    const response = await fetch(`/api/albums/${currentAlbum.id}/photos/${deletingPhoto.id}`, {
+                      method: "DELETE",
+                    });
+                    const data = (await response.json()) as { album?: Album; photos?: AlbumPhoto[]; error?: string };
+
+                    if (!response.ok || !data.album || !data.photos) {
+                      throw new Error(data.error ?? "删除照片失败");
+                    }
+
+                    setCurrentAlbum(data.album);
+                    setPhotos(data.photos);
+                    setDeletingPhoto(null);
+                  } catch (error) {
+                    setPendingDeletePhotoError(error instanceof Error ? error.message : "删除照片失败");
+                  } finally {
+                    setIsDeletingPhoto(false);
+                  }
+                }}
+                type="button"
+              >
+                {isDeletingPhoto ? "删除中" : "确认删除照片"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {isDeleteDialogOpen ? (

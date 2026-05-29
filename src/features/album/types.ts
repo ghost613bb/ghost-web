@@ -25,3 +25,8 @@ export type CreateAlbumPhotoInput = {
   note?: string;
   title?: string;
 };
+
+export type UpdateAlbumPhotoInput = {
+  note?: string;
+  title: string;
+};
