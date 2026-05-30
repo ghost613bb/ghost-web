@@ -372,13 +372,15 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
+    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "2xl:columns-5");
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].description)).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
     expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("article")[0]).toHaveClass("mb-4", "break-inside-avoid");
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
-    expect(thoughtImage.parentElement).toHaveClass("mb-3", "h-32", "overflow-hidden", "rounded-[1rem]");
+    expect(thoughtImage.parentElement).toHaveClass("mb-3", "aspect-[4/5]", "overflow-hidden", "rounded-[1rem]");
     expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
     expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-white", "shadow-[0_12px_24px_rgba(112,84,84,0.12)]");
   });
