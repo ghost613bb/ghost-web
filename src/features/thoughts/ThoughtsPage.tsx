@@ -129,6 +129,14 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
           </label>
         </div>
 
+        <Link
+          aria-label="新建碎碎念"
+          className="fixed bottom-6 right-6 z-30 inline-flex items-center rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-5 py-3 text-sm font-black text-[#6f343b] shadow-[0_14px_28px_rgba(112,84,84,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f7c9d0] sm:px-6 sm:text-base"
+          href="/thoughts/new"
+        >
+          ＋ 新建碎碎念
+        </Link>
+
         {filteredThoughts.length > 0 ? (
           <section className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-5">
             {filteredThoughts.map((thought, index) => (

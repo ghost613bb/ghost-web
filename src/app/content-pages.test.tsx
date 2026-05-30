@@ -9,6 +9,7 @@ import CoffeePage from "./coffee/page";
 import MessagePage from "./message/page";
 import PlaylistsPage from "./playlists/page";
 import ThoughtsPage from "./thoughts/page";
+import NewThoughtPage from "./thoughts/new/page";
 import TodoPage from "./todo/page";
 import { thoughts } from "@/data/thoughts";
 import { resetDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
@@ -371,6 +372,8 @@ describe("content module pages", () => {
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]");
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveAttribute("href", "/thoughts/new");
+    expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "rounded-full");
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
     expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "xl:columns-5");
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
@@ -431,6 +434,12 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: "碎碎念（试玩模式）" })).toBeInTheDocument();
     expect(screen.getByText("这是碎碎念模块的试玩版页面。")).toBeInTheDocument();
     expect(screen.getByText("你可以先体验基础编辑交互，但这里不会展示我的真实内容。")).toBeInTheDocument();
+  });
+
+  it("renders the new thought placeholder page", () => {
+    render(<NewThoughtPage />);
+
+    expect(screen.getByText("新建碎碎念")).toBeInTheDocument();
   });
 
   it("renders the playlists page heading", async () => {
