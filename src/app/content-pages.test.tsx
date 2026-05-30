@@ -372,7 +372,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
-    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "2xl:columns-5");
+    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "xl:columns-5");
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].description)).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
