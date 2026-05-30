@@ -9,6 +9,7 @@ import CoffeePage from "./coffee/page";
 import MessagePage from "./message/page";
 import PlaylistsPage from "./playlists/page";
 import ThoughtsPage from "./thoughts/page";
+import ThoughtDetailPage from "./thoughts/[slug]/page";
 import NewThoughtPage from "./thoughts/new/page";
 import TodoPage from "./todo/page";
 import { thoughts } from "@/data/thoughts";
@@ -436,6 +437,23 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: "碎碎念（试玩模式）" })).toBeInTheDocument();
     expect(screen.getByText("这是碎碎念模块的试玩版页面。")).toBeInTheDocument();
     expect(screen.getByText("你可以先体验基础编辑交互，但这里不会展示我的真实内容。")).toBeInTheDocument();
+  });
+
+  it("renders the thought detail page from a slug", async () => {
+    render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
+
+    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
+    expect(screen.getByRole("heading", { level: 1, name: thoughts[0].title })).toBeInTheDocument();
+    expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
+  });
+
+  it("renders the thoughts detail demo page in demo mode", async () => {
+    await updateDisplayMode("thoughts", "demo");
+
+    render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "碎碎念（试玩模式）" })).toBeInTheDocument();
+    expect(screen.getByText("这是碎碎念模块的试玩版页面。")).toBeInTheDocument();
   });
 
   it("renders the new thought placeholder page", () => {

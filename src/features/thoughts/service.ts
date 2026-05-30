@@ -16,6 +16,10 @@ export async function getLatestThought(): Promise<Thought | null> {
   return (await listThoughts())[0] ?? null;
 }
 
+export async function getThoughtBySlug(slug: string): Promise<Thought | null> {
+  return (await listThoughts()).find((thought) => thought.slug === slug) ?? null;
+}
+
 export async function createThought(thought: Thought): Promise<Thought> {
   await upsertStoredThought(thought);
   return thought;

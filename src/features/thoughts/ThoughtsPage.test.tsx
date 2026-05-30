@@ -51,4 +51,10 @@ describe("ThoughtsPageView", () => {
       expect(highlight).toHaveClass("rounded-[0.35rem]", "bg-[#ffe06d]", "text-stone-950");
     });
   });
+
+  it("links each thought card to its detail page", () => {
+    render(<ThoughtsPageView initialThoughts={[taggedThought]} />);
+
+    expect(screen.getByRole("link", { name: /有标签的碎碎念/ })).toHaveAttribute("href", "/thoughts/thought-with-tags");
+  });
 });

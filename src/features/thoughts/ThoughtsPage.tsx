@@ -144,19 +144,21 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                 className="mb-4 break-inside-avoid overflow-hidden rounded-[1.45rem] border-[2px] border-[#e8d4d1] bg-white p-2.5 shadow-[0_12px_24px_rgba(112,84,84,0.12)] transition hover:-translate-y-1 hover:shadow-[0_16px_30px_rgba(112,84,84,0.16)]"
                 key={thought.id}
               >
-                <div className={`mb-3 flex ${thoughtImageRatioClass(index)} items-center justify-center overflow-hidden rounded-[1rem] bg-[radial-gradient(circle_at_25%_20%,#fff8f4_0,#fff8f4_26%,transparent_27%),linear-gradient(135deg,#f8dfe1,#f7efe5)] text-4xl`}>
-                  <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
-                </div>
-                <div className="px-1 pb-1">
-                  <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
-                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thought.body, trimmedQuery)}</p>
-                  <div className="mt-3 flex items-center justify-between gap-2 text-sm font-bold text-stone-600">
-                    <p>{formatThoughtDate(thought.createdAt)}</p>
-                    <span className="rounded-full bg-[#f7c9d0] px-2.5 py-1 text-xs font-black text-[#6f343b] shadow-[0_4px_10px_rgba(112,84,84,0.12)]">
-                      {renderHighlightedText(primaryTag(thought), trimmedQuery)}
-                    </span>
+                <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#e39aa8]" href={`/thoughts/${thought.slug}`}>
+                  <div className={`mb-3 flex ${thoughtImageRatioClass(index)} items-center justify-center overflow-hidden rounded-[1rem] bg-[radial-gradient(circle_at_25%_20%,#fff8f4_0,#fff8f4_26%,transparent_27%),linear-gradient(135deg,#f8dfe1,#f7efe5)] text-4xl`}>
+                    <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
                   </div>
-                </div>
+                  <div className="px-1 pb-1">
+                    <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thought.body, trimmedQuery)}</p>
+                    <div className="mt-3 flex items-center justify-between gap-2 text-sm font-bold text-stone-600">
+                      <p>{formatThoughtDate(thought.createdAt)}</p>
+                      <span className="rounded-full bg-[#f7c9d0] px-2.5 py-1 text-xs font-black text-[#6f343b] shadow-[0_4px_10px_rgba(112,84,84,0.12)]">
+                        {renderHighlightedText(primaryTag(thought), trimmedQuery)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               </article>
             ))}
           </section>

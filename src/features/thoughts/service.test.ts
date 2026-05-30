@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { thoughts } from "@/data/thoughts";
 import { resetStoredThoughts, upsertStoredThought } from "./repository";
-import { createThought, getLatestThought, listThoughts } from "./service";
+import { createThought, getLatestThought, getThoughtBySlug, listThoughts } from "./service";
 
 describe("thoughts service", () => {
   beforeEach(async () => {
@@ -64,5 +64,39 @@ describe("thoughts service", () => {
         sortOrder: 2,
       },
     ]);
+  });
+
+  it("gets a stored thought by slug", async () => {
+    await upsertStoredThought({
+      id: "thought-db-003",
+      title: "详情页里的碎碎念",
+      slug: "detail-thought",
+      body: "详情页应该能拿到完整正文。",
+      tags: ["详情页"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-27",
+      sortOrder: 3,
+    });
+
+    await expect(getThoughtBySlug("detail-thought")).resolves.toEqual({
+      id: "thought-db-003",
+      title: "详情页里的碎碎念",
+      slug: "detail-thought",
+      body: "详情页应该能拿到完整正文。",
+      tags: ["详情页"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-27",
+      sortOrder: 3,
+    });
+  });
+
+  it("falls back to local thoughts when getting a thought by slug", async () => {
+    await expect(getThoughtBySlug("glowing-town")).resolves.toEqual(thoughts[0]);
+  });
+
+  it("returns null when no thought matches the slug", async () => {
+    await expect(getThoughtBySlug("missing-thought")).resolves.toBeNull();
   });
 });
