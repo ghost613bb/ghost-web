@@ -142,9 +142,12 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                 <div className="px-1 pb-1">
                   <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
                   <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thought.body, trimmedQuery)}</p>
-                  <p className="mt-3 text-sm font-bold text-stone-600">
-                    {formatThoughtDate(thought.createdAt)} · {renderHighlightedText(primaryTag(thought), trimmedQuery)}
-                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-2 text-sm font-bold text-stone-600">
+                    <p>{formatThoughtDate(thought.createdAt)}</p>
+                    <span className="rounded-full bg-[#f7c9d0] px-2.5 py-1 text-xs font-black text-[#6f343b] shadow-[0_4px_10px_rgba(112,84,84,0.12)]">
+                      {renderHighlightedText(primaryTag(thought), trimmedQuery)}
+                    </span>
+                  </div>
                 </div>
               </article>
             ))}

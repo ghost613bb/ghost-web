@@ -380,6 +380,10 @@ describe("content module pages", () => {
     expect(screen.queryByText("📎")).not.toBeInTheDocument();
     expect(screen.queryByText("🌼")).not.toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("mb-4", "break-inside-avoid");
+    const firstThoughtTag = screen.getAllByRole("article")[0].querySelector("span") as HTMLElement;
+    expect(firstThoughtTag).toHaveTextContent("网站");
+    expect(firstThoughtTag).toHaveClass("rounded-full", "bg-[#f7c9d0]", "px-2.5", "py-1");
+    expect(firstThoughtTag.parentElement).toHaveClass("flex", "items-center", "justify-between");
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
     expect(thoughtImage.parentElement).toHaveClass("mb-3", "aspect-[4/5]", "overflow-hidden", "rounded-[1rem]");

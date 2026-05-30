@@ -31,7 +31,8 @@ describe("ThoughtsPageView", () => {
     render(<ThoughtsPageView initialThoughts={[thoughtWithoutTags, taggedThought]} />);
 
     expect(screen.getByRole("heading", { level: 2, name: "没有标签的碎碎念" })).toBeInTheDocument();
-    expect(screen.getByText("2026.05.29 · 日常")).toBeInTheDocument();
+    expect(screen.getByText("2026.05.29")).toBeInTheDocument();
+    expect(screen.getByText("日常")).toHaveClass("rounded-full", "bg-[#f7c9d0]");
 
     fireEvent.click(screen.getByRole("button", { name: "有标签" }));
 
