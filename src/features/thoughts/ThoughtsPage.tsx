@@ -112,7 +112,7 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                 <div className="px-1 pb-1">
                   <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{thought.title}</h2>
                   {thought.description ? <p className="mt-1 text-sm font-semibold leading-6 text-stone-700">{thought.description}</p> : null}
-                  <p className="mt-1 line-clamp-3 text-sm leading-6 text-stone-600">{thought.body}</p>
+                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{thought.body}</p>
                   <p className="mt-3 text-sm font-bold text-stone-600">
                     {formatThoughtDate(thought.createdAt)} · {primaryTag(thought)}
                   </p>

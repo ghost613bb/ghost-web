@@ -379,6 +379,7 @@ describe("content module pages", () => {
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
     expect(thoughtImage.parentElement).toHaveClass("mb-3", "h-32", "overflow-hidden", "rounded-[1rem]");
+    expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
     expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-white", "shadow-[0_12px_24px_rgba(112,84,84,0.12)]");
   });
 
