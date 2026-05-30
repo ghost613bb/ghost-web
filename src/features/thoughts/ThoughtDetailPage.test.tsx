@@ -19,12 +19,13 @@ describe("ThoughtDetailPageView", () => {
   it("renders the thought detail as a cream editor-style page", () => {
     render(<ThoughtDetailPageView thought={thought} />);
 
-    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
+    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]", "py-3");
+    expect(screen.getByTestId("thought-detail-frame")).toHaveClass("lg:pl-[5.6rem]", "max-h-[calc(100dvh-1.5rem)]");
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByRole("heading", { level: 1, name: "关于春天的一些小事" })).toBeInTheDocument();
     expect(screen.getByText("2026.05.30")).toBeInTheDocument();
     expect(screen.getByText("春天")).toHaveClass("rounded-full", "bg-[#f8cfd5]");
-    expect(screen.getByLabelText("碎碎念正文纸张")).toHaveClass("bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
+    expect(screen.getByLabelText("碎碎念正文纸张")).toHaveClass("min-h-[560px]", "bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
     expect(screen.getByText("每天早上给开窗的时间，心情都会变好一点点。")).toBeInTheDocument();
     expect(screen.getByText("今日碎片")).toHaveClass("text-[#d97891]");
     expect(screen.getByText("喝到了好喝的拿铁 ☕")).toBeInTheDocument();
