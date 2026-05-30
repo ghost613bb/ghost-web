@@ -442,8 +442,8 @@ describe("content module pages", () => {
   it("renders the thought detail page from a slug", async () => {
     render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
 
-    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
-    expect(screen.getByRole("heading", { level: 1, name: thoughts[0].title })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回" })).toHaveAttribute("href", "/thoughts");
+    expect(screen.queryByRole("heading", { level: 1, name: thoughts[0].title })).not.toBeInTheDocument();
     expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
   });
 

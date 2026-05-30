@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Thought } from "@/data/thoughts";
@@ -73,16 +74,10 @@ export function ThoughtDetailPageView({ thought }: ThoughtDetailPageViewProps) {
           <div className="rounded-[1.8rem] border border-[#eadccf] bg-[#fffdf8] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] sm:p-4">
             <header className="mb-2 flex flex-col gap-2 border-b border-[#efe4d8] pb-2 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-2">
-                <Link aria-label="返回碎碎念" className="inline-flex items-center rounded-full px-2 py-1 text-sm font-black text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
-                  ‹ 返回碎碎念
+                <Link aria-label="返回" className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm font-black text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
+                  <ArrowLeft aria-hidden="true" className="h-4 w-4 stroke-[2.2]" data-testid="thought-detail-back-icon" />
+                  返回
                 </Link>
-                <span aria-hidden="true" className="text-[#f3afbd]">
-                  ♥
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs font-black text-[#7d6662]">
-                <span className="rounded-full border border-[#eaded4] bg-white px-3 py-1.5">已自动保存</span>
-                <span className="rounded-full border border-[#eaded4] bg-white px-3 py-1.5">最后写入：{formatThoughtDate(thought.createdAt)}</span>
               </div>
             </header>
 
@@ -96,12 +91,7 @@ export function ThoughtDetailPageView({ thought }: ThoughtDetailPageViewProps) {
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_270px]">
               <article aria-label="碎碎念正文纸张" className="relative min-h-[605px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6">
-                <div aria-hidden="true" className="absolute right-5 bottom-5 h-18 w-18 rounded-full border-2 border-[#f4c6cf] bg-[#fff8f5] opacity-80" />
-                <div aria-hidden="true" className="absolute right-9 bottom-15 text-2xl text-[#f0adbd]">
-                  ♡
-                </div>
                 <div className="relative max-w-[780px] space-y-2">
-                  <h1 className="text-[1.65rem] font-black leading-tight tracking-[0.02em] text-[#2f2926] sm:text-[2.05rem]"><span aria-hidden="true">🌸 </span>{thought.title}</h1>
                   <div className="flex flex-wrap items-center gap-2 pb-2 text-sm font-black text-[#9a7f74]">
                     <span>{formatThoughtDate(thought.createdAt)}</span>
                     {tags.map((tag) => (
