@@ -131,10 +131,10 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
 
         <Link
           aria-label="新建碎碎念"
-          className="fixed bottom-6 right-6 z-30 inline-flex items-center rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-5 py-3 text-sm font-black text-[#6f343b] shadow-[0_14px_28px_rgba(112,84,84,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f7c9d0] sm:px-6 sm:text-base"
+          className="fixed bottom-6 right-6 z-30 inline-flex h-15 w-15 items-center justify-center rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] text-3xl font-black leading-none text-[#6f343b] shadow-[0_14px_28px_rgba(112,84,84,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f7c9d0]"
           href="/thoughts/new"
         >
-          ＋ 新建碎碎念
+          +
         </Link>
 
         {filteredThoughts.length > 0 ? (

@@ -373,7 +373,9 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveAttribute("href", "/thoughts/new");
-    expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "rounded-full");
+    expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveTextContent("+");
+    expect(screen.getByRole("link", { name: "新建碎碎念" })).not.toHaveTextContent("新建碎碎念");
+    expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "h-15", "w-15", "rounded-full");
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
     expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "xl:columns-5");
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
