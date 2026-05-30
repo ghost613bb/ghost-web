@@ -24,8 +24,17 @@ describe("local content data", () => {
   });
 
   it("defines thoughts for public, interview-hidden, and masked visibility", () => {
-    expect(thoughts.map((thought) => thought.slug)).toEqual(["glowing-town", "interview-mode", "masked-note"]);
-    expect(thoughts.map((thought) => thought.visibility)).toEqual(["public", "interview_hidden", "masked"]);
+    expect(thoughts).toHaveLength(7);
+    expect(thoughts.map((thought) => thought.slug)).toEqual([
+      "glowing-town",
+      "interview-mode",
+      "masked-note",
+      "glowing-town-copy-1",
+      "glowing-town-copy-2",
+      "glowing-town-copy-3",
+      "glowing-town-copy-4",
+    ]);
+    expect(thoughts.map((thought) => thought.visibility)).toEqual(["public", "interview_hidden", "masked", "public", "public", "public", "public"]);
   });
 
   it("defines album photo records and adjacent navigation helpers", () => {

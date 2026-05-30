@@ -14,7 +14,7 @@ import { thoughts } from "@/data/thoughts";
 import { resetDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
 import { resetStoredAlbums, upsertStoredAlbum, upsertStoredAlbumPhoto } from "@/features/album/repository";
 import * as albumService from "@/features/album/service";
-import { resetStoredThoughts, upsertStoredThought } from "@/features/thoughts/repository";
+import { resetStoredThoughts } from "@/features/thoughts/repository";
 
 vi.mock("next/navigation", async () => {
   const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
@@ -362,35 +362,59 @@ describe("content module pages", () => {
     expect(screen.getByText("这是个人相册模块的基础演示内容。")).toBeInTheDocument();
   });
 
-  it("renders the latest stored thought in real mode", async () => {
-    await upsertStoredThought({
-      id: "thought-db-001",
-      title: "数据库里的碎碎念",
-      slug: "thought-in-db",
-      description: "先用一条真实数据打通页面读取。",
-      body: "这条内容来自数据库，不再直接依赖本地数组。",
-      tags: ["数据库", "最小闭环"],
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-05-25",
-      sortOrder: 1,
-    });
-
+  it("renders the thoughts display page with album-style header and fallback cards", async () => {
     render(await ThoughtsPage());
 
+    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
     expect(screen.getByRole("heading", { level: 1, name: "碎碎念" })).toBeInTheDocument();
-    expect(screen.getByText("数据库里的碎碎念")).toBeInTheDocument();
-    expect(screen.getByText("先用一条真实数据打通页面读取。")).toBeInTheDocument();
-    expect(screen.getByText("这条内容来自数据库，不再直接依赖本地数组。")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]");
+    expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
+    expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
+    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "xl:columns-5");
+    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
+    expect(screen.getAllByText(thoughts[0].description)).toHaveLength(5);
+    expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
+    expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("article")[0]).toHaveClass("mb-4", "break-inside-avoid");
+    const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
+    expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
+    expect(thoughtImage.parentElement).toHaveClass("mb-3", "aspect-[4/5]", "overflow-hidden", "rounded-[1rem]");
+    expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
+    expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-white", "shadow-[0_12px_24px_rgba(112,84,84,0.12)]");
   });
 
-  it("falls back to local thought data when storage is empty in real mode", async () => {
+  it("filters fallback thoughts by tag", async () => {
     render(await ThoughtsPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "碎碎念" })).toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].title)).toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].description)).toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[2].title })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "边界感" }));
+
+    expect(screen.queryByRole("heading", { level: 2, name: thoughts[0].title })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: thoughts[2].title })).not.toBeInTheDocument();
+  });
+
+  it("searches fallback thoughts and shows an empty state when nothing matches", async () => {
+    render(await ThoughtsPage());
+
+    const searchbox = screen.getByRole("searchbox", { name: "搜索碎碎念" });
+
+    fireEvent.change(searchbox, { target: { value: "模板站" } });
+
+    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
+    expect(screen.queryByRole("heading", { level: 2, name: thoughts[1].title })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: thoughts[2].title })).not.toBeInTheDocument();
+
+    fireEvent.change(searchbox, { target: { value: "没有这条碎碎念" } });
+
+    expect(screen.queryByRole("heading", { level: 2, name: thoughts[0].title })).not.toBeInTheDocument();
+    expect(screen.getByText("没有找到相关碎碎念")).toBeInTheDocument();
+    expect(screen.getByText("换个关键词，或者先回到全部分类看看。")).toBeInTheDocument();
   });
 
   it("renders the thoughts demo page in demo mode", async () => {

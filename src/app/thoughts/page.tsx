@@ -1,5 +1,6 @@
 import { getDisplayMode } from "@/features/module-display-mode/service";
-import { getLatestThought } from "@/features/thoughts/service";
+import { ThoughtsPageView } from "@/features/thoughts/ThoughtsPage";
+import { listThoughts } from "@/features/thoughts/service";
 
 export default async function ThoughtsPage() {
   if ((await getDisplayMode("thoughts")) === "demo") {
@@ -12,18 +13,5 @@ export default async function ThoughtsPage() {
     );
   }
 
-  const latestThought = await getLatestThought();
-
-  return (
-    <section className="space-y-3">
-      <h1>碎碎念</h1>
-      {latestThought ? (
-        <article className="space-y-2">
-          <h2 className="text-xl font-medium">{latestThought.title}</h2>
-          {latestThought.description ? <p>{latestThought.description}</p> : null}
-          <p>{latestThought.body}</p>
-        </article>
-      ) : null}
-    </section>
-  );
+  return <ThoughtsPageView initialThoughts={await listThoughts()} />;
 }
