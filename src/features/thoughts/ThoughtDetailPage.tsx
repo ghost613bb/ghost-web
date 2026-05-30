@@ -95,7 +95,7 @@ export function ThoughtDetailPageView({ thought }: ThoughtDetailPageViewProps) {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_270px]">
-              <article aria-label="碎碎念正文纸张" className="relative min-h-[585px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6">
+              <article aria-label="碎碎念正文纸张" className="relative min-h-[605px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6">
                 <div aria-hidden="true" className="absolute right-5 bottom-5 h-18 w-18 rounded-full border-2 border-[#f4c6cf] bg-[#fff8f5] opacity-80" />
                 <div aria-hidden="true" className="absolute right-9 bottom-15 text-2xl text-[#f0adbd]">
                   ♡

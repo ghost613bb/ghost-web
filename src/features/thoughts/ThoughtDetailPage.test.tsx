@@ -25,7 +25,7 @@ describe("ThoughtDetailPageView", () => {
     expect(screen.getByRole("heading", { level: 1, name: "关于春天的一些小事" })).toBeInTheDocument();
     expect(screen.getByText("2026.05.30")).toBeInTheDocument();
     expect(screen.getByText("春天")).toHaveClass("rounded-full", "bg-[#f8cfd5]");
-    expect(screen.getByLabelText("碎碎念正文纸张")).toHaveClass("min-h-[585px]", "bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
+    expect(screen.getByLabelText("碎碎念正文纸张")).toHaveClass("min-h-[605px]", "bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
     expect(screen.getByText("每天早上给开窗的时间，心情都会变好一点点。")).toBeInTheDocument();
     expect(screen.getByText("今日碎片")).toHaveClass("text-[#d97891]");
     expect(screen.getByText("喝到了好喝的拿铁 ☕")).toBeInTheDocument();
