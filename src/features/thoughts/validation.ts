@@ -47,10 +47,6 @@ export function parseCreateThought(body: unknown): Thought {
     throw new Error("thought 参数不合法");
   }
 
-  if (thought.description !== undefined && thought.description !== null && typeof thought.description !== "string") {
-    throw new Error("thought 参数不合法");
-  }
-
   if (thought.createdAt !== undefined && thought.createdAt !== null && typeof thought.createdAt !== "string") {
     throw new Error("thought 参数不合法");
   }
@@ -63,7 +59,6 @@ export function parseCreateThought(body: unknown): Thought {
     id: thought.id,
     title: thought.title,
     slug: thought.slug,
-    description: thought.description,
     body: thought.body,
     tags: thought.tags,
     visibility: thought.visibility,

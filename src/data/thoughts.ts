@@ -1,6 +1,6 @@
 import type { BaseContent } from "@/features/content-modules/types";
 
-export type Thought = BaseContent & {
+export type Thought = Omit<BaseContent, "description"> & {
   slug: string;
   body: string;
 };
@@ -10,7 +10,6 @@ export const thoughts: Thought[] = [
     id: "thought-001",
     title: "先把网站做成一个会发光的小镇",
     slug: "glowing-town",
-    description: "比起一上来做完整后台，我更想先让首页有自己的气质。",
     body: "个人网站的第一步，是先让访客知道这里和模板站不一样。后台、数据库和复杂权限都很重要，但第一眼的记忆点会决定我有没有动力继续把它养大。",
     tags: ["网站", "首页", "设计"],
     visibility: "public",
@@ -22,7 +21,6 @@ export const thoughts: Thought[] = [
     id: "thought-002",
     title: "面试模式存在的原因",
     slug: "interview-mode",
-    description: "表达和边界感可以同时存在。",
     body: "有些内容不是不能公开，而是不适合在所有场景公开。面试模式不是把自己藏起来，而是给不同访问场景一个更舒服的边界。",
     tags: ["边界感", "面试模式"],
     visibility: "interview_hidden",
@@ -34,7 +32,6 @@ export const thoughts: Thought[] = [
     id: "thought-003",
     title: "一条只露出标题的想法",
     slug: "masked-note",
-    description: "这个条目用于验证 masked 内容的展示方式。",
     body: "这段正文不会在公开列表里直接展示。",
     tags: ["masked"],
     visibility: "masked",
@@ -46,7 +43,6 @@ export const thoughts: Thought[] = [
     id: "thought-004",
     title: "先把网站做成一个会发光的小镇",
     slug: "glowing-town-copy-1",
-    description: "比起一上来做完整后台，我更想先让首页有自己的气质。",
     body: "个人网站的第一步，是先让访客知道这里和模板站不一样。后台、数据库和复杂权限都很重要，但第一眼的记忆点会决定我有没有动力继续把它养大。",
     tags: ["网站", "首页", "设计"],
     visibility: "public",
@@ -58,7 +54,6 @@ export const thoughts: Thought[] = [
     id: "thought-005",
     title: "先把网站做成一个会发光的小镇",
     slug: "glowing-town-copy-2",
-    description: "比起一上来做完整后台，我更想先让首页有自己的气质。",
     body: "个人网站的第一步，是先让访客知道这里和模板站不一样。后台、数据库和复杂权限都很重要，但第一眼的记忆点会决定我有没有动力继续把它养大。",
     tags: ["网站", "首页", "设计"],
     visibility: "public",
@@ -70,7 +65,6 @@ export const thoughts: Thought[] = [
     id: "thought-006",
     title: "先把网站做成一个会发光的小镇",
     slug: "glowing-town-copy-3",
-    description: "比起一上来做完整后台，我更想先让首页有自己的气质。",
     body: "个人网站的第一步，是先让访客知道这里和模板站不一样。后台、数据库和复杂权限都很重要，但第一眼的记忆点会决定我有没有动力继续把它养大。",
     tags: ["网站", "首页", "设计"],
     visibility: "public",
@@ -82,7 +76,6 @@ export const thoughts: Thought[] = [
     id: "thought-007",
     title: "先把网站做成一个会发光的小镇",
     slug: "glowing-town-copy-4",
-    description: "比起一上来做完整后台，我更想先让首页有自己的气质。",
     body: "个人网站的第一步，是先让访客知道这里和模板站不一样。后台、数据库和复杂权限都很重要，但第一眼的记忆点会决定我有没有动力继续把它养大。",
     tags: ["网站", "首页", "设计"],
     visibility: "public",

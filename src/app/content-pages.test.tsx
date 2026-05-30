@@ -374,7 +374,6 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
     expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "xl:columns-5");
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
-    expect(screen.getAllByText(thoughts[0].description)).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
     expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("mb-4", "break-inside-avoid");

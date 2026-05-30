@@ -34,6 +34,7 @@ describe("local content data", () => {
       "glowing-town-copy-3",
       "glowing-town-copy-4",
     ]);
+    expect(thoughts.every((thought) => !("description" in thought))).toBe(true);
     expect(thoughts.map((thought) => thought.visibility)).toEqual(["public", "interview_hidden", "masked", "public", "public", "public", "public"]);
   });
 

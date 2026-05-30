@@ -10,7 +10,6 @@ export const thoughts = sqliteTable("thoughts", {
   id: text("id").primaryKey(), // 主键 ID
   title: text("title").notNull(), // 标题
   slug: text("slug").notNull(), // URL 友好的唯一标识
-  description: text("description"), // 简介/摘要
   body: text("body").notNull(), // 正文内容
   tags: text("tags").notNull(), // 标签（字符串形式存储）
   visibility: text("visibility", { enum: ["public", "private", "interview_hidden", "masked"] }).notNull(), // 可见性

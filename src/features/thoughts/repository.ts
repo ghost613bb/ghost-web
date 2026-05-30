@@ -8,7 +8,6 @@ type StoredThoughtRow = {
   id: string;
   title: string;
   slug: string;
-  description: string | null;
   body: string;
   tags: string;
   visibility: Thought["visibility"];
@@ -22,7 +21,6 @@ function toThought(row: StoredThoughtRow): Thought {
     id: row.id,
     title: row.title,
     slug: row.slug,
-    description: row.description ?? undefined,
     body: row.body,
     tags: JSON.parse(row.tags) as string[],
     visibility: row.visibility,
@@ -44,7 +42,6 @@ export async function upsertStoredThought(thought: Thought) {
       id: thought.id,
       title: thought.title,
       slug: thought.slug,
-      description: thought.description ?? null,
       body: thought.body,
       tags: JSON.stringify(thought.tags ?? []),
       visibility: thought.visibility,
@@ -57,7 +54,6 @@ export async function upsertStoredThought(thought: Thought) {
       set: {
         title: thought.title,
         slug: thought.slug,
-        description: thought.description ?? null,
         body: thought.body,
         tags: JSON.stringify(thought.tags ?? []),
         visibility: thought.visibility,
