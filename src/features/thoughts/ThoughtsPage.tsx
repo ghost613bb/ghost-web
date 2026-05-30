@@ -37,15 +37,49 @@ function matchesQuery(thought: Thought, normalizedQuery: string) {
   return [thought.title, thought.body, thoughtTags(thought).join(" ")].some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
+function renderHighlightedText(value: string, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return value;
+  }
+
+  const normalizedValue = value.toLowerCase();
+  const fragments = [];
+  let cursor = 0;
+  let matchIndex = normalizedValue.indexOf(normalizedQuery, cursor);
+
+  while (matchIndex !== -1) {
+    if (matchIndex > cursor) {
+      fragments.push(value.slice(cursor, matchIndex));
+    }
+
+    const matchEnd = matchIndex + normalizedQuery.length;
+    fragments.push(
+      <mark className="rounded-[0.35rem] bg-[#ffe06d] px-0.5 text-stone-950" key={`${matchIndex}-${matchEnd}`}>
+        {value.slice(matchIndex, matchEnd)}
+      </mark>,
+    );
+    cursor = matchEnd;
+    matchIndex = normalizedValue.indexOf(normalizedQuery, cursor);
+  }
+
+  if (cursor < value.length) {
+    fragments.push(value.slice(cursor));
+  }
+
+  return fragments;
+}
+
 export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
   const [activeTag, setActiveTag] = useState("全部");
   const [query, setQuery] = useState("");
+  const trimmedQuery = query.trim();
+  const normalizedQuery = trimmedQuery.toLowerCase();
   const tags = useMemo(() => ["全部", ...Array.from(new Set(initialThoughts.flatMap((thought) => thoughtTags(thought))))], [initialThoughts]);
   const filteredThoughts = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
     return initialThoughts.filter((thought) => (activeTag === "全部" || thoughtTags(thought).includes(activeTag)) && matchesQuery(thought, normalizedQuery));
-  }, [activeTag, initialThoughts, query]);
+  }, [activeTag, initialThoughts, normalizedQuery]);
   const topActionClass =
     "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
@@ -76,7 +110,7 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                 onClick={() => setActiveTag(tag)}
                 type="button"
               >
-                {tag}
+                {renderHighlightedText(tag, trimmedQuery)}
               </button>
             ))}
           </div>
@@ -106,10 +140,10 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                   <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
                 </div>
                 <div className="px-1 pb-1">
-                  <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{thought.title}</h2>
-                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{thought.body}</p>
+                  <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
+                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thought.body, trimmedQuery)}</p>
                   <p className="mt-3 text-sm font-bold text-stone-600">
-                    {formatThoughtDate(thought.createdAt)} · {primaryTag(thought)}
+                    {formatThoughtDate(thought.createdAt)} · {renderHighlightedText(primaryTag(thought), trimmedQuery)}
                   </p>
                 </div>
               </article>

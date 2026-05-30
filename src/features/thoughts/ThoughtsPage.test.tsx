@@ -38,4 +38,16 @@ describe("ThoughtsPageView", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "没有标签的碎碎念" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "有标签的碎碎念" })).toBeInTheDocument();
   });
+
+  it("highlights matching keywords in filtered thought content", () => {
+    render(<ThoughtsPageView initialThoughts={[taggedThought]} />);
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "搜索碎碎念" }), { target: { value: "标签" } });
+
+    const highlights = screen.getAllByText("标签", { selector: "mark" });
+    expect(highlights.length).toBeGreaterThan(0);
+    highlights.forEach((highlight) => {
+      expect(highlight).toHaveClass("rounded-[0.35rem]", "bg-[#ffe06d]", "text-stone-950");
+    });
+  });
 });
