@@ -110,7 +110,6 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                   {index % 3 === 0 ? "💌" : index % 3 === 1 ? "📎" : "🌼"}
                 </div>
                 <div className="px-1 pb-1">
-                  <p className="mb-1 text-xs font-black tracking-[0.18em] text-[#cf8f99]">碎碎念小札</p>
                   <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{thought.title}</h2>
                   {thought.description ? <p className="mt-1 text-sm font-semibold leading-6 text-stone-700">{thought.description}</p> : null}
                   <p className="mt-1 line-clamp-3 text-sm leading-6 text-stone-600">{thought.body}</p>

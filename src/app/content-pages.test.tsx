@@ -375,7 +375,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByText(thoughts[0].description)).toBeInTheDocument();
     expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
-    expect(screen.getAllByText("碎碎念小札")).toHaveLength(thoughts.length);
+    expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
     expect(thoughtImage.parentElement).toHaveClass("mb-3", "h-32", "overflow-hidden", "rounded-[1rem]");
