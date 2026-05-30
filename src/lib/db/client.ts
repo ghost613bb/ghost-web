@@ -5,9 +5,21 @@
 //   - 用 better-sqlite3 打开 SQLite 文件
 //   - 再交给 Drizzle 包一层，得到 db
   
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { env } from "@/lib/env";
+
+function ensureSqliteDirectory(databaseUrl: string) {
+  if (databaseUrl === ":memory:" || databaseUrl.startsWith("file:")) {
+    return;
+  }
+
+  mkdirSync(path.dirname(databaseUrl), { recursive: true });
+}
+
+ensureSqliteDirectory(env.DATABASE_URL);
 
 export const sqlite = new Database(env.DATABASE_URL);
 
