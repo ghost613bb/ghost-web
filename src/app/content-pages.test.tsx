@@ -376,6 +376,9 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
     expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
+    expect(screen.queryByText("💌")).not.toBeInTheDocument();
+    expect(screen.queryByText("📎")).not.toBeInTheDocument();
+    expect(screen.queryByText("🌼")).not.toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("mb-4", "break-inside-avoid");
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");

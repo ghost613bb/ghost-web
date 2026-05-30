@@ -105,14 +105,6 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                 <div className={`mb-3 flex ${thoughtImageRatioClass(index)} items-center justify-center overflow-hidden rounded-[1rem] bg-[radial-gradient(circle_at_25%_20%,#fff8f4_0,#fff8f4_26%,transparent_27%),linear-gradient(135deg,#f8dfe1,#f7efe5)] text-4xl`}>
                   <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
                 </div>
-                <div
-                  aria-hidden="true"
-                  className={`float-right -mt-11 mr-2 rounded-[0.55rem] border-[2px] border-white bg-[#f7c9d0] px-2 py-1 text-lg shadow-[0_5px_10px_rgba(112,84,84,0.16)] ${
-                    index % 2 === 0 ? "rotate-6" : "-rotate-6"
-                  }`}
-                >
-                  {index % 3 === 0 ? "💌" : index % 3 === 1 ? "📎" : "🌼"}
-                </div>
                 <div className="px-1 pb-1">
                   <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{thought.title}</h2>
                   <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{thought.body}</p>
