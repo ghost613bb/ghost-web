@@ -372,9 +372,9 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].description)).toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
+    expect(screen.getAllByText(thoughts[0].description)).toHaveLength(5);
+    expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
     expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
@@ -385,7 +385,7 @@ describe("content module pages", () => {
   it("filters fallback thoughts by tag", async () => {
     render(await ThoughtsPage());
 
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
     expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: thoughts[2].title })).toBeInTheDocument();
 
@@ -403,7 +403,7 @@ describe("content module pages", () => {
 
     fireEvent.change(searchbox, { target: { value: "模板站" } });
 
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
     expect(screen.queryByRole("heading", { level: 2, name: thoughts[1].title })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: thoughts[2].title })).not.toBeInTheDocument();
 
