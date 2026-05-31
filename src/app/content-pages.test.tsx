@@ -26,6 +26,33 @@ vi.mock("next/navigation", async () => {
   };
 });
 
+vi.mock("@tiptap/react", () => {
+  const chain = {
+    focus: () => chain,
+    redo: () => chain,
+    run: () => true,
+    setParagraph: () => chain,
+    toggleBlockquote: () => chain,
+    toggleBold: () => chain,
+    toggleBulletList: () => chain,
+    toggleHeading: () => chain,
+    toggleItalic: () => chain,
+    undo: () => chain,
+  };
+
+  return {
+    EditorContent: () => <div aria-label="富文本编辑区" />,
+    useEditor: () => ({
+      can: () => ({ redo: () => false, undo: () => false }),
+      chain: () => chain,
+      getHTML: () => "",
+      isActive: () => false,
+    }),
+  };
+});
+
+vi.mock("@tiptap/starter-kit", () => ({ default: {} }));
+
 type JsonResponse = {
   json: () => Promise<unknown>;
   ok: boolean;
@@ -456,10 +483,15 @@ describe("content module pages", () => {
     expect(screen.getByText("这是碎碎念模块的试玩版页面。")).toBeInTheDocument();
   });
 
-  it("renders the new thought placeholder page", () => {
+  it("renders the new thought rich text draft page", () => {
     render(<NewThoughtPage />);
 
-    expect(screen.getByText("新建碎碎念")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
+    expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
+    expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
+    expect(screen.getByLabelText("碎碎念富文本预览纸张")).toBeInTheDocument();
   });
 
   it("renders the playlists page heading", async () => {
