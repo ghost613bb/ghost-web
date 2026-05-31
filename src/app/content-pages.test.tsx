@@ -29,23 +29,27 @@ vi.mock("next/navigation", async () => {
 vi.mock("@tiptap/react", () => {
   const chain = {
     focus: () => chain,
-    redo: () => chain,
     run: () => true,
+    setColor: () => chain,
     setParagraph: () => chain,
     toggleBlockquote: () => chain,
     toggleBold: () => chain,
     toggleBulletList: () => chain,
+    toggleOrderedList: () => chain,
+    toggleTaskList: () => chain,
     toggleHeading: () => chain,
     toggleItalic: () => chain,
+    toggleStrike: () => chain,
+    toggleUnderline: () => chain,
     undo: () => chain,
+    unsetColor: () => chain,
   };
 
   return {
     EditorContent: () => <div aria-label="富文本编辑区" />,
     useEditor: () => ({
-      can: () => ({ redo: () => false, undo: () => false }),
+      can: () => ({ undo: () => false }),
       chain: () => chain,
-      getHTML: () => "",
       isActive: () => false,
     }),
     useEditorState: () => ({
@@ -59,11 +63,15 @@ vi.mock("@tiptap/react", () => {
       isH4: false,
       isH5: false,
       isItalic: false,
+      isOrderedList: false,
+      isStrike: false,
+      isTaskList: false,
+      isUnderline: false,
     }),
   };
 });
 
-vi.mock("@tiptap/starter-kit", () => ({ default: {} }));
+vi.mock("@tiptap/starter-kit", () => ({ default: { configure: () => ({}) } }));
 
 type JsonResponse = {
   json: () => Promise<unknown>;
@@ -502,8 +510,15 @@ describe("content module pages", () => {
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    ["撤销", "标题", "列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("button", { name: "无序列表" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "H1" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念富文本预览纸张")).toBeInTheDocument();
+    expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
+    expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
+    expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
   });
 
   it("renders the playlists page heading", async () => {

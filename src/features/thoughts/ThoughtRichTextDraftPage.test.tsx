@@ -1,16 +1,19 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorState } from "@tiptap/react";
 import { ThoughtRichTextDraftPage } from "./ThoughtRichTextDraftPage";
 
+const mockStarterKit = vi.hoisted(() => ({
+  configure: vi.fn((options: unknown) => ({ name: "StarterKit", options })),
+}));
+
 const mockEditor = {
   chain: vi.fn(),
   can: vi.fn(),
-  getHTML: vi.fn(),
   isActive: vi.fn(),
 };
 
-let capturedOnUpdate: ((props: { editor: { getHTML: () => string } }) => void) | undefined;
+let capturedUseEditorOptions: { extensions?: unknown[]; onUpdate?: unknown } | undefined;
 let editorState = {
   canUndo: false,
   isBlockquote: false,
@@ -21,16 +24,41 @@ let editorState = {
   isH3: false,
   isH4: false,
   isH5: false,
+  isItalic: false,
+  isOrderedList: false,
+  isStrike: false,
+  isTaskList: false,
+  isUnderline: false,
 };
 
 vi.mock("@tiptap/starter-kit", () => ({
-  default: "StarterKit",
+  default: mockStarterKit,
+}));
+
+vi.mock("@tiptap/extension-underline", () => ({
+  default: "Underline",
+}));
+
+vi.mock("@tiptap/extension-text-style", () => ({
+  TextStyle: "TextStyle",
+}));
+
+vi.mock("@tiptap/extension-color", () => ({
+  default: "Color",
+}));
+
+vi.mock("@tiptap/extension-task-list", () => ({
+  default: "TaskList",
+}));
+
+vi.mock("@tiptap/extension-task-item", () => ({
+  default: "TaskItem",
 }));
 
 vi.mock("@tiptap/react", () => ({
   EditorContent: ({ editor }: { editor: unknown }) => <div data-testid="editor-content">Editor ready: {String(Boolean(editor))}</div>,
-  useEditor: vi.fn((options: { onUpdate?: (props: { editor: { getHTML: () => string } }) => void }) => {
-    capturedOnUpdate = options.onUpdate;
+  useEditor: vi.fn((options: { extensions?: unknown[]; onUpdate?: unknown }) => {
+    capturedUseEditorOptions = options;
     return mockEditor;
   }),
   useEditorState: vi.fn(() => editorState),
@@ -39,21 +67,26 @@ vi.mock("@tiptap/react", () => ({
 function chainResult() {
   return {
     focus: vi.fn().mockReturnThis(),
+    setColor: vi.fn().mockReturnThis(),
     setParagraph: vi.fn().mockReturnThis(),
     toggleHeading: vi.fn().mockReturnThis(),
     toggleBold: vi.fn().mockReturnThis(),
     toggleItalic: vi.fn().mockReturnThis(),
+    toggleStrike: vi.fn().mockReturnThis(),
+    toggleUnderline: vi.fn().mockReturnThis(),
     toggleBulletList: vi.fn().mockReturnThis(),
+    toggleOrderedList: vi.fn().mockReturnThis(),
+    toggleTaskList: vi.fn().mockReturnThis(),
     toggleBlockquote: vi.fn().mockReturnThis(),
     undo: vi.fn().mockReturnThis(),
-    redo: vi.fn().mockReturnThis(),
+    unsetColor: vi.fn().mockReturnThis(),
     run: vi.fn(),
   };
 }
 
 describe("ThoughtRichTextDraftPage", () => {
   beforeEach(() => {
-    capturedOnUpdate = undefined;
+    capturedUseEditorOptions = undefined;
     editorState = {
       canUndo: false,
       isBlockquote: false,
@@ -65,10 +98,14 @@ describe("ThoughtRichTextDraftPage", () => {
       isH4: false,
       isH5: false,
       isItalic: false,
+      isOrderedList: false,
+      isStrike: false,
+      isTaskList: false,
+      isUnderline: false,
     };
+    mockStarterKit.configure.mockClear();
     mockEditor.chain.mockImplementation(chainResult);
-    mockEditor.can.mockReturnValue({ undo: () => editorState.canUndo, redo: () => editorState.canRedo });
-    mockEditor.getHTML.mockReturnValue("");
+    mockEditor.can.mockReturnValue({ undo: () => editorState.canUndo });
     mockEditor.isActive.mockImplementation((name: string, attrs?: { level?: number }) => {
       if (name === "heading" && attrs?.level === 1) return editorState.isH1;
       if (name === "heading" && attrs?.level === 2) return editorState.isH2;
@@ -77,13 +114,17 @@ describe("ThoughtRichTextDraftPage", () => {
       if (name === "heading" && attrs?.level === 5) return editorState.isH5;
       if (name === "bold") return editorState.isBold;
       if (name === "italic") return editorState.isItalic;
+      if (name === "strike") return editorState.isStrike;
+      if (name === "underline") return editorState.isUnderline;
       if (name === "bulletList") return editorState.isBulletList;
+      if (name === "orderedList") return editorState.isOrderedList;
+      if (name === "taskList") return editorState.isTaskList;
       if (name === "blockquote") return editorState.isBlockquote;
       return false;
     });
   });
 
-  it("renders a local rich text draft preview without save actions", () => {
+  it("renders a local rich text draft with compact toolbar controls and no save actions", () => {
     render(<ThoughtRichTextDraftPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toBeInTheDocument();
@@ -91,34 +132,32 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
 
-    ["H1", "H2", "H3", "H4", "H5", "加粗", "斜体", "无序列表", "引用", "撤销"].forEach((name) => {
+    ["撤销", "标题", "列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
+    expect(screen.queryByRole("button", { name: "无序列表" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "H1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "H5" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "段落" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "重做" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "引用" })).not.toBeInTheDocument();
 
+    expect(mockStarterKit.configure).toHaveBeenCalledWith({ underline: false });
+    expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem"]);
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念富文本预览纸张")).toBeInTheDocument();
+    expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
+    expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
+    expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
+    expect(capturedUseEditorOptions).not.toHaveProperty("onUpdate");
     expect(screen.queryByRole("button", { name: "保存" })).not.toBeInTheDocument();
-    expect(screen.getByText("开始写一点今天的小事。")).toBeInTheDocument();
   });
 
-  it("updates the local preview with the editor HTML when the editor content changes", () => {
-    const { container } = render(<ThoughtRichTextDraftPage />);
-
-    act(() => {
-      capturedOnUpdate?.({ editor: { getHTML: () => "<p>今天写一点<strong>新的</strong>小事。</p>" } });
-    });
-
-    expect(screen.getByText("新的")).toBeInTheDocument();
-    expect(container.querySelector("article strong")?.textContent).toBe("新的");
-  });
-
-  it("styles rich text nodes so toolbar actions are visible in the editor and preview", () => {
-    const { container } = render(<ThoughtRichTextDraftPage />);
+  it("styles rich text nodes so toolbar actions are visible in the editor", () => {
+    render(<ThoughtRichTextDraftPage />);
 
     const editorFrame = screen.getByTestId("thought-rich-text-editor-frame");
-    const previewFrame = screen.getByTestId("thought-rich-text-preview-frame");
 
     expect(editorFrame.className).toContain("[&_h1]:text-[1.65rem]");
     expect(editorFrame.className).toContain("[&_h2]:text-[1.35rem]");
@@ -128,41 +167,42 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).not.toContain("[&_h2]:text-[#d97891]");
     expect(editorFrame.className).not.toContain("[&_h3]:text-[#d97891]");
     expect(editorFrame.className).toContain("[&_strong]:font-black");
+    expect(editorFrame.className).toContain("[&_s]:line-through");
+    expect(editorFrame.className).toContain("[&_u]:underline");
     expect(editorFrame.className).toContain("[&_ul]:list-disc");
+    expect(editorFrame.className).toContain("[&_ol]:list-decimal");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']]:list-none");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]]:flex");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label]:mt-1");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>div]:flex-1");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:accent-[#d97891]");
     expect(editorFrame.className).toContain("[&_blockquote]:border-l-4");
-    expect(previewFrame.className).toContain("[&_h1]:text-[1.65rem]");
-    expect(previewFrame.className).toContain("[&_h2]:text-[1.35rem]");
-    expect(previewFrame.className).not.toContain("[&_h2]:text-[#d97891]");
-    expect(previewFrame.className).toContain("[&_strong]:font-black");
-    expect(previewFrame.className).toContain("[&_ul]:list-disc");
 
-    act(() => {
-      capturedOnUpdate?.({ editor: { getHTML: () => "<h2>标题</h2><ul><li><p>列表</p></li></ul><blockquote><p>引用</p></blockquote>" } });
-    });
-
-    expect(container.querySelector("article h2")?.textContent).toBe("标题");
-    expect(container.querySelector("article ul li")?.textContent).toBe("列表");
-    expect(container.querySelector("article blockquote")?.textContent).toBe("引用");
+    expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
   });
 
-  it("runs heading and bold commands and subscribes to editor state so toolbar buttons rerender", () => {
-    const h1Chain = chainResult();
-    const h5Chain = chainResult();
-    const boldChain = chainResult();
-    mockEditor.chain.mockReturnValueOnce(h1Chain).mockReturnValueOnce(h5Chain).mockReturnValueOnce(boldChain).mockImplementation(chainResult);
+  it("runs heading and color dropdown commands and subscribes to editor state so toolbar buttons rerender", () => {
+    const h3Chain = chainResult();
+    const colorChain = chainResult();
+    const defaultColorChain = chainResult();
+    mockEditor.chain.mockReturnValueOnce(h3Chain).mockReturnValueOnce(colorChain).mockReturnValueOnce(defaultColorChain).mockImplementation(chainResult);
     const { rerender } = render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "H1" }));
-    expect(h1Chain.toggleHeading).toHaveBeenCalledWith({ level: 1 });
-    expect(h1Chain.run).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "标题" }));
+    expect(screen.getByRole("menuitem", { name: "H1" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "H3" }));
+    expect(h3Chain.toggleHeading).toHaveBeenCalledWith({ level: 3 });
+    expect(h3Chain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "H5" }));
-    expect(h5Chain.toggleHeading).toHaveBeenCalledWith({ level: 5 });
-    expect(h5Chain.run).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "粉色" }));
+    expect(colorChain.setColor).toHaveBeenCalledWith("#d97891");
+    expect(colorChain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "加粗" }));
-    expect(boldChain.toggleBold).toHaveBeenCalledTimes(1);
-    expect(boldChain.run).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "默认" }));
+    expect(defaultColorChain.unsetColor).toHaveBeenCalledTimes(1);
+    expect(defaultColorChain.run).toHaveBeenCalledTimes(1);
 
     expect(useEditorState).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -176,12 +216,69 @@ describe("ThoughtRichTextDraftPage", () => {
       ...editorState,
       canUndo: true,
       isBold: true,
-      isH2: true,
+      isH3: true,
+      isStrike: true,
+      isUnderline: true,
     };
     rerender(<ThoughtRichTextDraftPage />);
 
     expect(screen.getByRole("button", { name: "撤销" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "加粗" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "H2" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "标题" })).toHaveTextContent("H3");
+    expect(screen.getByRole("button", { name: "删除线" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "下划线" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("runs inline style commands from compact toolbar buttons", () => {
+    const boldChain = chainResult();
+    const strikeChain = chainResult();
+    const italicChain = chainResult();
+    const underlineChain = chainResult();
+    mockEditor.chain
+      .mockReturnValueOnce(boldChain)
+      .mockReturnValueOnce(strikeChain)
+      .mockReturnValueOnce(italicChain)
+      .mockReturnValueOnce(underlineChain)
+      .mockImplementation(chainResult);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "加粗" }));
+    expect(boldChain.toggleBold).toHaveBeenCalledTimes(1);
+    expect(boldChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "删除线" }));
+    expect(strikeChain.toggleStrike).toHaveBeenCalledTimes(1);
+    expect(strikeChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "斜体" }));
+    expect(italicChain.toggleItalic).toHaveBeenCalledTimes(1);
+    expect(italicChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "下划线" }));
+    expect(underlineChain.toggleUnderline).toHaveBeenCalledTimes(1);
+    expect(underlineChain.run).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the list dropdown and runs bullet, ordered, and task list commands", () => {
+    const bulletChain = chainResult();
+    const orderedChain = chainResult();
+    const taskChain = chainResult();
+    mockEditor.chain.mockReturnValueOnce(bulletChain).mockReturnValueOnce(orderedChain).mockReturnValueOnce(taskChain).mockImplementation(chainResult);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "列表" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "无序列表" }));
+    expect(bulletChain.toggleBulletList).toHaveBeenCalledTimes(1);
+    expect(bulletChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "列表" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "有序列表" }));
+    expect(orderedChain.toggleOrderedList).toHaveBeenCalledTimes(1);
+    expect(orderedChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "列表" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "任务列表" }));
+    expect(taskChain.toggleTaskList).toHaveBeenCalledTimes(1);
+    expect(taskChain.run).toHaveBeenCalledTimes(1);
   });
 });
