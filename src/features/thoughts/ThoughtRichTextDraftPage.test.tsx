@@ -157,8 +157,11 @@ describe("ThoughtRichTextDraftPage", () => {
   it("styles rich text nodes so toolbar actions are visible in the editor", () => {
     render(<ThoughtRichTextDraftPage />);
 
-    const editorFrame = screen.getByTestId("thought-rich-text-editor-frame");
+    const editorFrame = screen.getByLabelText("碎碎念富文本编辑纸张");
 
+    expect(editorFrame.className).not.toContain("border-dashed");
+    expect(editorFrame.className).not.toContain("bg-white/45");
+    expect(screen.queryByTestId("thought-rich-text-editor-frame")).not.toBeInTheDocument();
     expect(editorFrame.className).toContain("[&_h1]:text-[1.65rem]");
     expect(editorFrame.className).toContain("[&_h2]:text-[1.35rem]");
     expect(editorFrame.className).toContain("[&_h3]:text-[1.15rem]");

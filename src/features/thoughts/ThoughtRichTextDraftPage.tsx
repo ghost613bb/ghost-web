@@ -290,10 +290,8 @@ export function ThoughtRichTextDraftPage() {
               </div>
             </nav>
 
-            <section aria-label="碎碎念富文本编辑纸张" className="relative min-h-[605px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6">
-              <div className={`min-h-[520px] rounded-[1rem] border border-dashed border-[#ecd9cd] bg-white/45 p-4 text-[1rem] font-normal leading-8 text-[#5b4347] outline-none ${richTextFrameClass}`} data-testid="thought-rich-text-editor-frame">
-                {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
-              </div>
+            <section aria-label="碎碎念富文本编辑纸张" className={`relative min-h-[605px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`}>
+              {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
             </section>
           </div>
         </section>
