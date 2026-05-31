@@ -83,7 +83,7 @@ describe("ThoughtRichTextDraftPage", () => {
     });
   });
 
-  it("renders a local rich text draft preview without save actions", () => {
+  it("renders a single rich text editor without local preview or save actions", () => {
     render(<ThoughtRichTextDraftPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toBeInTheDocument();
@@ -98,27 +98,26 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByRole("button", { name: "重做" })).not.toBeInTheDocument();
 
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念富文本预览纸张")).toBeInTheDocument();
+    expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
+    expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "保存" })).not.toBeInTheDocument();
-    expect(screen.getByText("开始写一点今天的小事。")).toBeInTheDocument();
   });
 
-  it("updates the local preview with the editor HTML when the editor content changes", () => {
+  it("does not mirror editor HTML into a separate preview panel", () => {
     const { container } = render(<ThoughtRichTextDraftPage />);
 
     act(() => {
       capturedOnUpdate?.({ editor: { getHTML: () => "<p>今天写一点<strong>新的</strong>小事。</p>" } });
     });
 
-    expect(screen.getByText("新的")).toBeInTheDocument();
-    expect(container.querySelector("article strong")?.textContent).toBe("新的");
+    expect(container.querySelector("article strong")).not.toBeInTheDocument();
+    expect(screen.queryByText("新的")).not.toBeInTheDocument();
   });
 
-  it("styles rich text nodes so toolbar actions are visible in the editor and preview", () => {
-    const { container } = render(<ThoughtRichTextDraftPage />);
+  it("styles rich text nodes directly in the editor", () => {
+    render(<ThoughtRichTextDraftPage />);
 
     const editorFrame = screen.getByTestId("thought-rich-text-editor-frame");
-    const previewFrame = screen.getByTestId("thought-rich-text-preview-frame");
 
     expect(editorFrame.className).toContain("[&_h1]:text-[1.65rem]");
     expect(editorFrame.className).toContain("[&_h2]:text-[1.35rem]");
@@ -127,22 +126,12 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).toContain("[&_h5]:text-[0.95rem]");
     expect(editorFrame.className).not.toContain("[&_h2]:text-[#d97891]");
     expect(editorFrame.className).not.toContain("[&_h3]:text-[#d97891]");
+    expect(editorFrame.className).toContain("[&_.ProseMirror-focused]:outline-none");
+    expect(editorFrame.className).toContain("[&_.ProseMirror]:outline-none");
     expect(editorFrame.className).toContain("[&_strong]:font-black");
     expect(editorFrame.className).toContain("[&_ul]:list-disc");
     expect(editorFrame.className).toContain("[&_blockquote]:border-l-4");
-    expect(previewFrame.className).toContain("[&_h1]:text-[1.65rem]");
-    expect(previewFrame.className).toContain("[&_h2]:text-[1.35rem]");
-    expect(previewFrame.className).not.toContain("[&_h2]:text-[#d97891]");
-    expect(previewFrame.className).toContain("[&_strong]:font-black");
-    expect(previewFrame.className).toContain("[&_ul]:list-disc");
-
-    act(() => {
-      capturedOnUpdate?.({ editor: { getHTML: () => "<h2>标题</h2><ul><li><p>列表</p></li></ul><blockquote><p>引用</p></blockquote>" } });
-    });
-
-    expect(container.querySelector("article h2")?.textContent).toBe("标题");
-    expect(container.querySelector("article ul li")?.textContent).toBe("列表");
-    expect(container.querySelector("article blockquote")?.textContent).toBe("引用");
+    expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
   });
 
   it("runs heading and bold commands and subscribes to editor state so toolbar buttons rerender", () => {

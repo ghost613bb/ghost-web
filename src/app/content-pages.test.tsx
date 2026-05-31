@@ -503,7 +503,7 @@ describe("content module pages", () => {
     expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念富文本预览纸张")).toBeInTheDocument();
+    expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
   });
 
   it("renders the playlists page heading", async () => {
