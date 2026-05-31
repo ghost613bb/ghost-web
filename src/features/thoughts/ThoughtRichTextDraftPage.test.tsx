@@ -171,6 +171,10 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).not.toContain("[&_h3]:text-[#d97891]");
     expect(editorFrame.className).toContain("[&_.ProseMirror-focused]:outline-none");
     expect(editorFrame.className).toContain("[&_.ProseMirror]:outline-none");
+    expect(editorFrame.className).toContain("[&_.ProseMirror]:leading-[32px]");
+    expect(editorFrame.className).toContain("[&_.ProseMirror]:pt-1");
+    expect(editorFrame.className).toContain("[&_p]:my-0");
+    expect(editorFrame.className).toContain("[&_p]:leading-[32px]");
     expect(editorFrame.className).toContain("[&_strong]:font-black");
     expect(editorFrame.className).toContain("[&_s]:line-through");
     expect(editorFrame.className).toContain("[&_u]:underline");
