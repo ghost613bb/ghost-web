@@ -48,6 +48,18 @@ vi.mock("@tiptap/react", () => {
       getHTML: () => "",
       isActive: () => false,
     }),
+    useEditorState: () => ({
+      canUndo: false,
+      isBlockquote: false,
+      isBold: false,
+      isBulletList: false,
+      isH1: false,
+      isH2: false,
+      isH3: false,
+      isH4: false,
+      isH5: false,
+      isItalic: false,
+    }),
   };
 });
 
