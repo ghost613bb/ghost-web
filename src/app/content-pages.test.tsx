@@ -62,6 +62,7 @@ vi.mock("@tiptap/react", () => {
       isH3: false,
       isH4: false,
       isH5: false,
+      isH6: false,
       isItalic: false,
       isOrderedList: false,
       isStrike: false,
@@ -510,11 +511,11 @@ describe("content module pages", () => {
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
-    ["撤销", "标题", "列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
-    expect(screen.queryByRole("button", { name: "无序列表" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "H1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
     expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
     expect(screen.queryByText("本地预览")).not.toBeInTheDocument();

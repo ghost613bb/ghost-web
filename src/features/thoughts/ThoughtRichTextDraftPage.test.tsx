@@ -24,6 +24,7 @@ let editorState = {
   isH3: false,
   isH4: false,
   isH5: false,
+  isH6: false,
   isItalic: false,
   isOrderedList: false,
   isStrike: false,
@@ -112,6 +113,7 @@ describe("ThoughtRichTextDraftPage", () => {
       if (name === "heading" && attrs?.level === 3) return editorState.isH3;
       if (name === "heading" && attrs?.level === 4) return editorState.isH4;
       if (name === "heading" && attrs?.level === 5) return editorState.isH5;
+      if (name === "heading" && attrs?.level === 6) return editorState.isH6;
       if (name === "bold") return editorState.isBold;
       if (name === "italic") return editorState.isItalic;
       if (name === "strike") return editorState.isStrike;
@@ -132,13 +134,14 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
 
-    ["撤销", "标题", "列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
-    expect(screen.queryByRole("button", { name: "无序列表" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "H1" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: "H5" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "无序列表" })).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("toolbar-divider")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "段落" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "重做" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "引用" })).not.toBeInTheDocument();
@@ -200,15 +203,8 @@ describe("ThoughtRichTextDraftPage", () => {
 
     const editorPaper = screen.getByLabelText("碎碎念富文本编辑纸张");
 
-    fireEvent.click(screen.getByRole("button", { name: "标题" }));
-    expect(screen.getByRole("menuitem", { name: "H1" })).toBeInTheDocument();
-    fireEvent.mouseDown(editorPaper);
-    expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "列表" }));
-    expect(screen.getByRole("menuitem", { name: "无序列表" })).toBeInTheDocument();
-    fireEvent.mouseDown(editorPaper);
-    expect(screen.queryByRole("menuitem", { name: "无序列表" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
     expect(screen.getByRole("menuitem", { name: "默认" })).toBeInTheDocument();
@@ -217,17 +213,15 @@ describe("ThoughtRichTextDraftPage", () => {
   });
 
   it("runs heading and color dropdown commands and subscribes to editor state so toolbar buttons rerender", () => {
-    const h3Chain = chainResult();
+    const h6Chain = chainResult();
     const colorChain = chainResult();
     const defaultColorChain = chainResult();
-    mockEditor.chain.mockReturnValueOnce(h3Chain).mockReturnValueOnce(colorChain).mockReturnValueOnce(defaultColorChain).mockImplementation(chainResult);
+    mockEditor.chain.mockReturnValueOnce(h6Chain).mockReturnValueOnce(colorChain).mockReturnValueOnce(defaultColorChain).mockImplementation(chainResult);
     const { rerender } = render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "标题" }));
-    expect(screen.getByRole("menuitem", { name: "H1" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("menuitem", { name: "H3" }));
-    expect(h3Chain.toggleHeading).toHaveBeenCalledWith({ level: 3 });
-    expect(h3Chain.run).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "H6" }));
+    expect(h6Chain.toggleHeading).toHaveBeenCalledWith({ level: 6 });
+    expect(h6Chain.run).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "粉色" }));
@@ -251,7 +245,7 @@ describe("ThoughtRichTextDraftPage", () => {
       ...editorState,
       canUndo: true,
       isBold: true,
-      isH3: true,
+      isH6: true,
       isStrike: true,
       isUnderline: true,
     };
@@ -259,7 +253,7 @@ describe("ThoughtRichTextDraftPage", () => {
 
     expect(screen.getByRole("button", { name: "撤销" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "加粗" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "标题" })).toHaveTextContent("H3");
+    expect(screen.getByRole("button", { name: "H6" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "删除线" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "下划线" })).toHaveAttribute("aria-pressed", "true");
   });
@@ -294,25 +288,22 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(underlineChain.run).toHaveBeenCalledTimes(1);
   });
 
-  it("opens the list dropdown and runs bullet, ordered, and task list commands", () => {
+  it("runs bullet, ordered, and task list commands from flat toolbar buttons", () => {
     const bulletChain = chainResult();
     const orderedChain = chainResult();
     const taskChain = chainResult();
     mockEditor.chain.mockReturnValueOnce(bulletChain).mockReturnValueOnce(orderedChain).mockReturnValueOnce(taskChain).mockImplementation(chainResult);
     render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "列表" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "无序列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "无序列表" }));
     expect(bulletChain.toggleBulletList).toHaveBeenCalledTimes(1);
     expect(bulletChain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "列表" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "有序列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "有序列表" }));
     expect(orderedChain.toggleOrderedList).toHaveBeenCalledTimes(1);
     expect(orderedChain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "列表" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "任务列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "任务列表" }));
     expect(taskChain.toggleTaskList).toHaveBeenCalledTimes(1);
     expect(taskChain.run).toHaveBeenCalledTimes(1);
   });

@@ -7,7 +7,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Bold, ChevronDown, Italic, List, Palette, Strikethrough, Type, Underline as UnderlineIcon, Undo2 } from "lucide-react";
+import { Bold, ChevronDown, Italic, List, ListOrdered, ListTodo, Palette, Strikethrough, Underline as UnderlineIcon, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,10 +19,11 @@ const inactiveToolbarButtonClass =
 const activeToolbarButtonClass = "border-[#d97891] bg-[#f8cfd5] text-[#7a3f4a] hover:border-[#d97891] hover:bg-[#f8cfd5]";
 const toolbarMenuClass = "absolute left-0 top-12 z-20 min-w-28 overflow-hidden rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] p-1 shadow-[0_18px_34px_rgba(122,79,85,0.16)]";
 const toolbarMenuItemClass = "flex w-full items-center gap-2 rounded-[0.7rem] px-3 py-2 text-left text-sm font-black text-[#6f4b51] transition hover:bg-[#fff1f4]";
+const toolbarDividerClass = "mx-1 h-7 w-px bg-[#ead7ce]";
 const richTextFrameClass =
-  "[&_.ProseMirror-focused]:outline-none [&_.ProseMirror]:leading-[32px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:pt-1 [&_blockquote]:my-3 [&_blockquote]:rounded-r-[1rem] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f0b5c0] [&_blockquote]:bg-[#fff6f8]/80 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:font-semibold [&_h1]:my-0 [&_h1]:text-[1.625rem] [&_h1]:font-black [&_h1]:leading-[32px] [&_h1]:tracking-[0.03em] [&_h2]:my-0 [&_h2]:text-[1.45rem] [&_h2]:font-black [&_h2]:leading-[32px] [&_h2]:tracking-[0.03em] [&_h3]:my-0 [&_h3]:text-[1.3rem] [&_h3]:font-black [&_h3]:leading-[32px] [&_h4]:my-0 [&_h4]:text-[1.16rem] [&_h4]:font-black [&_h4]:leading-[32px] [&_h5]:my-0 [&_h5]:text-[1.05rem] [&_h5]:font-black [&_h5]:leading-[32px] [&_li]:my-0 [&_li]:pl-1 [&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-0 [&_p]:leading-[32px] [&_s]:line-through [&_s]:decoration-2 [&_strong]:font-black [&_u]:underline [&_u]:decoration-2 [&_u]:underline-offset-4 [&_ul]:my-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul[data-type='taskList']]:my-0 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-1 [&_ul[data-type='taskList']_li[data-checked]]:flex [&_ul[data-type='taskList']_li[data-checked]]:items-start [&_ul[data-type='taskList']_li[data-checked]]:gap-2 [&_ul[data-type='taskList']_li[data-checked]]:pl-0 [&_ul[data-type='taskList']_li[data-checked]>label]:mt-1 [&_ul[data-type='taskList']_li[data-checked]>div]:flex-1 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:h-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:w-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:accent-[#d97891] [&_[data-type='taskItem']]:flex [&_[data-type='taskItem']]:items-start [&_[data-type='taskItem']]:gap-2 [&_[data-type='taskItem']]:pl-0 [&_[data-type='taskItem']_label]:mt-1 [&_[data-type='taskItem']_input]:h-4 [&_[data-type='taskItem']_input]:w-4 [&_[data-type='taskItem']_input]:accent-[#d97891] [&_[data-type='taskList']]:my-0 [&_[data-type='taskList']]:list-none [&_[data-type='taskList']]:pl-1";
+  "[&_.ProseMirror-focused]:outline-none [&_.ProseMirror]:leading-[32px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:pt-1 [&_blockquote]:my-3 [&_blockquote]:rounded-r-[1rem] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f0b5c0] [&_blockquote]:bg-[#fff6f8]/80 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:font-semibold [&_h1]:my-0 [&_h1]:text-[1.625rem] [&_h1]:font-black [&_h1]:leading-[32px] [&_h1]:tracking-[0.03em] [&_h2]:my-0 [&_h2]:text-[1.45rem] [&_h2]:font-black [&_h2]:leading-[32px] [&_h2]:tracking-[0.03em] [&_h3]:my-0 [&_h3]:text-[1.3rem] [&_h3]:font-black [&_h3]:leading-[32px] [&_h4]:my-0 [&_h4]:text-[1.16rem] [&_h4]:font-black [&_h4]:leading-[32px] [&_h5]:my-0 [&_h5]:text-[1.05rem] [&_h5]:font-black [&_h5]:leading-[32px] [&_h6]:my-0 [&_h6]:text-[1rem] [&_h6]:font-black [&_h6]:leading-[32px] [&_li]:my-0 [&_li]:pl-1 [&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-0 [&_p]:leading-[32px] [&_s]:line-through [&_s]:decoration-2 [&_strong]:font-black [&_u]:underline [&_u]:decoration-2 [&_u]:underline-offset-4 [&_ul]:my-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul[data-type='taskList']]:my-0 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-1 [&_ul[data-type='taskList']_li[data-checked]]:flex [&_ul[data-type='taskList']_li[data-checked]]:items-start [&_ul[data-type='taskList']_li[data-checked]]:gap-2 [&_ul[data-type='taskList']_li[data-checked]]:pl-0 [&_ul[data-type='taskList']_li[data-checked]>label]:mt-1 [&_ul[data-type='taskList']_li[data-checked]>div]:flex-1 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:h-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:w-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:accent-[#d97891] [&_[data-type='taskItem']]:flex [&_[data-type='taskItem']]:items-start [&_[data-type='taskItem']]:gap-2 [&_[data-type='taskItem']]:pl-0 [&_[data-type='taskItem']_label]:mt-1 [&_[data-type='taskItem']_input]:h-4 [&_[data-type='taskItem']_input]:w-4 [&_[data-type='taskItem']_input]:accent-[#d97891] [&_[data-type='taskList']]:my-0 [&_[data-type='taskList']]:list-none [&_[data-type='taskList']]:pl-1";
 
-const headingLevels = [1, 2, 3, 4, 5] as const;
+const headingLevels = [1, 2, 3, 4, 5, 6] as const;
 const colorOptions = [
   { label: "默认", value: null, swatch: "#5b4347" },
   { label: "深棕", value: "#5b4347", swatch: "#5b4347" },
@@ -42,6 +43,7 @@ type ToolbarState = {
   isH3: boolean;
   isH4: boolean;
   isH5: boolean;
+  isH6: boolean;
   isItalic: boolean;
   isOrderedList: boolean;
   isStrike: boolean;
@@ -59,6 +61,7 @@ const defaultToolbarState: ToolbarState = {
   isH3: false,
   isH4: false,
   isH5: false,
+  isH6: false,
   isItalic: false,
   isOrderedList: false,
   isStrike: false,
@@ -67,9 +70,7 @@ const defaultToolbarState: ToolbarState = {
 };
 
 export function ThoughtRichTextDraftPage() {
-  const [headingMenuOpen, setHeadingMenuOpen] = useState(false);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
-  const [listMenuOpen, setListMenuOpen] = useState(false);
   const toolbarRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
     extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem],
@@ -94,6 +95,7 @@ export function ThoughtRichTextDraftPage() {
           isH3: editor.isActive("heading", { level: 3 }),
           isH4: editor.isActive("heading", { level: 4 }),
           isH5: editor.isActive("heading", { level: 5 }),
+          isH6: editor.isActive("heading", { level: 6 }),
           isItalic: editor.isActive("italic"),
           isOrderedList: editor.isActive("orderedList"),
           isStrike: editor.isActive("strike"),
@@ -105,12 +107,8 @@ export function ThoughtRichTextDraftPage() {
   const editorMissing = !editor;
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
-  const headingButtonText = activeHeadingLevel ? `H${activeHeadingLevel}` : "标题";
-  const listActive = toolbarState.isBulletList || toolbarState.isOrderedList || toolbarState.isTaskList;
   const closeMenus = () => {
-    setHeadingMenuOpen(false);
     setColorMenuOpen(false);
-    setListMenuOpen(false);
   };
 
   useEffect(() => {
@@ -154,100 +152,31 @@ export function ThoughtRichTextDraftPage() {
               <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
-              <div className="relative">
+              {headingLevels.map((level) => (
                 <button
-                  aria-expanded={headingMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label="标题"
-                  className={toolbarButtonClass(Boolean(activeHeadingLevel))}
+                  aria-label={`H${level}`}
+                  aria-pressed={activeHeadingLevel === level}
+                  className={toolbarButtonClass(activeHeadingLevel === level)}
                   disabled={editorMissing}
-                  onClick={() => {
-                    setHeadingMenuOpen((open) => !open);
-                    setColorMenuOpen(false);
-                    setListMenuOpen(false);
-                  }}
+                  key={level}
+                  onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
+                  title={`H${level}`}
                   type="button"
                 >
-                  <Type aria-hidden="true" size={17} strokeWidth={2.6} />
-                  <span>{headingButtonText}</span>
-                  <ChevronDown aria-hidden="true" size={15} strokeWidth={2.6} />
+                  H{level}
                 </button>
-                {headingMenuOpen ? (
-                  <div className={toolbarMenuClass} role="menu">
-                    {headingLevels.map((level) => (
-                      <button
-                        className={toolbarMenuItemClass}
-                        key={level}
-                        onClick={() => {
-                          editor?.chain().focus().toggleHeading({ level }).run();
-                          closeMenus();
-                        }}
-                        role="menuitem"
-                        type="button"
-                      >
-                        H{level}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <div className="relative">
-                <button
-                  aria-expanded={listMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label="列表"
-                  aria-pressed={listActive}
-                  className={toolbarButtonClass(listActive)}
-                  disabled={editorMissing}
-                  onClick={() => {
-                    setListMenuOpen((open) => !open);
-                    setHeadingMenuOpen(false);
-                    setColorMenuOpen(false);
-                  }}
-                  title="列表"
-                  type="button"
-                >
-                  <List aria-hidden="true" size={18} strokeWidth={2.6} />
-                  <ChevronDown aria-hidden="true" size={15} strokeWidth={2.6} />
-                </button>
-                {listMenuOpen ? (
-                  <div className={toolbarMenuClass} role="menu">
-                    <button
-                      className={toolbarMenuItemClass}
-                      onClick={() => {
-                        editor?.chain().focus().toggleBulletList().run();
-                        closeMenus();
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      无序列表
-                    </button>
-                    <button
-                      className={toolbarMenuItemClass}
-                      onClick={() => {
-                        editor?.chain().focus().toggleOrderedList().run();
-                        closeMenus();
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      有序列表
-                    </button>
-                    <button
-                      className={toolbarMenuItemClass}
-                      onClick={() => {
-                        editor?.chain().focus().toggleTaskList().run();
-                        closeMenus();
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      任务列表
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+              ))}
+              <span aria-hidden="true" className={toolbarDividerClass} data-testid="toolbar-divider" />
+              <button aria-label="无序列表" aria-pressed={toolbarState.isBulletList} className={toolbarButtonClass(toolbarState.isBulletList, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="无序列表" type="button">
+                <List aria-hidden="true" size={18} strokeWidth={2.6} />
+              </button>
+              <button aria-label="有序列表" aria-pressed={toolbarState.isOrderedList} className={toolbarButtonClass(toolbarState.isOrderedList, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="有序列表" type="button">
+                <ListOrdered aria-hidden="true" size={18} strokeWidth={2.6} />
+              </button>
+              <button aria-label="任务列表" aria-pressed={toolbarState.isTaskList} className={toolbarButtonClass(toolbarState.isTaskList, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleTaskList().run()} title="任务列表" type="button">
+                <ListTodo aria-hidden="true" size={18} strokeWidth={2.6} />
+              </button>
+              <span aria-hidden="true" className={toolbarDividerClass} data-testid="toolbar-divider" />
               <button aria-label="加粗" aria-pressed={toolbarState.isBold} className={toolbarButtonClass(toolbarState.isBold, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleBold().run()} title="加粗" type="button">
                 <Bold aria-hidden="true" size={17} strokeWidth={2.8} />
               </button>
@@ -269,8 +198,6 @@ export function ThoughtRichTextDraftPage() {
                   disabled={editorMissing}
                   onClick={() => {
                     setColorMenuOpen((open) => !open);
-                    setHeadingMenuOpen(false);
-                    setListMenuOpen(false);
                   }}
                   type="button"
                 >
