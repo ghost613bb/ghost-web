@@ -190,9 +190,22 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).toContain("[&_ol]:list-decimal");
     expect(editorFrame.className).toContain("[&_ul[data-type='taskList']]:list-none");
     expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]]:flex");
-    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label]:mt-1");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]]:leading-[32px]");
+    expect(editorFrame.className).not.toContain("[&_ul[data-type='taskList']_li[data-checked]>label]:mt-1");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label]:flex");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label]:h-[32px]");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label]:items-center");
     expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>div]:flex-1");
-    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:accent-[#d97891]");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>div]:leading-[32px]");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>div_p]:my-0");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>div_p]:leading-[32px]");
+    expect(editorFrame.className).not.toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:accent-[#d97891]");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:appearance-none");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:rounded-[0.28rem]");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border-[#d97891]");
+    expect(editorFrame.className).toContain("[&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']:checked]:bg-[#d97891]");
+    expect(editorFrame.className).not.toContain("bg-[url(");
+    expect(editorFrame.className).toContain("thought-rich-text-editor");
     expect(editorFrame.className).toContain("[&_blockquote]:border-l-4");
 
     expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
