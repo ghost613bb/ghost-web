@@ -9,7 +9,7 @@ import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, ChevronDown, Italic, List, Palette, Strikethrough, Type, Underline as UnderlineIcon, Undo2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const toolbarButtonBaseClass =
   "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-[0.85rem] border px-2.5 text-sm font-black shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0";
@@ -70,6 +70,7 @@ export function ThoughtRichTextDraftPage() {
   const [headingMenuOpen, setHeadingMenuOpen] = useState(false);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const [listMenuOpen, setListMenuOpen] = useState(false);
+  const toolbarRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
     extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem],
     content: "",
@@ -112,6 +113,19 @@ export function ThoughtRichTextDraftPage() {
     setListMenuOpen(false);
   };
 
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!toolbarRef.current?.contains(event.target as Node)) {
+        closeMenus();
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] px-3 py-3 text-[#4c2b2d] sm:px-5 sm:py-4">
       <div className="mx-auto max-w-[1360px]">
@@ -136,7 +150,7 @@ export function ThoughtRichTextDraftPage() {
               </p>
             </header>
 
-            <nav aria-label="富文本工具栏" className="mb-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]">
+            <nav aria-label="富文本工具栏" className="mb-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]" ref={toolbarRef}>
               <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>

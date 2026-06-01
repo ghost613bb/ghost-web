@@ -195,6 +195,27 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
   });
 
+  it("closes toolbar dropdowns when clicking outside the menu", () => {
+    render(<ThoughtRichTextDraftPage />);
+
+    const editorPaper = screen.getByLabelText("碎碎念富文本编辑纸张");
+
+    fireEvent.click(screen.getByRole("button", { name: "标题" }));
+    expect(screen.getByRole("menuitem", { name: "H1" })).toBeInTheDocument();
+    fireEvent.mouseDown(editorPaper);
+    expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "列表" }));
+    expect(screen.getByRole("menuitem", { name: "无序列表" })).toBeInTheDocument();
+    fireEvent.mouseDown(editorPaper);
+    expect(screen.queryByRole("menuitem", { name: "无序列表" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
+    expect(screen.getByRole("menuitem", { name: "默认" })).toBeInTheDocument();
+    fireEvent.mouseDown(editorPaper);
+    expect(screen.queryByRole("menuitem", { name: "默认" })).not.toBeInTheDocument();
+  });
+
   it("runs heading and color dropdown commands and subscribes to editor state so toolbar buttons rerender", () => {
     const h3Chain = chainResult();
     const colorChain = chainResult();
