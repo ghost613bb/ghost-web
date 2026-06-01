@@ -149,9 +149,6 @@ export function ThoughtRichTextDraftPage() {
             </header>
 
             <nav aria-label="富文本工具栏" className="mb-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]" ref={toolbarRef}>
-              <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
-                <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
-              </button>
               {headingLevels.map((level) => (
                 <button
                   aria-label={`H${level}`}
@@ -229,9 +226,12 @@ export function ThoughtRichTextDraftPage() {
                   </div>
                 ) : null}
               </div>
+              <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
+                <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
+              </button>
             </nav>
 
-            <section aria-label="碎碎念富文本编辑纸张" className={`thought-rich-text-editor relative min-h-[605px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`}>
+            <section aria-label="碎碎念富文本编辑纸张" className={`thought-rich-text-editor relative min-h-[545px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`}>
               {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
             </section>
           </div>

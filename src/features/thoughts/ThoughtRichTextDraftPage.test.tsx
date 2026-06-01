@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorState } from "@tiptap/react";
 import { ThoughtRichTextDraftPage } from "./ThoughtRichTextDraftPage";
@@ -137,6 +137,8 @@ describe("ThoughtRichTextDraftPage", () => {
     ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
+    const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -162,6 +164,9 @@ describe("ThoughtRichTextDraftPage", () => {
 
     const editorFrame = screen.getByLabelText("碎碎念富文本编辑纸张");
 
+    expect(editorFrame).toHaveClass("min-h-[545px]");
+    expect(editorFrame).not.toHaveClass("min-h-[585px]");
+    expect(editorFrame).not.toHaveClass("min-h-[605px]");
     expect(editorFrame.className).not.toContain("border-dashed");
     expect(editorFrame.className).not.toContain("bg-white/45");
     expect(screen.queryByTestId("thought-rich-text-editor-frame")).not.toBeInTheDocument();
