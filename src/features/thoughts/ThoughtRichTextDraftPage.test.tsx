@@ -144,12 +144,12 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("min-h-[545px]", "overflow-hidden");
 
-    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "附件"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "背景", "附件"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
     expect(screen.getByLabelText("上传图片或视频附件")).toHaveAttribute("accept", "image/*,video/*");
     const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
-    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "附件", "撤销"]);
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "背景", "附件", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -243,6 +243,48 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("menuitem", { name: "默认" })).toBeInTheDocument();
     fireEvent.mouseDown(editorPaper);
     expect(screen.queryByRole("menuitem", { name: "默认" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
+    expect(screen.getByRole("group", { name: "编辑纸张背景设置" })).toBeInTheDocument();
+    fireEvent.mouseDown(editorPaper);
+    expect(screen.queryByRole("group", { name: "编辑纸张背景设置" })).not.toBeInTheDocument();
+  });
+
+  it("customizes editor paper background image and opacity while keeping notebook lines", () => {
+    const objectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:thought-paper-bg");
+    const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    render(<ThoughtRichTextDraftPage />);
+
+    const editorPaper = screen.getByLabelText("碎碎念富文本编辑纸张");
+    expect(editorPaper.className).toContain("bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
+    expect(editorPaper).not.toHaveAttribute("style");
+
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
+    const backgroundPanel = screen.getByRole("group", { name: "编辑纸张背景设置" });
+    const backgroundImageInput = within(backgroundPanel).getByLabelText("上传背景图");
+
+    expect(backgroundImageInput).toHaveAttribute("accept", "image/*");
+    expect(within(backgroundPanel).queryByLabelText("背景透明度")).not.toBeInTheDocument();
+    expect(within(backgroundPanel).queryByRole("button", { name: "恢复默认背景" })).not.toBeInTheDocument();
+
+    fireEvent.change(backgroundImageInput, { target: { files: [new File(["paper"], "paper.png", { type: "image/png" })] } });
+    const backgroundOpacityInput = within(backgroundPanel).getByLabelText("背景透明度");
+    expect(backgroundOpacityInput).toHaveValue("100");
+    expect(within(backgroundPanel).getByText("已选择背景图")).toBeInTheDocument();
+
+    fireEvent.change(backgroundOpacityInput, { target: { value: "45" } });
+
+    expect(objectUrlSpy).toHaveBeenCalledTimes(1);
+    expect(editorPaper.getAttribute("style")).toContain("blob:thought-paper-bg");
+    expect(editorPaper.getAttribute("style")).toContain("rgba(255, 253, 247, 0.55)");
+    expect(editorPaper.getAttribute("style")).toContain("repeating-linear-gradient");
+    expect(editorPaper.className).toContain("bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
+
+    fireEvent.click(within(backgroundPanel).getByRole("button", { name: "恢复默认背景" }));
+
+    expect(within(backgroundPanel).queryByLabelText("背景透明度")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张").getAttribute("style") ?? "").toBe("");
+    expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:thought-paper-bg");
   });
 
   it("runs heading and color dropdown commands and subscribes to editor state so toolbar buttons rerender", () => {

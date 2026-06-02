@@ -9,9 +9,9 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Bold, ChevronDown, ImagePlus, Italic, List, ListOrdered, ListTodo, Palette, Strikethrough, Underline as UnderlineIcon, Undo2 } from "lucide-react";
+import { Bold, ChevronDown, ImagePlus, Italic, List, ListOrdered, ListTodo, Palette, Strikethrough, Underline as UnderlineIcon, Undo2, Wallpaper } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
 
 const toolbarButtonBaseClass =
   "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-[0.85rem] border px-2.5 text-sm font-black shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0";
@@ -47,8 +47,8 @@ const Video = TiptapNode.create({
     return {
       setVideo:
         (options: { src: string }) =>
-        ({ commands }) =>
-          commands.insertContent({ type: this.name, attrs: options }),
+          ({ commands }) =>
+            commands.insertContent({ type: this.name, attrs: options }),
     };
   },
 });
@@ -69,6 +69,9 @@ const colorOptions = [
   { label: "绿色", value: "#5f8a68", swatch: "#5f8a68" },
   { label: "黄色", value: "#b8860b", swatch: "#b8860b" },
 ] as const;
+
+const defaultPaperBackgroundOpacity = 100;
+const paperLineGradient = "repeating-linear-gradient(0deg, transparent 0, transparent 31px, #efe6d8 32px)";
 
 type ToolbarState = {
   canUndo: boolean;
@@ -109,8 +112,13 @@ const defaultToolbarState: ToolbarState = {
 export function ThoughtRichTextDraftPage() {
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
   const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
+  const [backgroundMenuOpen, setBackgroundMenuOpen] = useState(false);
+  const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
+  const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const paperBackgroundImageUrlRef = useRef("");
   const toolbarRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
     extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, Video],
@@ -147,9 +155,45 @@ export function ThoughtRichTextDraftPage() {
   const editorMissing = !editor;
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
+  const paperBackgroundCustomized = paperBackgroundImageUrl.length > 0;
+  const paperBackgroundStyle: CSSProperties | undefined = paperBackgroundCustomized
+    ? {
+      backgroundImage: `${paperLineGradient}, linear-gradient(rgba(255, 253, 247, ${1 - paperBackgroundOpacity / 100}), rgba(255, 253, 247, ${1 - paperBackgroundOpacity / 100})), url(${paperBackgroundImageUrl}), linear-gradient(#fffdf7, #fffdf7)`,
+      backgroundPosition: "0 0, 0 0, center, 0 0",
+      backgroundSize: "auto, auto, cover, auto",
+    }
+    : undefined;
   const closeMenus = () => {
+    setBackgroundMenuOpen(false);
     setColorMenuOpen(false);
   };
+
+  function resetPaperBackground() {
+    if (paperBackgroundImageUrlRef.current) {
+      URL.revokeObjectURL(paperBackgroundImageUrlRef.current);
+      paperBackgroundImageUrlRef.current = "";
+    }
+
+    setPaperBackgroundImageUrl("");
+    setPaperBackgroundOpacity(defaultPaperBackgroundOpacity);
+  }
+
+  function handlePaperBackgroundChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (paperBackgroundImageUrlRef.current) {
+      URL.revokeObjectURL(paperBackgroundImageUrlRef.current);
+    }
+
+    const nextUrl = URL.createObjectURL(file);
+    paperBackgroundImageUrlRef.current = nextUrl;
+    setPaperBackgroundImageUrl(nextUrl);
+  }
 
   async function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -204,6 +248,14 @@ export function ThoughtRichTextDraftPage() {
       window.clearTimeout(timeoutId);
     };
   }, [attachmentUploadError, attachmentUploadStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (paperBackgroundImageUrlRef.current) {
+        URL.revokeObjectURL(paperBackgroundImageUrlRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -320,6 +372,48 @@ export function ThoughtRichTextDraftPage() {
                   </div>
                 ) : null}
               </div>
+              <div className="relative">
+                <button
+                  aria-expanded={backgroundMenuOpen}
+                  aria-label="背景"
+                  className={toolbarButtonClass(paperBackgroundCustomized)}
+                  onClick={() => {
+                    setBackgroundMenuOpen((open) => !open);
+                    setColorMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  <Wallpaper aria-hidden="true" size={17} strokeWidth={2.6} />
+                  <ChevronDown aria-hidden="true" size={15} strokeWidth={2.6} />
+                </button>
+                {backgroundMenuOpen ? (
+                  <div aria-label="编辑纸张背景设置" className="absolute left-0 top-12 z-20 w-64 rounded-[1rem] border border-[#ead7ce] bg-[#fffdf8] p-3 shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="group">
+                    <input aria-label="上传背景图" accept="image/*" className="sr-only" onChange={handlePaperBackgroundChange} ref={backgroundInputRef} type="file" />
+                    <button
+                      className="w-full rounded-[0.8rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:border-[#e8b7c0] hover:bg-[#fff1f4]"
+                      onClick={() => backgroundInputRef.current?.click()}
+                      type="button"
+                    >
+                      选择本地图片
+                    </button>
+                    {paperBackgroundCustomized ? (
+                      <>
+                        <p className="mt-2 text-xs font-bold text-[#9a7377]">已选择背景图</p>
+                        <label className="mt-3 block rounded-[0.85rem] border border-[#f0e2d6] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#6f4b51]">
+                          <span className="flex items-center justify-between">
+                            背景透明度
+                            <span>{paperBackgroundOpacity}%</span>
+                          </span>
+                          <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891]" max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
+                        </label>
+                        <button className="mt-3 w-full rounded-[0.8rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:border-[#e8b7c0] hover:bg-[#fff1f4]" onClick={resetPaperBackground} type="button">
+                          恢复默认背景
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
               <input aria-label="上传图片或视频附件" accept="image/*,video/*" className="sr-only" onChange={handleAttachmentChange} ref={attachmentInputRef} type="file" />
               <button aria-label="附件" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => attachmentInputRef.current?.click()} title="上传图片或视频附件" type="button">
                 <ImagePlus aria-hidden="true" size={17} strokeWidth={2.6} />
@@ -332,7 +426,7 @@ export function ThoughtRichTextDraftPage() {
             {attachmentUploadStatus === "uploaded" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">附件上传完成</div> : null}
             {attachmentUploadError ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{attachmentUploadError}</div> : null}
 
-            <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative h-[545px] overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`}>
+            <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative h-[545px] overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`} style={paperBackgroundStyle}>
               {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
             </section>
           </div>

@@ -516,7 +516,7 @@ describe("content module pages", () => {
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
-    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "附件"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "背景", "附件"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
     expect(screen.getByLabelText("上传图片或视频附件")).toHaveAttribute("accept", "image/*,video/*");
