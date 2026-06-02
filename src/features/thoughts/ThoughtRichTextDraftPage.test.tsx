@@ -266,8 +266,19 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).not.toContain("[&_pre]:bg-[#3b2d31]");
     expect(editorFrame.className).toContain("[&_a]:text-[#d97891]");
     expect(editorFrame.className).toContain("[&_table]:w-full");
+    expect(editorFrame.className).toContain("[&_table]:table-fixed");
+    expect(editorFrame.className).toContain("[&_table]:rounded-[1rem]");
+    expect(editorFrame.className).toContain("[&_table]:transition-[table-layout]");
+    expect(editorFrame.className).toContain("[&_table]:duration-300");
+    expect(editorFrame.className).toContain("[&_.ProseMirror-focused_table]:table-fixed");
+    expect(editorFrame.className).toContain("[&_th:first-child]:rounded-tl-[1rem]");
+    expect(editorFrame.className).toContain("[&_th:last-child]:rounded-tr-[1rem]");
+    expect(editorFrame.className).toContain("[&_tr:last-child_td:first-child]:rounded-bl-[1rem]");
+    expect(editorFrame.className).toContain("[&_tr:last-child_td:last-child]:rounded-br-[1rem]");
     expect(editorFrame.className).toContain("[&_td]:border");
+    expect(editorFrame.className).toContain("[&_td]:break-words");
     expect(editorFrame.className).toContain("[&_th]:border");
+    expect(editorFrame.className).toContain("[&_th]:break-words");
     expect(editorFrame.className).toContain("[&_video]:max-w-full");
     expect(editorFrame.className).toContain("[&_video]:bg-[#2f2528]");
 
