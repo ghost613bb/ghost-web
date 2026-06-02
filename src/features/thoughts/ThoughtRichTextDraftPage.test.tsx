@@ -25,7 +25,9 @@ let editorState = {
   isH4: false,
   isH5: false,
   isH6: false,
+  isCodeBlock: false,
   isItalic: false,
+  isLink: false,
   isOrderedList: false,
   isStrike: false,
   isTaskList: false,
@@ -42,6 +44,17 @@ vi.mock("@tiptap/extension-underline", () => ({
 
 vi.mock("@tiptap/extension-image", () => ({
   default: "Image",
+}));
+
+vi.mock("@tiptap/extension-link", () => ({
+  default: "Link",
+}));
+
+vi.mock("@tiptap/extension-table", () => ({
+  Table: "Table",
+  TableCell: "TableCell",
+  TableHeader: "TableHeader",
+  TableRow: "TableRow",
 }));
 
 vi.mock("@tiptap/extension-text-style", () => ({
@@ -73,7 +86,14 @@ function chainResult() {
   return {
     focus: vi.fn().mockReturnThis(),
     setColor: vi.fn().mockReturnThis(),
+    addColumnAfter: vi.fn().mockReturnThis(),
+    addRowAfter: vi.fn().mockReturnThis(),
+    deleteColumn: vi.fn().mockReturnThis(),
+    deleteRow: vi.fn().mockReturnThis(),
+    extendMarkRange: vi.fn().mockReturnThis(),
+    insertTable: vi.fn().mockReturnThis(),
     setImage: vi.fn().mockReturnThis(),
+    setLink: vi.fn().mockReturnThis(),
     setParagraph: vi.fn().mockReturnThis(),
     setVideo: vi.fn().mockReturnThis(),
     toggleHeading: vi.fn().mockReturnThis(),
@@ -85,7 +105,10 @@ function chainResult() {
     toggleOrderedList: vi.fn().mockReturnThis(),
     toggleTaskList: vi.fn().mockReturnThis(),
     toggleBlockquote: vi.fn().mockReturnThis(),
+    toggleCodeBlock: vi.fn().mockReturnThis(),
+    toggleLink: vi.fn().mockReturnThis(),
     undo: vi.fn().mockReturnThis(),
+    unsetLink: vi.fn().mockReturnThis(),
     unsetColor: vi.fn().mockReturnThis(),
     run: vi.fn(),
   };
@@ -104,7 +127,10 @@ describe("ThoughtRichTextDraftPage", () => {
       isH3: false,
       isH4: false,
       isH5: false,
+      isH6: false,
+      isCodeBlock: false,
       isItalic: false,
+      isLink: false,
       isOrderedList: false,
       isStrike: false,
       isTaskList: false,
@@ -120,8 +146,10 @@ describe("ThoughtRichTextDraftPage", () => {
       if (name === "heading" && attrs?.level === 4) return editorState.isH4;
       if (name === "heading" && attrs?.level === 5) return editorState.isH5;
       if (name === "heading" && attrs?.level === 6) return editorState.isH6;
+      if (name === "codeBlock") return editorState.isCodeBlock;
       if (name === "bold") return editorState.isBold;
       if (name === "italic") return editorState.isItalic;
+      if (name === "link") return editorState.isLink;
       if (name === "strike") return editorState.isStrike;
       if (name === "underline") return editorState.isUnderline;
       if (name === "bulletList") return editorState.isBulletList;
@@ -144,12 +172,18 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("min-h-[545px]", "overflow-hidden");
 
-    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "背景", "附件"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
-    expect(screen.getByLabelText("上传图片或视频附件")).toHaveAttribute("accept", "image/*,video/*");
+    ["新增表格行", "删除表格行", "新增表格列", "删除表格列"].forEach((name) => {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name })).not.toBeInTheDocument();
+    });
+    expect(screen.queryByRole("button", { name: "链接" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("上传图片附件")).toHaveAttribute("accept", "image/*");
+    expect(screen.getByLabelText("上传视频附件")).toHaveAttribute("accept", "video/*");
     const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
-    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "背景", "附件", "撤销"]);
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -160,7 +194,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByRole("button", { name: "引用" })).not.toBeInTheDocument();
 
     expect(mockStarterKit.configure).toHaveBeenCalledWith({ underline: false });
-    expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem", "Image", expect.objectContaining({ name: "video" })]);
+    expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem", "Image", "Link", "Table", "TableRow", "TableHeader", "TableCell", expect.objectContaining({ name: "video" })]);
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
     expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
     expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
@@ -225,6 +259,15 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).toContain("thought-rich-text-editor");
     expect(editorFrame.className).toContain("[&_blockquote]:border-l-4");
     expect(editorFrame.className).toContain("[&_img]:max-w-full");
+    expect(editorFrame.className).toContain("[&_pre]:my-3");
+    expect(editorFrame.className).toContain("[&_pre]:rounded-[1rem]");
+    expect(editorFrame.className).toContain("[&_pre]:border-[#ead7ce]");
+    expect(editorFrame.className).toContain("[&_pre]:bg-[#fff6ec]");
+    expect(editorFrame.className).not.toContain("[&_pre]:bg-[#3b2d31]");
+    expect(editorFrame.className).toContain("[&_a]:text-[#d97891]");
+    expect(editorFrame.className).toContain("[&_table]:w-full");
+    expect(editorFrame.className).toContain("[&_td]:border");
+    expect(editorFrame.className).toContain("[&_th]:border");
     expect(editorFrame.className).toContain("[&_video]:max-w-full");
     expect(editorFrame.className).toContain("[&_video]:bg-[#2f2528]");
 
@@ -320,6 +363,7 @@ describe("ThoughtRichTextDraftPage", () => {
       ...editorState,
       canUndo: true,
       isBold: true,
+      isCodeBlock: true,
       isH6: true,
       isStrike: true,
       isUnderline: true,
@@ -328,6 +372,8 @@ describe("ThoughtRichTextDraftPage", () => {
 
     expect(screen.getByRole("button", { name: "撤销" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "加粗" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "代码块" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: "链接" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "H6" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "删除线" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "下划线" })).toHaveAttribute("aria-pressed", "true");
@@ -344,8 +390,9 @@ describe("ThoughtRichTextDraftPage", () => {
 
     render(<ThoughtRichTextDraftPage />);
 
-    const fileInput = screen.getByLabelText("上传图片或视频附件");
-    fireEvent.change(fileInput, { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+    const imageInput = screen.getByLabelText("上传图片附件");
+    const videoInput = screen.getByLabelText("上传视频附件");
+    fireEvent.change(imageInput, { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
     const uploadToast = screen.getByRole("status");
@@ -354,7 +401,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(imageChain.setImage).toHaveBeenCalledWith({ src: "/uploads/thoughts/cat.png" });
     expect(imageChain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.change(fileInput, { target: { files: [new File(["video"], "clip.mp4", { type: "video/mp4" })] } });
+    fireEvent.change(videoInput, { target: { files: [new File(["video"], "clip.mp4", { type: "video/mp4" })] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
     expect(videoChain.setVideo).toHaveBeenCalledWith({ src: "/uploads/thoughts/clip.mp4" });
@@ -365,7 +412,7 @@ describe("ThoughtRichTextDraftPage", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: false, json: async () => ({ error: "只支持上传图片或视频附件" }) } as Response);
     render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.change(screen.getByLabelText("上传图片或视频附件"), { target: { files: [new File(["text"], "note.txt", { type: "text/plain" })] } });
+    fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["text"], "note.txt", { type: "text/plain" })] } });
 
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("只支持上传图片或视频附件"));
     const errorToast = screen.getByRole("alert");
@@ -378,7 +425,7 @@ describe("ThoughtRichTextDraftPage", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png" } }) } as Response);
     render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.change(screen.getByLabelText("上传图片或视频附件"), { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+    fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
 
     await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
     act(() => {
@@ -393,11 +440,13 @@ describe("ThoughtRichTextDraftPage", () => {
     const strikeChain = chainResult();
     const italicChain = chainResult();
     const underlineChain = chainResult();
+    const codeBlockChain = chainResult();
     mockEditor.chain
       .mockReturnValueOnce(boldChain)
       .mockReturnValueOnce(strikeChain)
       .mockReturnValueOnce(italicChain)
       .mockReturnValueOnce(underlineChain)
+      .mockReturnValueOnce(codeBlockChain)
       .mockImplementation(chainResult);
     render(<ThoughtRichTextDraftPage />);
 
@@ -416,6 +465,57 @@ describe("ThoughtRichTextDraftPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "下划线" }));
     expect(underlineChain.toggleUnderline).toHaveBeenCalledTimes(1);
     expect(underlineChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "代码块" }));
+    expect(codeBlockChain.toggleCodeBlock).toHaveBeenCalledTimes(1);
+    expect(codeBlockChain.run).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs table editing commands from toolbar buttons", () => {
+    const tableChain = chainResult();
+    const addRowChain = chainResult();
+    const deleteRowChain = chainResult();
+    const addColumnChain = chainResult();
+    const deleteColumnChain = chainResult();
+    mockEditor.chain
+      .mockReturnValueOnce(tableChain)
+      .mockReturnValueOnce(addRowChain)
+      .mockReturnValueOnce(deleteRowChain)
+      .mockReturnValueOnce(addColumnChain)
+      .mockReturnValueOnce(deleteColumnChain)
+      .mockImplementation(chainResult);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    expect(screen.getByRole("menuitem", { name: "插入表格" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "新增表格行" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "删除表格行" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "新增表格列" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "删除表格列" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "插入表格" }));
+    expect(tableChain.insertTable).toHaveBeenCalledWith({ cols: 3, rows: 3, withHeaderRow: true });
+    expect(tableChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "新增表格行" }));
+    expect(addRowChain.addRowAfter).toHaveBeenCalledTimes(1);
+    expect(addRowChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "删除表格行" }));
+    expect(deleteRowChain.deleteRow).toHaveBeenCalledTimes(1);
+    expect(deleteRowChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "新增表格列" }));
+    expect(addColumnChain.addColumnAfter).toHaveBeenCalledTimes(1);
+    expect(addColumnChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "删除表格列" }));
+    expect(deleteColumnChain.deleteColumn).toHaveBeenCalledTimes(1);
+    expect(deleteColumnChain.run).toHaveBeenCalledTimes(1);
   });
 
   it("runs bullet, ordered, and task list commands from flat toolbar buttons", () => {

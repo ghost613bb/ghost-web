@@ -3,13 +3,15 @@
 import { mergeAttributes, Node as TiptapNode } from "@tiptap/core";
 import Color from "@tiptap/extension-color";
 import Image from "@tiptap/extension-image";
+import LinkExtension from "@tiptap/extension-link";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Bold, ChevronDown, ImagePlus, Italic, List, ListOrdered, ListTodo, Palette, Strikethrough, Underline as UnderlineIcon, Undo2, Wallpaper } from "lucide-react";
+import { Bold, ChevronDown, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, PanelLeft, PanelRight, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon, Wallpaper } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
 
@@ -23,7 +25,7 @@ const toolbarMenuClass = "absolute left-0 top-12 z-20 min-w-28 overflow-hidden r
 const toolbarMenuItemClass = "flex w-full items-center gap-2 rounded-[0.7rem] px-3 py-2 text-left text-sm font-black text-[#6f4b51] transition hover:bg-[#fff1f4]";
 const toolbarDividerClass = "mx-1 h-7 w-px bg-[#ead7ce]";
 const richTextFrameClass =
-  "[&_.ProseMirror-focused]:outline-none [&_.ProseMirror]:leading-[32px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:pt-1 [&_blockquote]:my-3 [&_blockquote]:rounded-r-[1rem] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f0b5c0] [&_blockquote]:bg-[#fff6f8]/80 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:font-semibold [&_h1]:my-0 [&_h1]:text-[1.625rem] [&_h1]:font-black [&_h1]:leading-[32px] [&_h1]:tracking-[0.03em] [&_h2]:my-0 [&_h2]:text-[1.45rem] [&_h2]:font-black [&_h2]:leading-[32px] [&_h2]:tracking-[0.03em] [&_h3]:my-0 [&_h3]:text-[1.3rem] [&_h3]:font-black [&_h3]:leading-[32px] [&_h4]:my-0 [&_h4]:text-[1.16rem] [&_h4]:font-black [&_h4]:leading-[32px] [&_h5]:my-0 [&_h5]:text-[1.05rem] [&_h5]:font-black [&_h5]:leading-[32px] [&_h6]:my-0 [&_h6]:text-[1rem] [&_h6]:font-black [&_h6]:leading-[32px] [&_li]:my-0 [&_li]:pl-1 [&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-0 [&_p]:leading-[32px] [&_s]:line-through [&_s]:decoration-2 [&_strong]:font-black [&_u]:underline [&_u]:decoration-2 [&_u]:underline-offset-4 [&_ul]:my-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul[data-type='taskList']]:my-0 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-1 [&_ul[data-type='taskList']_li[data-checked]]:flex [&_ul[data-type='taskList']_li[data-checked]]:items-start [&_ul[data-type='taskList']_li[data-checked]]:gap-2 [&_ul[data-type='taskList']_li[data-checked]]:pl-0 [&_ul[data-type='taskList']_li[data-checked]]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:flex [&_ul[data-type='taskList']_li[data-checked]>label]:h-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:items-center [&_ul[data-type='taskList']_li[data-checked]>div]:flex-1 [&_ul[data-type='taskList']_li[data-checked]>div]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>div_p]:my-0 [&_ul[data-type='taskList']_li[data-checked]>div_p]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:h-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:w-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:appearance-none [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:rounded-[0.28rem] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border-[#d97891] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-white [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-center [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-no-repeat [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']:checked]:bg-[#d97891] [&_[data-type='taskItem']]:flex [&_[data-type='taskItem']]:items-start [&_[data-type='taskItem']]:gap-2 [&_[data-type='taskItem']]:pl-0 [&_[data-type='taskItem']]:leading-[32px] [&_[data-type='taskItem']_label]:flex [&_[data-type='taskItem']_label]:h-[32px] [&_[data-type='taskItem']_label]:items-center [&_[data-type='taskItem']_div]:leading-[32px] [&_[data-type='taskItem']_div_p]:my-0 [&_[data-type='taskItem']_div_p]:leading-[32px] [&_[data-type='taskItem']_input]:h-4 [&_[data-type='taskItem']_input]:w-4 [&_[data-type='taskItem']_input]:appearance-none [&_[data-type='taskItem']_input]:rounded-[0.28rem] [&_[data-type='taskItem']_input]:border [&_[data-type='taskItem']_input]:border-[#d97891] [&_[data-type='taskItem']_input]:bg-white [&_[data-type='taskItem']_input]:bg-center [&_[data-type='taskItem']_input]:bg-no-repeat [&_[data-type='taskItem']_input:checked]:bg-[#d97891] [&_[data-type='taskList']]:my-0 [&_[data-type='taskList']]:list-none [&_[data-type='taskList']]:pl-1 [&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-[1rem] [&_img]:border [&_img]:border-[#efd8cf] [&_video]:my-3 [&_video]:max-w-full [&_video]:rounded-[1rem] [&_video]:border [&_video]:border-[#efd8cf] [&_video]:bg-[#2f2528]";
+  "[&_.ProseMirror-focused]:outline-none [&_.ProseMirror]:leading-[32px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:pt-1 [&_blockquote]:my-3 [&_blockquote]:rounded-r-[1rem] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f0b5c0] [&_blockquote]:bg-[#fff6f8]/80 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:font-semibold [&_h1]:my-0 [&_h1]:text-[1.625rem] [&_h1]:font-black [&_h1]:leading-[32px] [&_h1]:tracking-[0.03em] [&_h2]:my-0 [&_h2]:text-[1.45rem] [&_h2]:font-black [&_h2]:leading-[32px] [&_h2]:tracking-[0.03em] [&_h3]:my-0 [&_h3]:text-[1.3rem] [&_h3]:font-black [&_h3]:leading-[32px] [&_h4]:my-0 [&_h4]:text-[1.16rem] [&_h4]:font-black [&_h4]:leading-[32px] [&_h5]:my-0 [&_h5]:text-[1.05rem] [&_h5]:font-black [&_h5]:leading-[32px] [&_h6]:my-0 [&_h6]:text-[1rem] [&_h6]:font-black [&_h6]:leading-[32px] [&_li]:my-0 [&_li]:pl-1 [&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-0 [&_p]:leading-[32px] [&_s]:line-through [&_s]:decoration-2 [&_strong]:font-black [&_u]:underline [&_u]:decoration-2 [&_u]:underline-offset-4 [&_ul]:my-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul[data-type='taskList']]:my-0 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-1 [&_ul[data-type='taskList']_li[data-checked]]:flex [&_ul[data-type='taskList']_li[data-checked]]:items-start [&_ul[data-type='taskList']_li[data-checked]]:gap-2 [&_ul[data-type='taskList']_li[data-checked]]:pl-0 [&_ul[data-type='taskList']_li[data-checked]]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:flex [&_ul[data-type='taskList']_li[data-checked]>label]:h-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:items-center [&_ul[data-type='taskList']_li[data-checked]>div]:flex-1 [&_ul[data-type='taskList']_li[data-checked]>div]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>div_p]:my-0 [&_ul[data-type='taskList']_li[data-checked]>div_p]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:h-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:w-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:appearance-none [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:rounded-[0.28rem] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border-[#d97891] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-white [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-center [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-no-repeat [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']:checked]:bg-[#d97891] [&_[data-type='taskItem']]:flex [&_[data-type='taskItem']]:items-start [&_[data-type='taskItem']]:gap-2 [&_[data-type='taskItem']]:pl-0 [&_[data-type='taskItem']]:leading-[32px] [&_[data-type='taskItem']_label]:flex [&_[data-type='taskItem']_label]:h-[32px] [&_[data-type='taskItem']_label]:items-center [&_[data-type='taskItem']_div]:leading-[32px] [&_[data-type='taskItem']_div_p]:my-0 [&_[data-type='taskItem']_div_p]:leading-[32px] [&_[data-type='taskItem']_input]:h-4 [&_[data-type='taskItem']_input]:w-4 [&_[data-type='taskItem']_input]:appearance-none [&_[data-type='taskItem']_input]:rounded-[0.28rem] [&_[data-type='taskItem']_input]:border [&_[data-type='taskItem']_input]:border-[#d97891] [&_[data-type='taskItem']_input]:bg-white [&_[data-type='taskItem']_input]:bg-center [&_[data-type='taskItem']_input]:bg-no-repeat [&_[data-type='taskItem']_input:checked]:bg-[#d97891] [&_[data-type='taskList']]:my-0 [&_[data-type='taskList']]:list-none [&_[data-type='taskList']]:pl-1 [&_a]:font-black [&_a]:text-[#d97891] [&_a]:underline [&_a]:decoration-2 [&_a]:underline-offset-4 [&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-[1rem] [&_img]:border [&_img]:border-[#efd8cf] [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-[1rem] [&_pre]:border [&_pre]:border-[#ead7ce] [&_pre]:bg-[#fff6ec] [&_pre]:px-4 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-sm [&_pre]:leading-6 [&_pre]:text-[#6f4b51] [&_pre_code]:font-mono [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-[0.9rem] [&_table]:bg-[#fffaf4] [&_td]:border [&_td]:border-[#ead7ce] [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-[#e4c9bf] [&_th]:bg-[#fff1f4] [&_th]:px-3 [&_th]:py-2 [&_th]:font-black [&_video]:my-3 [&_video]:max-w-full [&_video]:rounded-[1rem] [&_video]:border [&_video]:border-[#efd8cf] [&_video]:bg-[#2f2528]";
 
 const headingLevels = [1, 2, 3, 4, 5, 6] as const;
 const Video = TiptapNode.create({
@@ -78,6 +80,7 @@ type ToolbarState = {
   isBlockquote: boolean;
   isBold: boolean;
   isBulletList: boolean;
+  isCodeBlock: boolean;
   isH1: boolean;
   isH2: boolean;
   isH3: boolean;
@@ -96,6 +99,7 @@ const defaultToolbarState: ToolbarState = {
   isBlockquote: false,
   isBold: false,
   isBulletList: false,
+  isCodeBlock: false,
   isH1: false,
   isH2: false,
   isH3: false,
@@ -116,12 +120,14 @@ export function ThoughtRichTextDraftPage() {
   const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
-  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const [tableMenuOpen, setTableMenuOpen] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const paperBackgroundImageUrlRef = useRef("");
   const toolbarRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
-    extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, Video],
+    extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, LinkExtension, Table, TableRow, TableHeader, TableCell, Video],
     content: "",
     immediatelyRender: false,
   });
@@ -138,6 +144,7 @@ export function ThoughtRichTextDraftPage() {
           isBlockquote: editor.isActive("blockquote"),
           isBold: editor.isActive("bold"),
           isBulletList: editor.isActive("bulletList"),
+          isCodeBlock: editor.isActive("codeBlock"),
           isH1: editor.isActive("heading", { level: 1 }),
           isH2: editor.isActive("heading", { level: 2 }),
           isH3: editor.isActive("heading", { level: 3 }),
@@ -166,7 +173,20 @@ export function ThoughtRichTextDraftPage() {
   const closeMenus = () => {
     setBackgroundMenuOpen(false);
     setColorMenuOpen(false);
+    setTableMenuOpen(false);
   };
+
+  function runTableCommand(command: "addColumnAfter" | "addRowAfter" | "deleteColumn" | "deleteRow" | "insertTable") {
+    const chain = editor?.chain().focus();
+
+    if (command === "insertTable") {
+      chain?.insertTable({ cols: 3, rows: 3, withHeaderRow: true }).run();
+    } else {
+      chain?.[command]().run();
+    }
+
+    closeMenus();
+  }
 
   function resetPaperBackground() {
     if (paperBackgroundImageUrlRef.current) {
@@ -332,6 +352,40 @@ export function ThoughtRichTextDraftPage() {
               <button aria-label="下划线" aria-pressed={toolbarState.isUnderline} className={toolbarButtonClass(toolbarState.isUnderline, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="下划线" type="button">
                 <UnderlineIcon aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
+              <button aria-label="代码块" aria-pressed={toolbarState.isCodeBlock} className={toolbarButtonClass(toolbarState.isCodeBlock, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} title="代码块" type="button">
+                <Code2 aria-hidden="true" size={17} strokeWidth={2.6} />
+              </button>
+              <div className="relative">
+                <button
+                  aria-expanded={tableMenuOpen}
+                  aria-haspopup="menu"
+                  aria-label="表格"
+                  className={toolbarButtonClass(false)}
+                  disabled={editorMissing}
+                  onClick={() => {
+                    setBackgroundMenuOpen(false);
+                    setColorMenuOpen(false);
+                    setTableMenuOpen((open) => !open);
+                  }}
+                  title="表格"
+                  type="button"
+                >
+                  <Table2 aria-hidden="true" size={17} strokeWidth={2.6} />
+                  <ChevronDown aria-hidden="true" size={15} strokeWidth={2.6} />
+                </button>
+                {tableMenuOpen ? (
+                  <div className={toolbarMenuClass} role="menu">
+                    <button className={toolbarMenuItemClass} onClick={() => runTableCommand("insertTable")} role="menuitem" type="button">插入表格</button>
+                    <button className={toolbarMenuItemClass} onClick={() => runTableCommand("addRowAfter")} role="menuitem" type="button">新增表格行</button>
+                    <button className={toolbarMenuItemClass} onClick={() => runTableCommand("deleteRow")} role="menuitem" type="button">删除表格行</button>
+                    <button className={toolbarMenuItemClass} onClick={() => runTableCommand("addColumnAfter")} role="menuitem" type="button">新增表格列</button>
+                    <button className={toolbarMenuItemClass} onClick={() => runTableCommand("deleteColumn")} role="menuitem" type="button">删除表格列</button>
+                  </div>
+                ) : null}
+              </div>
+              <button aria-label="表情包" className={toolbarButtonClass(false, true)} disabled={editorMissing} title="表情包" type="button">
+                <SmilePlus aria-hidden="true" size={17} strokeWidth={2.6} />
+              </button>
               <div className="relative">
                 <button
                   aria-expanded={colorMenuOpen}
@@ -414,9 +468,13 @@ export function ThoughtRichTextDraftPage() {
                   </div>
                 ) : null}
               </div>
-              <input aria-label="上传图片或视频附件" accept="image/*,video/*" className="sr-only" onChange={handleAttachmentChange} ref={attachmentInputRef} type="file" />
-              <button aria-label="附件" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => attachmentInputRef.current?.click()} title="上传图片或视频附件" type="button">
+              <input aria-label="上传图片附件" accept="image/*" className="sr-only" onChange={handleAttachmentChange} ref={imageInputRef} type="file" />
+              <button aria-label="图片" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => imageInputRef.current?.click()} title="上传图片附件" type="button">
                 <ImagePlus aria-hidden="true" size={17} strokeWidth={2.6} />
+              </button>
+              <input aria-label="上传视频附件" accept="video/*" className="sr-only" onChange={handleAttachmentChange} ref={videoInputRef} type="file" />
+              <button aria-label="视频" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => videoInputRef.current?.click()} title="上传视频附件" type="button">
+                <VideoIcon aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
               <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
