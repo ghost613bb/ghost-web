@@ -1,15 +1,17 @@
 "use client";
 
+import { mergeAttributes, Node as TiptapNode } from "@tiptap/core";
 import Color from "@tiptap/extension-color";
+import Image from "@tiptap/extension-image";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Bold, ChevronDown, Italic, List, ListOrdered, ListTodo, Palette, Strikethrough, Underline as UnderlineIcon, Undo2 } from "lucide-react";
+import { Bold, ChevronDown, ImagePlus, Italic, List, ListOrdered, ListTodo, Palette, Strikethrough, Underline as UnderlineIcon, Undo2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 const toolbarButtonBaseClass =
   "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-[0.85rem] border px-2.5 text-sm font-black shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0";
@@ -21,9 +23,44 @@ const toolbarMenuClass = "absolute left-0 top-12 z-20 min-w-28 overflow-hidden r
 const toolbarMenuItemClass = "flex w-full items-center gap-2 rounded-[0.7rem] px-3 py-2 text-left text-sm font-black text-[#6f4b51] transition hover:bg-[#fff1f4]";
 const toolbarDividerClass = "mx-1 h-7 w-px bg-[#ead7ce]";
 const richTextFrameClass =
-  "[&_.ProseMirror-focused]:outline-none [&_.ProseMirror]:leading-[32px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:pt-1 [&_blockquote]:my-3 [&_blockquote]:rounded-r-[1rem] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f0b5c0] [&_blockquote]:bg-[#fff6f8]/80 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:font-semibold [&_h1]:my-0 [&_h1]:text-[1.625rem] [&_h1]:font-black [&_h1]:leading-[32px] [&_h1]:tracking-[0.03em] [&_h2]:my-0 [&_h2]:text-[1.45rem] [&_h2]:font-black [&_h2]:leading-[32px] [&_h2]:tracking-[0.03em] [&_h3]:my-0 [&_h3]:text-[1.3rem] [&_h3]:font-black [&_h3]:leading-[32px] [&_h4]:my-0 [&_h4]:text-[1.16rem] [&_h4]:font-black [&_h4]:leading-[32px] [&_h5]:my-0 [&_h5]:text-[1.05rem] [&_h5]:font-black [&_h5]:leading-[32px] [&_h6]:my-0 [&_h6]:text-[1rem] [&_h6]:font-black [&_h6]:leading-[32px] [&_li]:my-0 [&_li]:pl-1 [&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-0 [&_p]:leading-[32px] [&_s]:line-through [&_s]:decoration-2 [&_strong]:font-black [&_u]:underline [&_u]:decoration-2 [&_u]:underline-offset-4 [&_ul]:my-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul[data-type='taskList']]:my-0 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-1 [&_ul[data-type='taskList']_li[data-checked]]:flex [&_ul[data-type='taskList']_li[data-checked]]:items-start [&_ul[data-type='taskList']_li[data-checked]]:gap-2 [&_ul[data-type='taskList']_li[data-checked]]:pl-0 [&_ul[data-type='taskList']_li[data-checked]]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:flex [&_ul[data-type='taskList']_li[data-checked]>label]:h-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:items-center [&_ul[data-type='taskList']_li[data-checked]>div]:flex-1 [&_ul[data-type='taskList']_li[data-checked]>div]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>div_p]:my-0 [&_ul[data-type='taskList']_li[data-checked]>div_p]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:h-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:w-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:appearance-none [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:rounded-[0.28rem] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border-[#d97891] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-white [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-center [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-no-repeat [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']:checked]:bg-[#d97891] [&_[data-type='taskItem']]:flex [&_[data-type='taskItem']]:items-start [&_[data-type='taskItem']]:gap-2 [&_[data-type='taskItem']]:pl-0 [&_[data-type='taskItem']]:leading-[32px] [&_[data-type='taskItem']_label]:flex [&_[data-type='taskItem']_label]:h-[32px] [&_[data-type='taskItem']_label]:items-center [&_[data-type='taskItem']_div]:leading-[32px] [&_[data-type='taskItem']_div_p]:my-0 [&_[data-type='taskItem']_div_p]:leading-[32px] [&_[data-type='taskItem']_input]:h-4 [&_[data-type='taskItem']_input]:w-4 [&_[data-type='taskItem']_input]:appearance-none [&_[data-type='taskItem']_input]:rounded-[0.28rem] [&_[data-type='taskItem']_input]:border [&_[data-type='taskItem']_input]:border-[#d97891] [&_[data-type='taskItem']_input]:bg-white [&_[data-type='taskItem']_input]:bg-center [&_[data-type='taskItem']_input]:bg-no-repeat [&_[data-type='taskItem']_input:checked]:bg-[#d97891] [&_[data-type='taskList']]:my-0 [&_[data-type='taskList']]:list-none [&_[data-type='taskList']]:pl-1";
+  "[&_.ProseMirror-focused]:outline-none [&_.ProseMirror]:leading-[32px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:pt-1 [&_blockquote]:my-3 [&_blockquote]:rounded-r-[1rem] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f0b5c0] [&_blockquote]:bg-[#fff6f8]/80 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:font-semibold [&_h1]:my-0 [&_h1]:text-[1.625rem] [&_h1]:font-black [&_h1]:leading-[32px] [&_h1]:tracking-[0.03em] [&_h2]:my-0 [&_h2]:text-[1.45rem] [&_h2]:font-black [&_h2]:leading-[32px] [&_h2]:tracking-[0.03em] [&_h3]:my-0 [&_h3]:text-[1.3rem] [&_h3]:font-black [&_h3]:leading-[32px] [&_h4]:my-0 [&_h4]:text-[1.16rem] [&_h4]:font-black [&_h4]:leading-[32px] [&_h5]:my-0 [&_h5]:text-[1.05rem] [&_h5]:font-black [&_h5]:leading-[32px] [&_h6]:my-0 [&_h6]:text-[1rem] [&_h6]:font-black [&_h6]:leading-[32px] [&_li]:my-0 [&_li]:pl-1 [&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-0 [&_p]:leading-[32px] [&_s]:line-through [&_s]:decoration-2 [&_strong]:font-black [&_u]:underline [&_u]:decoration-2 [&_u]:underline-offset-4 [&_ul]:my-0 [&_ul]:list-disc [&_ul]:pl-6 [&_ul[data-type='taskList']]:my-0 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-1 [&_ul[data-type='taskList']_li[data-checked]]:flex [&_ul[data-type='taskList']_li[data-checked]]:items-start [&_ul[data-type='taskList']_li[data-checked]]:gap-2 [&_ul[data-type='taskList']_li[data-checked]]:pl-0 [&_ul[data-type='taskList']_li[data-checked]]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:flex [&_ul[data-type='taskList']_li[data-checked]>label]:h-[32px] [&_ul[data-type='taskList']_li[data-checked]>label]:items-center [&_ul[data-type='taskList']_li[data-checked]>div]:flex-1 [&_ul[data-type='taskList']_li[data-checked]>div]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>div_p]:my-0 [&_ul[data-type='taskList']_li[data-checked]>div_p]:leading-[32px] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:h-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:w-4 [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:appearance-none [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:rounded-[0.28rem] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:border-[#d97891] [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-white [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-center [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']]:bg-no-repeat [&_ul[data-type='taskList']_li[data-checked]>label_input[type='checkbox']:checked]:bg-[#d97891] [&_[data-type='taskItem']]:flex [&_[data-type='taskItem']]:items-start [&_[data-type='taskItem']]:gap-2 [&_[data-type='taskItem']]:pl-0 [&_[data-type='taskItem']]:leading-[32px] [&_[data-type='taskItem']_label]:flex [&_[data-type='taskItem']_label]:h-[32px] [&_[data-type='taskItem']_label]:items-center [&_[data-type='taskItem']_div]:leading-[32px] [&_[data-type='taskItem']_div_p]:my-0 [&_[data-type='taskItem']_div_p]:leading-[32px] [&_[data-type='taskItem']_input]:h-4 [&_[data-type='taskItem']_input]:w-4 [&_[data-type='taskItem']_input]:appearance-none [&_[data-type='taskItem']_input]:rounded-[0.28rem] [&_[data-type='taskItem']_input]:border [&_[data-type='taskItem']_input]:border-[#d97891] [&_[data-type='taskItem']_input]:bg-white [&_[data-type='taskItem']_input]:bg-center [&_[data-type='taskItem']_input]:bg-no-repeat [&_[data-type='taskItem']_input:checked]:bg-[#d97891] [&_[data-type='taskList']]:my-0 [&_[data-type='taskList']]:list-none [&_[data-type='taskList']]:pl-1 [&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-[1rem] [&_img]:border [&_img]:border-[#efd8cf] [&_video]:my-3 [&_video]:max-w-full [&_video]:rounded-[1rem] [&_video]:border [&_video]:border-[#efd8cf] [&_video]:bg-[#2f2528]";
 
 const headingLevels = [1, 2, 3, 4, 5, 6] as const;
+const Video = TiptapNode.create({
+  name: "video",
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: "video[src]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["video", mergeAttributes(HTMLAttributes, { controls: "true" }), 0];
+  },
+  addCommands() {
+    return {
+      setVideo:
+        (options: { src: string }) =>
+        ({ commands }) =>
+          commands.insertContent({ type: this.name, attrs: options }),
+    };
+  },
+});
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    video: {
+      setVideo: (options: { src: string }) => ReturnType;
+    };
+  }
+}
+
 const colorOptions = [
   { label: "默认", value: null, swatch: "#5b4347" },
   { label: "深棕", value: "#5b4347", swatch: "#5b4347" },
@@ -70,10 +107,13 @@ const defaultToolbarState: ToolbarState = {
 };
 
 export function ThoughtRichTextDraftPage() {
+  const [attachmentUploadError, setAttachmentUploadError] = useState("");
+  const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const toolbarRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
-    extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem],
+    extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, Video],
     content: "",
     immediatelyRender: false,
   });
@@ -111,6 +151,60 @@ export function ThoughtRichTextDraftPage() {
     setColorMenuOpen(false);
   };
 
+  async function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !editor) {
+      return;
+    }
+
+    setAttachmentUploadError("");
+    setAttachmentUploadStatus("uploading");
+
+    const formData = new FormData();
+    formData.set("attachmentFile", file);
+    formData.set("attachmentFileName", file.name);
+
+    try {
+      const response = await fetch("/api/thoughts/attachments", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "附件上传失败");
+      }
+
+      if (data.attachment.type === "image") {
+        editor.chain().focus().setImage({ src: data.attachment.url }).run();
+      } else if (data.attachment.type === "video") {
+        editor.chain().focus().setVideo({ src: data.attachment.url }).run();
+      }
+
+      setAttachmentUploadStatus("uploaded");
+    } catch (error) {
+      setAttachmentUploadError(error instanceof Error ? error.message : "附件上传失败");
+      setAttachmentUploadStatus("idle");
+    }
+  }
+
+  useEffect(() => {
+    if (attachmentUploadStatus !== "uploaded" && !attachmentUploadError) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setAttachmentUploadStatus("idle");
+      setAttachmentUploadError("");
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [attachmentUploadError, attachmentUploadStatus]);
+
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
       if (!toolbarRef.current?.contains(event.target as Node)) {
@@ -127,7 +221,7 @@ export function ThoughtRichTextDraftPage() {
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] px-3 py-3 text-[#4c2b2d] sm:px-5 sm:py-4">
       <div className="mx-auto max-w-[1360px]">
-        <section className="relative overflow-hidden rounded-[2.2rem] border-[2px] border-[#e4d0bd] bg-[#fffaf0] p-3 shadow-[0_24px_60px_rgba(135,95,76,0.14)] sm:p-4 lg:pl-[5.6rem]">
+        <section aria-label="新建碎碎念编辑本" className="relative overflow-hidden rounded-[2.2rem] border-[2px] border-[#e4d0bd] bg-[#fffaf0] p-3 shadow-[0_24px_60px_rgba(135,95,76,0.14)] sm:p-4 lg:pl-[5.6rem]">
           <div aria-hidden="true" className="absolute inset-y-0 left-0 hidden w-[4.3rem] border-r border-[#ead9c6] bg-[linear-gradient(90deg,#fff8ea_0%,#f7ead9_100%)] lg:block" />
           <div aria-hidden="true" className="absolute left-[3.62rem] top-9 hidden h-[76%] w-5 flex-col justify-between lg:flex">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -135,7 +229,7 @@ export function ThoughtRichTextDraftPage() {
             ))}
           </div>
 
-          <div className="rounded-[1.8rem] border border-[#eadccf] bg-[#fffdf8] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] sm:p-4">
+          <div aria-label="新建碎碎念内容滚动区" className="rounded-[1.8rem] border border-[#eadccf] bg-[#fffdf8] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] sm:p-4">
             <header className="mb-3 flex flex-col gap-3 border-b border-[#efe4d8] pb-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <Link className="inline-flex items-center rounded-full px-2 py-1 text-sm font-black text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
@@ -226,12 +320,19 @@ export function ThoughtRichTextDraftPage() {
                   </div>
                 ) : null}
               </div>
+              <input aria-label="上传图片或视频附件" accept="image/*,video/*" className="sr-only" onChange={handleAttachmentChange} ref={attachmentInputRef} type="file" />
+              <button aria-label="附件" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => attachmentInputRef.current?.click()} title="上传图片或视频附件" type="button">
+                <ImagePlus aria-hidden="true" size={17} strokeWidth={2.6} />
+              </button>
               <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
             </nav>
+            {attachmentUploadStatus === "uploading" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">附件上传中...</div> : null}
+            {attachmentUploadStatus === "uploaded" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">附件上传完成</div> : null}
+            {attachmentUploadError ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{attachmentUploadError}</div> : null}
 
-            <section aria-label="碎碎念富文本编辑纸张" className={`thought-rich-text-editor relative min-h-[545px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`}>
+            <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative h-[545px] overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`}>
               {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
             </section>
           </div>

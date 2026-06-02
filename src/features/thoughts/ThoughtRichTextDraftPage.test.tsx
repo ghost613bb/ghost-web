@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorState } from "@tiptap/react";
 import { ThoughtRichTextDraftPage } from "./ThoughtRichTextDraftPage";
@@ -40,6 +40,10 @@ vi.mock("@tiptap/extension-underline", () => ({
   default: "Underline",
 }));
 
+vi.mock("@tiptap/extension-image", () => ({
+  default: "Image",
+}));
+
 vi.mock("@tiptap/extension-text-style", () => ({
   TextStyle: "TextStyle",
 }));
@@ -69,7 +73,9 @@ function chainResult() {
   return {
     focus: vi.fn().mockReturnThis(),
     setColor: vi.fn().mockReturnThis(),
+    setImage: vi.fn().mockReturnThis(),
     setParagraph: vi.fn().mockReturnThis(),
+    setVideo: vi.fn().mockReturnThis(),
     toggleHeading: vi.fn().mockReturnThis(),
     toggleBold: vi.fn().mockReturnThis(),
     toggleItalic: vi.fn().mockReturnThis(),
@@ -133,12 +139,17 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
+    expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("min-h-[545px]", "overflow-hidden");
 
-    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "附件"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
+    expect(screen.getByLabelText("上传图片或视频附件")).toHaveAttribute("accept", "image/*,video/*");
     const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
-    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "撤销"]);
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "文字颜色", "附件", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -149,7 +160,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByRole("button", { name: "引用" })).not.toBeInTheDocument();
 
     expect(mockStarterKit.configure).toHaveBeenCalledWith({ underline: false });
-    expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem"]);
+    expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem", "Image", expect.objectContaining({ name: "video" })]);
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
     expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
     expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
@@ -164,7 +175,8 @@ describe("ThoughtRichTextDraftPage", () => {
 
     const editorFrame = screen.getByLabelText("碎碎念富文本编辑纸张");
 
-    expect(editorFrame).toHaveClass("min-h-[545px]");
+    expect(editorFrame).toHaveClass("h-[545px]");
+    expect(editorFrame).not.toHaveClass("min-h-[545px]");
     expect(editorFrame).not.toHaveClass("min-h-[585px]");
     expect(editorFrame).not.toHaveClass("min-h-[605px]");
     expect(editorFrame.className).not.toContain("border-dashed");
@@ -212,6 +224,9 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).not.toContain("bg-[url(");
     expect(editorFrame.className).toContain("thought-rich-text-editor");
     expect(editorFrame.className).toContain("[&_blockquote]:border-l-4");
+    expect(editorFrame.className).toContain("[&_img]:max-w-full");
+    expect(editorFrame.className).toContain("[&_video]:max-w-full");
+    expect(editorFrame.className).toContain("[&_video]:bg-[#2f2528]");
 
     expect(screen.queryByTestId("thought-rich-text-preview-frame")).not.toBeInTheDocument();
   });
@@ -274,6 +289,61 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "H6" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "删除线" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "下划线" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("uploads image and video attachments then inserts media nodes into the editor", async () => {
+    const imageChain = chainResult();
+    const videoChain = chainResult();
+    mockEditor.chain.mockReturnValueOnce(imageChain).mockReturnValueOnce(videoChain).mockImplementation(chainResult);
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png" } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "video", url: "/uploads/thoughts/clip.mp4", fileName: "clip.mp4" } }) } as Response);
+
+    render(<ThoughtRichTextDraftPage />);
+
+    const fileInput = screen.getByLabelText("上传图片或视频附件");
+    fireEvent.change(fileInput, { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    const uploadToast = screen.getByRole("status");
+    expect(uploadToast).toHaveClass("fixed", "right-6", "top-6");
+    expect(fetchMock).toHaveBeenCalledWith("/api/thoughts/attachments", expect.objectContaining({ method: "POST", body: expect.any(FormData) }));
+    expect(imageChain.setImage).toHaveBeenCalledWith({ src: "/uploads/thoughts/cat.png" });
+    expect(imageChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(fileInput, { target: { files: [new File(["video"], "clip.mp4", { type: "video/mp4" })] } });
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    expect(videoChain.setVideo).toHaveBeenCalledWith({ src: "/uploads/thoughts/clip.mp4" });
+    expect(videoChain.run).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows attachment upload errors without saving the thought", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: false, json: async () => ({ error: "只支持上传图片或视频附件" }) } as Response);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.change(screen.getByLabelText("上传图片或视频附件"), { target: { files: [new File(["text"], "note.txt", { type: "text/plain" })] } });
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("只支持上传图片或视频附件"));
+    const errorToast = screen.getByRole("alert");
+    expect(errorToast).toHaveClass("fixed", "right-6", "top-6");
+    expect(screen.queryByRole("button", { name: "保存" })).not.toBeInTheDocument();
+  });
+
+  it("hides attachment toast automatically", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png" } }) } as Response);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.change(screen.getByLabelText("上传图片或视频附件"), { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it("runs inline style commands from compact toolbar buttons", () => {
