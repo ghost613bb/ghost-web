@@ -521,8 +521,11 @@ describe("content module pages", () => {
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
-    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    });
+    ["H4", "H5", "H6"].forEach((name) => {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     });
     ["新增表格行", "删除表格行", "新增表格列", "删除表格列"].forEach((name) => {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();

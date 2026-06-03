@@ -188,8 +188,11 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("min-h-[545px]", "overflow-hidden");
 
-    ["撤销", "H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    });
+    ["H4", "H5", "H6"].forEach((name) => {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     });
     ["新增表格行", "删除表格行", "新增表格列", "删除表格列"].forEach((name) => {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
@@ -199,7 +202,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByLabelText("上传图片附件")).toHaveAttribute("accept", "image/*");
     expect(screen.getByLabelText("上传视频附件")).toHaveAttribute("accept", "video/*");
     const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
-    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "H4", "H5", "H6", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频", "撤销"]);
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -233,14 +236,13 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByTestId("thought-rich-text-editor-frame")).not.toBeInTheDocument();
     expect(editorFrame.className).toContain("[&_h1]:text-[1.625rem]");
     expect(editorFrame.className).toContain("[&_h1]:leading-[32px]");
-    expect(editorFrame.className).toContain("[&_h2]:text-[1.45rem]");
+    expect(editorFrame.className).toContain("[&_h2]:text-[1.35rem]");
     expect(editorFrame.className).toContain("[&_h2]:leading-[32px]");
-    expect(editorFrame.className).toContain("[&_h3]:text-[1.3rem]");
+    expect(editorFrame.className).toContain("[&_h3]:text-[1.12rem]");
     expect(editorFrame.className).toContain("[&_h3]:leading-[32px]");
-    expect(editorFrame.className).toContain("[&_h4]:text-[1.16rem]");
-    expect(editorFrame.className).toContain("[&_h4]:leading-[32px]");
-    expect(editorFrame.className).toContain("[&_h5]:text-[1.05rem]");
-    expect(editorFrame.className).toContain("[&_h5]:leading-[32px]");
+    expect(editorFrame.className).not.toContain("[&_h4]:text-");
+    expect(editorFrame.className).not.toContain("[&_h5]:text-");
+    expect(editorFrame.className).not.toContain("[&_h6]:text-");
     expect(editorFrame.className).not.toContain("[&_h2]:text-[#d97891]");
     expect(editorFrame.className).not.toContain("[&_h3]:text-[#d97891]");
     expect(editorFrame.className).toContain("[&_.ProseMirror-focused]:outline-none");
@@ -361,15 +363,15 @@ describe("ThoughtRichTextDraftPage", () => {
   });
 
   it("runs heading and color dropdown commands and subscribes to editor state so toolbar buttons rerender", () => {
-    const h6Chain = chainResult();
+    const h3Chain = chainResult();
     const colorChain = chainResult();
     const defaultColorChain = chainResult();
-    mockEditor.chain.mockReturnValueOnce(h6Chain).mockReturnValueOnce(colorChain).mockReturnValueOnce(defaultColorChain).mockImplementation(chainResult);
+    mockEditor.chain.mockReturnValueOnce(h3Chain).mockReturnValueOnce(colorChain).mockReturnValueOnce(defaultColorChain).mockImplementation(chainResult);
     const { rerender } = render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "H6" }));
-    expect(h6Chain.toggleHeading).toHaveBeenCalledWith({ level: 6 });
-    expect(h6Chain.run).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "H3" }));
+    expect(h3Chain.toggleHeading).toHaveBeenCalledWith({ level: 3 });
+    expect(h3Chain.run).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "粉色" }));
@@ -394,7 +396,7 @@ describe("ThoughtRichTextDraftPage", () => {
       canUndo: true,
       isBold: true,
       isCodeBlock: true,
-      isH6: true,
+      isH3: true,
       isStrike: true,
       isUnderline: true,
     };
@@ -404,7 +406,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "加粗" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "代码块" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("button", { name: "链接" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "H6" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "H3" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "删除线" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "下划线" })).toHaveAttribute("aria-pressed", "true");
   });
