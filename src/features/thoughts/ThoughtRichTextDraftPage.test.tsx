@@ -82,6 +82,16 @@ vi.mock("@tiptap/react", () => ({
   useEditorState: vi.fn(() => editorState),
 }));
 
+vi.mock("emoji-picker-react", () => ({
+  default: ({ onEmojiClick }: { onEmojiClick: (emojiData: { emoji: string }) => void }) => (
+    <div aria-label="表情选择器" role="group">
+      <button onClick={() => onEmojiClick({ emoji: "😊" })} type="button">
+        选择笑脸
+      </button>
+    </div>
+  ),
+}));
+
 function chainResult() {
   return {
     focus: vi.fn().mockReturnThis(),
@@ -92,6 +102,7 @@ function chainResult() {
     deleteRow: vi.fn().mockReturnThis(),
     extendMarkRange: vi.fn().mockReturnThis(),
     insertTable: vi.fn().mockReturnThis(),
+    insertContent: vi.fn().mockReturnThis(),
     setImage: vi.fn().mockReturnThis(),
     setLink: vi.fn().mockReturnThis(),
     setParagraph: vi.fn().mockReturnThis(),
@@ -531,6 +542,56 @@ describe("ThoughtRichTextDraftPage", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "删除表格列" }));
     expect(deleteColumnChain.deleteColumn).toHaveBeenCalledTimes(1);
     expect(deleteColumnChain.run).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the emoji picker from the toolbar and inserts the selected emoji", () => {
+    const emojiChain = chainResult();
+    mockEditor.chain.mockImplementation(() => emojiChain);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "表情包" }));
+
+    expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "选择笑脸" }));
+
+    expect(emojiChain.insertContent).toHaveBeenCalledWith(" 😊 ");
+    expect(emojiChain.run).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("group", { name: "表情选择器" })).not.toBeInTheDocument();
+  });
+
+  it("closes the emoji picker when opening other toolbar menus or clicking outside", () => {
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "表情包" }));
+    expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    expect(screen.queryByRole("group", { name: "表情选择器" })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "插入表格" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    fireEvent.click(screen.getByRole("button", { name: "表情包" }));
+    expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
+    expect(screen.queryByRole("group", { name: "表情选择器" })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "默认" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
+    fireEvent.click(screen.getByRole("button", { name: "表情包" }));
+    expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
+    expect(screen.queryByRole("group", { name: "表情选择器" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "编辑纸张背景设置" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
+    fireEvent.click(screen.getByRole("button", { name: "表情包" }));
+    expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByLabelText("碎碎念富文本编辑纸张"));
+    expect(screen.queryByRole("group", { name: "表情选择器" })).not.toBeInTheDocument();
   });
 
   it("uses an in-page dialog before deleting the table header row", () => {

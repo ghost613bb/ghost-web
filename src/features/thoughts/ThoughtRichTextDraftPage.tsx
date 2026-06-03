@@ -12,6 +12,7 @@ import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, ChevronDown, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, PanelLeft, PanelRight, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon, Wallpaper } from "lucide-react";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
 
@@ -120,6 +121,7 @@ export function ThoughtRichTextDraftPage() {
   const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
+  const [emojiMenuOpen, setEmojiMenuOpen] = useState(false);
   const [tableHeaderDeletePending, setTableHeaderDeletePending] = useState(false);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -174,6 +176,7 @@ export function ThoughtRichTextDraftPage() {
   const closeMenus = () => {
     setBackgroundMenuOpen(false);
     setColorMenuOpen(false);
+    setEmojiMenuOpen(false);
     setTableMenuOpen(false);
   };
 
@@ -197,6 +200,11 @@ export function ThoughtRichTextDraftPage() {
       chain?.[command]().run();
     }
 
+    closeMenus();
+  }
+
+  function handleEmojiClick(emojiData: EmojiClickData) {
+    editor?.chain().focus().insertContent(` ${emojiData.emoji} `).run();
     closeMenus();
   }
 
@@ -377,6 +385,7 @@ export function ThoughtRichTextDraftPage() {
                   onClick={() => {
                     setBackgroundMenuOpen(false);
                     setColorMenuOpen(false);
+                    setEmojiMenuOpen(false);
                     setTableMenuOpen((open) => !open);
                   }}
                   title="表格"
@@ -395,9 +404,30 @@ export function ThoughtRichTextDraftPage() {
                   </div>
                 ) : null}
               </div>
-              <button aria-label="表情包" className={toolbarButtonClass(false, true)} disabled={editorMissing} title="表情包" type="button">
-                <SmilePlus aria-hidden="true" size={17} strokeWidth={2.6} />
-              </button>
+              <div className="relative">
+                <button
+                  aria-expanded={emojiMenuOpen}
+                  aria-haspopup="dialog"
+                  aria-label="表情包"
+                  className={toolbarButtonClass(emojiMenuOpen, true)}
+                  disabled={editorMissing}
+                  onClick={() => {
+                    setBackgroundMenuOpen(false);
+                    setColorMenuOpen(false);
+                    setTableMenuOpen(false);
+                    setEmojiMenuOpen((open) => !open);
+                  }}
+                  title="表情包"
+                  type="button"
+                >
+                  <SmilePlus aria-hidden="true" size={17} strokeWidth={2.6} />
+                </button>
+                {emojiMenuOpen ? (
+                  <div className="absolute left-0 top-12 z-20 overflow-hidden rounded-[1rem] border border-[#ead7ce] bg-[#fffdf8] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="dialog" aria-label="表情选择器弹层">
+                    <EmojiPicker onEmojiClick={handleEmojiClick} />
+                  </div>
+                ) : null}
+              </div>
               <div className="relative">
                 <button
                   aria-expanded={colorMenuOpen}
@@ -406,6 +436,9 @@ export function ThoughtRichTextDraftPage() {
                   className={toolbarButtonClass()}
                   disabled={editorMissing}
                   onClick={() => {
+                    setBackgroundMenuOpen(false);
+                    setEmojiMenuOpen(false);
+                    setTableMenuOpen(false);
                     setColorMenuOpen((open) => !open);
                   }}
                   type="button"
@@ -446,6 +479,8 @@ export function ThoughtRichTextDraftPage() {
                   onClick={() => {
                     setBackgroundMenuOpen((open) => !open);
                     setColorMenuOpen(false);
+                    setEmojiMenuOpen(false);
+                    setTableMenuOpen(false);
                   }}
                   type="button"
                 >
