@@ -271,10 +271,14 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).toContain("[&_table]:transition-[table-layout]");
     expect(editorFrame.className).toContain("[&_table]:duration-300");
     expect(editorFrame.className).toContain("[&_.ProseMirror-focused_table]:table-fixed");
-    expect(editorFrame.className).toContain("[&_th:first-child]:rounded-tl-[1rem]");
-    expect(editorFrame.className).toContain("[&_th:last-child]:rounded-tr-[1rem]");
-    expect(editorFrame.className).toContain("[&_tr:last-child_td:first-child]:rounded-bl-[1rem]");
-    expect(editorFrame.className).toContain("[&_tr:last-child_td:last-child]:rounded-br-[1rem]");
+    expect(editorFrame.className).toContain("[&_tr:first-child>*:first-child]:rounded-tl-[1rem]");
+    expect(editorFrame.className).toContain("[&_tr:first-child>*:last-child]:rounded-tr-[1rem]");
+    expect(editorFrame.className).toContain("[&_tr:last-child>*:first-child]:rounded-bl-[1rem]");
+    expect(editorFrame.className).toContain("[&_tr:last-child>*:last-child]:rounded-br-[1rem]");
+    expect(editorFrame.className).not.toContain("[&_th:first-child]:rounded-tl-[1rem]");
+    expect(editorFrame.className).not.toContain("[&_th:last-child]:rounded-tr-[1rem]");
+    expect(editorFrame.className).not.toContain("[&_tr:last-child_td:first-child]:rounded-bl-[1rem]");
+    expect(editorFrame.className).not.toContain("[&_tr:last-child_td:last-child]:rounded-br-[1rem]");
     expect(editorFrame.className).toContain("[&_td]:border");
     expect(editorFrame.className).toContain("[&_td]:break-words");
     expect(editorFrame.className).toContain("[&_th]:border");
