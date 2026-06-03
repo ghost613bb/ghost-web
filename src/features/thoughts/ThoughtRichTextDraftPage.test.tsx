@@ -171,12 +171,17 @@ describe("ThoughtRichTextDraftPage", () => {
     });
   });
 
-  it("renders a local rich text draft with compact toolbar controls and no save actions", () => {
+  it("renders a local rich text draft with a reference-style header and compact toolbar controls", () => {
     render(<ThoughtRichTextDraftPage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
-    expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toHaveClass("text-xl", "sm:text-2xl");
+    const backLink = screen.getByRole("link", { name: "返回碎碎念" });
+    expect(backLink).toHaveAttribute("href", "/thoughts");
+    expect(backLink).not.toHaveTextContent("←");
+    expect(backLink.querySelector("svg")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
+    expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
@@ -212,7 +217,6 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
     expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
     expect(capturedUseEditorOptions).not.toHaveProperty("onUpdate");
-    expect(screen.queryByRole("button", { name: "保存" })).not.toBeInTheDocument();
   });
 
   it("styles rich text nodes so toolbar actions are visible in the editor", () => {
@@ -443,7 +447,6 @@ describe("ThoughtRichTextDraftPage", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("只支持上传图片或视频附件"));
     const errorToast = screen.getByRole("alert");
     expect(errorToast).toHaveClass("fixed", "right-6", "top-6");
-    expect(screen.queryByRole("button", { name: "保存" })).not.toBeInTheDocument();
   });
 
   it("hides attachment toast automatically", async () => {

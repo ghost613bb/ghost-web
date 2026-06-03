@@ -11,7 +11,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Bold, ChevronDown, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, PanelLeft, PanelRight, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon, Wallpaper } from "lucide-react";
+import { ArrowLeft, Bold, ChevronDown, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, PanelLeft, PanelRight, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon, Wallpaper } from "lucide-react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
@@ -323,15 +323,26 @@ export function ThoughtRichTextDraftPage() {
 
           <div aria-label="新建碎碎念内容滚动区" className="rounded-[1.8rem] border border-[#eadccf] bg-[#fffdf8] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] sm:p-4">
             <header className="mb-3 flex flex-col gap-3 border-b border-[#efe4d8] pb-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <Link className="inline-flex items-center rounded-full px-2 py-1 text-sm font-black text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
-                  返回碎碎念
+              <div className="flex flex-wrap items-center gap-3">
+                <Link aria-label="返回碎碎念" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
+                  <ArrowLeft aria-hidden="true" size={22} strokeWidth={3} />
                 </Link>
-                <h1 className="mt-2 text-2xl font-black tracking-tight text-[#4c2b2d] sm:text-[2rem]">新建碎碎念</h1>
+                <h1 className="text-xl font-black tracking-tight text-[#4c2b2d] sm:text-2xl">新建碎碎念</h1>
               </div>
-              <p className="rounded-full border border-[#f0d8dd] bg-[#fff4f6] px-4 py-2 text-sm font-black text-[#8a5b62] shadow-[0_8px_20px_rgba(120,90,75,0.05)]">
-                当前为富文本编辑体验预览，暂不保存。
-              </p>
+              <div aria-label="碎碎念操作" className="flex flex-wrap items-center gap-2">
+                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" type="button">
+                  保存
+                </button>
+                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" type="button">
+                  删除
+                </button>
+                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" onClick={() => setBackgroundMenuOpen((open) => !open)} type="button">
+                  背景模板
+                </button>
+                <button className="rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-4 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.28)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
+                  更换背景
+                </button>
+              </div>
             </header>
 
             <nav aria-label="富文本工具栏" className="mb-3 flex flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]" ref={toolbarRef}>

@@ -509,9 +509,14 @@ describe("content module pages", () => {
   it("renders the new thought rich text draft page", () => {
     render(<NewThoughtPage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
-    expect(screen.getByText("当前为富文本编辑体验预览，暂不保存。")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toHaveClass("text-xl", "sm:text-2xl");
+    const backLink = screen.getByRole("link", { name: "返回碎碎念" });
+    expect(backLink).toHaveAttribute("href", "/thoughts");
+    expect(backLink).not.toHaveTextContent("←");
+    expect(backLink.querySelector("svg")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
+    expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
