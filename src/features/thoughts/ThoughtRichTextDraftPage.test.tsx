@@ -529,6 +529,54 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(deleteColumnChain.run).toHaveBeenCalledTimes(1);
   });
 
+  it("uses an in-page dialog before deleting the table header row", () => {
+    mockEditor.isActive.mockImplementation((name: string, attrs?: { level?: number }) => {
+      if (name === "tableHeader") return true;
+      if (name === "heading" && attrs?.level === 1) return editorState.isH1;
+      if (name === "heading" && attrs?.level === 2) return editorState.isH2;
+      if (name === "heading" && attrs?.level === 3) return editorState.isH3;
+      if (name === "heading" && attrs?.level === 4) return editorState.isH4;
+      if (name === "heading" && attrs?.level === 5) return editorState.isH5;
+      if (name === "heading" && attrs?.level === 6) return editorState.isH6;
+      if (name === "codeBlock") return editorState.isCodeBlock;
+      if (name === "bold") return editorState.isBold;
+      if (name === "italic") return editorState.isItalic;
+      if (name === "link") return editorState.isLink;
+      if (name === "strike") return editorState.isStrike;
+      if (name === "underline") return editorState.isUnderline;
+      if (name === "bulletList") return editorState.isBulletList;
+      if (name === "orderedList") return editorState.isOrderedList;
+      if (name === "taskList") return editorState.isTaskList;
+      if (name === "blockquote") return editorState.isBlockquote;
+      return false;
+    });
+    const confirmedDeleteRowChain = chainResult();
+    mockEditor.chain.mockReturnValueOnce(confirmedDeleteRowChain).mockImplementation(chainResult);
+    const confirmSpy = vi.spyOn(window, "confirm");
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    mockEditor.chain.mockClear();
+    fireEvent.click(screen.getByRole("menuitem", { name: "删除表格行" }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog", { name: "删除表头行" });
+    expect(dialog).toHaveTextContent("确定要删除表头行吗？");
+    expect(mockEditor.chain).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
+    expect(screen.queryByRole("dialog", { name: "删除表头行" })).not.toBeInTheDocument();
+    expect(mockEditor.chain).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "表格" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "删除表格行" }));
+    fireEvent.click(screen.getByRole("button", { name: "确认删除" }));
+
+    expect(confirmedDeleteRowChain.deleteRow).toHaveBeenCalledTimes(1);
+    expect(confirmedDeleteRowChain.run).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog", { name: "删除表头行" })).not.toBeInTheDocument();
+  });
+
   it("runs bullet, ordered, and task list commands from flat toolbar buttons", () => {
     const bulletChain = chainResult();
     const orderedChain = chainResult();

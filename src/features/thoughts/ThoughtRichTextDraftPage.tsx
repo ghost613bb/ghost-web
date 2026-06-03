@@ -120,6 +120,7 @@ export function ThoughtRichTextDraftPage() {
   const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
+  const [tableHeaderDeletePending, setTableHeaderDeletePending] = useState(false);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
@@ -176,7 +177,18 @@ export function ThoughtRichTextDraftPage() {
     setTableMenuOpen(false);
   };
 
+  function deleteTableRow() {
+    editor?.chain().focus().deleteRow().run();
+    closeMenus();
+  }
+
   function runTableCommand(command: "addColumnAfter" | "addRowAfter" | "deleteColumn" | "deleteRow" | "insertTable") {
+    if (command === "deleteRow" && editor?.isActive("tableHeader")) {
+      setTableHeaderDeletePending(true);
+      closeMenus();
+      return;
+    }
+
     const chain = editor?.chain().focus();
 
     if (command === "insertTable") {
@@ -487,6 +499,22 @@ export function ThoughtRichTextDraftPage() {
             <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative h-[545px] overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`} style={paperBackgroundStyle}>
               {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
             </section>
+            {tableHeaderDeletePending ? (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4c2b2d]/20 px-4">
+                <div aria-modal="true" className="w-full max-w-sm rounded-[1.4rem] border border-[#ead7ce] bg-[#fffdf8] p-5 text-[#5b4347] shadow-[0_24px_60px_rgba(122,79,85,0.2)]" role="dialog" aria-label="删除表头行">
+                  <h2 className="text-lg font-black text-[#4c2b2d]">删除表头行</h2>
+                  <p className="mt-2 text-sm font-bold leading-6 text-[#8a5b62]">确定要删除表头行吗？删除后表格会失去表头结构。</p>
+                  <div className="mt-5 flex justify-end gap-2">
+                    <button className="rounded-[0.85rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={() => setTableHeaderDeletePending(false)} type="button">
+                      取消
+                    </button>
+                    <button className="rounded-[0.85rem] border border-[#d97891] bg-[#f8cfd5] px-4 py-2 text-sm font-black text-[#7a3f4a] transition hover:bg-[#f4b8c2]" onClick={() => { setTableHeaderDeletePending(false); deleteTableRow(); }} type="button">
+                      确认删除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </section>
       </div>
