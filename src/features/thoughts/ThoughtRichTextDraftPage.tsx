@@ -172,9 +172,9 @@ export function ThoughtRichTextDraftPage() {
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
   const paperBackgroundCustomized = paperBackgroundImageUrl.length > 0;
-  const editorLayoutClass = backgroundPanelCollapsed ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start" : "grid gap-4 xl:grid-cols-[max-content_minmax(18rem,1fr)] xl:items-start";
-  const editorAreaClass = backgroundPanelCollapsed ? "w-full max-w-full" : "w-fit max-w-full";
-  const editorPaperSizeClass = "h-[545px] w-full";
+  const editorLayoutClass = backgroundPanelCollapsed ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start" : "grid gap-4 xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)] xl:items-start";
+  const editorAreaClass = "min-w-0 w-full max-w-full";
+  const editorPaperSizeClass = "h-[545px] min-w-0 w-full";
   const backgroundPanelClass = backgroundPanelCollapsed
     ? "h-[604px] w-12 min-w-0 overflow-hidden rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] px-2 py-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)]"
     : "h-full min-w-0 self-stretch rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] p-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)] xl:sticky xl:top-4";
@@ -355,7 +355,7 @@ export function ThoughtRichTextDraftPage() {
 
             <div aria-label="碎碎念编辑布局" className={editorLayoutClass}>
               <div aria-label="富文本编辑区" className={editorAreaClass}>
-                <nav aria-label="富文本工具栏" className="mb-3 flex w-full max-w-full flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]" ref={toolbarRef}>
+                <nav aria-label="富文本工具栏" className="mb-3 flex min-w-0 w-full max-w-full flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]" ref={toolbarRef}>
               {headingLevels.map((level) => (
                 <button
                   aria-label={`H${level}`}

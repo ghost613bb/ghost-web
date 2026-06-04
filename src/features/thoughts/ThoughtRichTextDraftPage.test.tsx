@@ -192,11 +192,11 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[max-content_minmax(18rem,1fr)]");
+    expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)]");
     const editorArea = screen.getAllByLabelText("富文本编辑区")[0];
-    expect(editorArea).toHaveClass("w-fit", "max-w-full");
-    expect(within(editorArea).getByLabelText("富文本工具栏")).toHaveClass("w-full", "max-w-full");
-    expect(within(editorArea).getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full");
+    expect(editorArea).toHaveClass("w-full", "max-w-full", "min-w-0");
+    expect(within(editorArea).getByLabelText("富文本工具栏")).toHaveClass("w-full", "max-w-full", "min-w-0");
+    expect(within(editorArea).getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full", "min-w-0");
     expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4", "min-w-0");
     expect(screen.getByLabelText("背景模板列表")).toHaveClass("grid", "grid-cols-2");
     expect(screen.getByLabelText("新建碎碎念编辑本")).toHaveClass("max-w-[1600px]");
