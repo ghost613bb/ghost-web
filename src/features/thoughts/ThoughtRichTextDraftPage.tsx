@@ -73,13 +73,12 @@ const colorOptions = [
   { label: "黄色", value: "#b8860b", swatch: "#b8860b" },
 ] as const;
 
-const defaultPaperBackgroundOpacity = 100;
+const defaultPaperBackgroundOpacity = 52;
 const paperLineGradient = "repeating-linear-gradient(0deg, transparent 0, transparent 31px, #efe6d8 32px)";
 const paperTemplateOptions = [
-  { label: "横线纸", previewClass: "bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_17px,#efe6d8_18px)]" },
-  { label: "方格纸", previewClass: "bg-[linear-gradient(#f0e8dd_1px,transparent_1px),linear-gradient(90deg,#f0e8dd_1px,transparent_1px)] bg-[length:18px_18px]" },
-  { label: "暖色纸", previewClass: "bg-[linear-gradient(135deg,#fff4e6_0%,#fffdf7_55%,#ffe8d8_100%)]" },
-  { label: "粉色纸", previewClass: "bg-[linear-gradient(135deg,#fff7fa_0%,#fffdf7_58%,#ffe4eb_100%)]" },
+  { label: "糖果波纹", imageUrl: "/thought-backgrounds/candy-waves.jpg" },
+  { label: "粉心回响", imageUrl: "/thought-backgrounds/pink-heart.jpg" },
+  { label: "海盐边框", imageUrl: "/thought-backgrounds/sea-salt-frame.jpg" },
 ] as const;
 
 type ToolbarState = {
@@ -226,6 +225,16 @@ export function ThoughtRichTextDraftPage() {
     }
 
     setPaperBackgroundImageUrl("");
+    setPaperBackgroundOpacity(defaultPaperBackgroundOpacity);
+  }
+
+  function applyPaperTemplate(imageUrl: string) {
+    if (paperBackgroundImageUrlRef.current) {
+      URL.revokeObjectURL(paperBackgroundImageUrlRef.current);
+      paperBackgroundImageUrlRef.current = "";
+    }
+
+    setPaperBackgroundImageUrl(imageUrl);
     setPaperBackgroundOpacity(defaultPaperBackgroundOpacity);
   }
 
@@ -526,8 +535,8 @@ export function ThoughtRichTextDraftPage() {
                     </div>
                     <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
                       {paperTemplateOptions.map((template) => (
-                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.label} type="button">
-                          <span className={`block h-20 rounded-[0.8rem] border border-[#f0e2d6] ${template.previewClass}`} />
+                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.label} onClick={() => applyPaperTemplate(template.imageUrl)} type="button">
+                          <span className="block h-20 rounded-[0.8rem] border border-[#f0e2d6] bg-cover bg-center" style={{ backgroundImage: `url(${template.imageUrl})` }} />
                           <span className="mt-2 block text-xs font-black text-[#6f4b51]">{template.label}</span>
                         </button>
                       ))}

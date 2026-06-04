@@ -189,9 +189,9 @@ describe("ThoughtRichTextDraftPage", () => {
     ["简约", "可爱", "手账", "自然"].forEach((name) => {
       expect(screen.queryByText(name)).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "糖果波纹" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "粉心回响" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "海盐边框" })).toBeInTheDocument();
     expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)]");
     const editorArea = screen.getAllByLabelText("富文本编辑区")[0];
     expect(editorArea).toHaveClass("w-full", "max-w-full", "min-w-0");
@@ -371,9 +371,15 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(within(backgroundPanel).queryByLabelText("背景透明度")).not.toBeInTheDocument();
     expect(within(backgroundPanel).queryByRole("button", { name: "恢复默认背景" })).not.toBeInTheDocument();
 
+    fireEvent.click(within(backgroundPanel).getByRole("button", { name: "糖果波纹" }));
+    expect(within(backgroundPanel).getByLabelText("背景透明度")).toHaveValue("52");
+    expect(editorPaper.getAttribute("style")).toContain("/thought-backgrounds/candy-waves.jpg");
+
+    fireEvent.click(within(backgroundPanel).getByRole("button", { name: "恢复默认背景" }));
+
     fireEvent.change(backgroundImageInput, { target: { files: [new File(["paper"], "paper.png", { type: "image/png" })] } });
     const backgroundOpacityInput = within(backgroundPanel).getByLabelText("背景透明度");
-    expect(backgroundOpacityInput).toHaveValue("100");
+    expect(backgroundOpacityInput).toHaveValue("52");
     expect(within(backgroundPanel).getByText("已选择背景图")).toBeInTheDocument();
 
     fireEvent.change(backgroundOpacityInput, { target: { value: "45" } });

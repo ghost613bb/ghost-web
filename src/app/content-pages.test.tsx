@@ -524,9 +524,9 @@ describe("content module pages", () => {
     ["简约", "可爱", "手账", "自然"].forEach((name) => {
       expect(screen.queryByText(name)).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "糖果波纹" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "粉心回响" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "海盐边框" })).toBeInTheDocument();
     expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)]");
     const editorArea = screen.getAllByLabelText("富文本编辑区")[0];
     expect(editorArea).toHaveClass("w-full", "max-w-full", "min-w-0");
