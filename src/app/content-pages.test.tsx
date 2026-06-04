@@ -519,6 +519,11 @@ describe("content module pages", () => {
     expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByText("背景模板")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "全部" })).not.toBeInTheDocument();
+    ["简约", "可爱", "手账", "自然"].forEach((name) => {
+      expect(screen.queryByText(name)).not.toBeInTheDocument();
+    });
     expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();

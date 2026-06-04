@@ -123,11 +123,11 @@ const defaultToolbarState: ToolbarState = {
 export function ThoughtRichTextDraftPage() {
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
   const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
-  const [backgroundMenuOpen, setBackgroundMenuOpen] = useState(false);
   const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const [emojiMenuOpen, setEmojiMenuOpen] = useState(false);
+  const [backgroundPanelCollapsed, setBackgroundPanelCollapsed] = useState(false);
   const [tableHeaderDeletePending, setTableHeaderDeletePending] = useState(false);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -172,6 +172,12 @@ export function ThoughtRichTextDraftPage() {
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
   const paperBackgroundCustomized = paperBackgroundImageUrl.length > 0;
+  const editorLayoutClass = backgroundPanelCollapsed ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start" : "grid gap-4 xl:grid-cols-[max-content_minmax(18rem,1fr)] xl:items-start";
+  const editorAreaClass = backgroundPanelCollapsed ? "w-full max-w-full" : "w-fit max-w-full";
+  const editorPaperSizeClass = "h-[545px] w-full";
+  const backgroundPanelClass = backgroundPanelCollapsed
+    ? "h-[604px] w-12 min-w-0 overflow-hidden rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] px-2 py-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)]"
+    : "h-full min-w-0 self-stretch rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] p-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)] xl:sticky xl:top-4";
   const paperBackgroundStyle: CSSProperties | undefined = paperBackgroundCustomized
     ? {
       backgroundImage: `${paperLineGradient}, linear-gradient(rgba(255, 253, 247, ${1 - paperBackgroundOpacity / 100}), rgba(255, 253, 247, ${1 - paperBackgroundOpacity / 100})), url(${paperBackgroundImageUrl}), linear-gradient(#fffdf7, #fffdf7)`,
@@ -180,7 +186,6 @@ export function ThoughtRichTextDraftPage() {
     }
     : undefined;
   const closeMenus = () => {
-    setBackgroundMenuOpen(false);
     setColorMenuOpen(false);
     setEmojiMenuOpen(false);
     setTableMenuOpen(false);
@@ -348,8 +353,8 @@ export function ThoughtRichTextDraftPage() {
               </div>
             </header>
 
-            <div aria-label="碎碎念编辑布局" className="grid gap-4 xl:grid-cols-[max-content_minmax(18rem,1fr)] xl:items-start">
-              <div aria-label="富文本编辑区" className="w-fit max-w-full">
+            <div aria-label="碎碎念编辑布局" className={editorLayoutClass}>
+              <div aria-label="富文本编辑区" className={editorAreaClass}>
                 <nav aria-label="富文本工具栏" className="mb-3 flex w-full max-w-full flex-wrap items-center gap-1.5 rounded-[1rem] border border-[#eee2d4] bg-[#fffaf3] p-2 shadow-[0_8px_20px_rgba(120,90,75,0.05)]" ref={toolbarRef}>
               {headingLevels.map((level) => (
                 <button
@@ -399,7 +404,6 @@ export function ThoughtRichTextDraftPage() {
                   className={toolbarButtonClass(false)}
                   disabled={editorMissing}
                   onClick={() => {
-                    setBackgroundMenuOpen(false);
                     setColorMenuOpen(false);
                     setEmojiMenuOpen(false);
                     setTableMenuOpen((open) => !open);
@@ -428,7 +432,6 @@ export function ThoughtRichTextDraftPage() {
                   className={toolbarButtonClass(emojiMenuOpen, true)}
                   disabled={editorMissing}
                   onClick={() => {
-                    setBackgroundMenuOpen(false);
                     setColorMenuOpen(false);
                     setTableMenuOpen(false);
                     setEmojiMenuOpen((open) => !open);
@@ -452,7 +455,6 @@ export function ThoughtRichTextDraftPage() {
                   className={toolbarButtonClass()}
                   disabled={editorMissing}
                   onClick={() => {
-                    setBackgroundMenuOpen(false);
                     setEmojiMenuOpen(false);
                     setTableMenuOpen(false);
                     setColorMenuOpen((open) => !open);
@@ -503,46 +505,49 @@ export function ThoughtRichTextDraftPage() {
                 {attachmentUploadStatus === "uploading" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">附件上传中...</div> : null}
                 {attachmentUploadStatus === "uploaded" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">附件上传完成</div> : null}
                 {attachmentUploadError ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{attachmentUploadError}</div> : null}
-                <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative h-[545px] w-full overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`} style={paperBackgroundStyle}>
+                <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative ${editorPaperSizeClass} overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`} style={paperBackgroundStyle}>
                   {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
                 </section>
               </div>
-              <aside aria-label="背景模板选择" className="h-full min-w-0 self-stretch rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] p-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)] xl:sticky xl:top-4">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-base font-black text-[#4c2b2d]">背景模板</h2>
-                  <button className="rounded-full bg-[#f8cfd5] px-3 py-1 text-xs font-black text-[#9a5260]" type="button">全部</button>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs font-black text-[#8a6a62]">
-                  {['简约', '可爱', '手账', '自然'].map((label) => (
-                    <span className="rounded-full bg-[#fff4f6] px-2.5 py-1" key={label}>{label}</span>
-                  ))}
-                </div>
-                <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
-                  {paperTemplateOptions.map((template) => (
-                    <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.label} type="button">
-                      <span className={`block h-20 rounded-[0.8rem] border border-[#f0e2d6] ${template.previewClass}`} />
-                      <span className="mt-2 block text-xs font-black text-[#6f4b51]">{template.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <button className="mt-3 w-full rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-3 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.22)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
-                  上传背景图片
-                </button>
-                {paperBackgroundCustomized ? (
+              <aside aria-label="背景模板选择" className={backgroundPanelClass}>
+                {backgroundPanelCollapsed ? (
+                  <button aria-label="展开背景模板" className="flex h-full w-full items-start justify-center rounded-[0.9rem] bg-[#fff4f6] py-3 text-sm font-black text-[#9a5260] transition hover:bg-[#ffe8ee] [writing-mode:vertical-rl]" onClick={() => setBackgroundPanelCollapsed(false)} type="button">
+                    背景模板
+                  </button>
+                ) : (
                   <>
-                    <p className="mt-2 text-xs font-bold text-[#9a7377]">已选择背景图</p>
-                    <label className="mt-2 block rounded-[0.85rem] border border-[#f0e2d6] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#6f4b51]">
-                      <span className="flex items-center justify-between">
-                        背景透明度
-                        <span>{paperBackgroundOpacity}%</span>
-                      </span>
-                      <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891]" max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
-                    </label>
-                    <button className="mt-2 w-full rounded-[0.9rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={resetPaperBackground} type="button">
-                      恢复默认背景
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-base font-black text-[#4c2b2d]">背景模板</h2>
+                      <button className="rounded-full bg-[#f8cfd5] px-3 py-1 text-xs font-black text-[#9a5260]" onClick={() => setBackgroundPanelCollapsed(true)} type="button">收起</button>
+                    </div>
+                    <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
+                      {paperTemplateOptions.map((template) => (
+                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.label} type="button">
+                          <span className={`block h-20 rounded-[0.8rem] border border-[#f0e2d6] ${template.previewClass}`} />
+                          <span className="mt-2 block text-xs font-black text-[#6f4b51]">{template.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button className="mt-3 w-full rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-3 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.22)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
+                      上传背景图片
                     </button>
+                    {paperBackgroundCustomized ? (
+                      <>
+                        <p className="mt-2 text-xs font-bold text-[#9a7377]">已选择背景图</p>
+                        <label className="mt-2 block rounded-[0.85rem] border border-[#f0e2d6] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#6f4b51]">
+                          <span className="flex items-center justify-between">
+                            背景透明度
+                            <span>{paperBackgroundOpacity}%</span>
+                          </span>
+                          <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891]" max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
+                        </label>
+                        <button className="mt-2 w-full rounded-[0.9rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={resetPaperBackground} type="button">
+                          恢复默认背景
+                        </button>
+                      </>
+                    ) : null}
                   </>
-                ) : null}
+                )}
               </aside>
             </div>
             {tableHeaderDeletePending ? (

@@ -184,6 +184,11 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByText("背景模板")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "全部" })).not.toBeInTheDocument();
+    ["简约", "可爱", "手账", "自然"].forEach((name) => {
+      expect(screen.queryByText(name)).not.toBeInTheDocument();
+    });
     expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();
@@ -234,6 +239,22 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
     expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
     expect(capturedUseEditorOptions).not.toHaveProperty("onUpdate");
+  });
+
+  it("collapses the background template panel and lets the editor fill the remaining space", () => {
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "收起" }));
+
+    expect(screen.queryByLabelText("背景模板列表")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "上传背景图片" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("xl:grid-cols-[minmax(0,1fr)_auto]");
+    expect(screen.getAllByLabelText("富文本编辑区")[0]).toHaveClass("w-full", "max-w-full");
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full", "h-[545px]");
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("h-[calc(100dvh-13rem)]");
+    expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-[604px]", "w-12", "overflow-hidden", "px-2");
+    expect(screen.getByLabelText("背景模板选择")).not.toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4");
+    expect(screen.getByRole("button", { name: "展开背景模板" })).toBeInTheDocument();
   });
 
   it("styles rich text nodes so toolbar actions are visible in the editor", () => {
