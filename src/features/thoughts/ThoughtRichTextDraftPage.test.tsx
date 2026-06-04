@@ -183,14 +183,28 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
     expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    expect(screen.getByText("背景模板")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();
+    expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[max-content_minmax(18rem,1fr)]");
+    const editorArea = screen.getAllByLabelText("富文本编辑区")[0];
+    expect(editorArea).toHaveClass("w-fit", "max-w-full");
+    expect(within(editorArea).getByLabelText("富文本工具栏")).toHaveClass("w-full", "max-w-full");
+    expect(within(editorArea).getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full");
+    expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4", "min-w-0");
+    expect(screen.getByLabelText("背景模板列表")).toHaveClass("grid", "grid-cols-2");
+    expect(screen.getByLabelText("新建碎碎念编辑本")).toHaveClass("max-w-[1600px]");
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("min-h-[545px]", "overflow-hidden");
 
-    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
+    expect(within(screen.getByLabelText("富文本工具栏")).queryByRole("button", { name: "背景" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "上传背景图片" })).toBeInTheDocument();
     ["H4", "H5", "H6"].forEach((name) => {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     });
@@ -202,7 +216,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByLabelText("上传图片附件")).toHaveAttribute("accept", "image/*");
     expect(screen.getByLabelText("上传视频附件")).toHaveAttribute("accept", "video/*");
     const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
-    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频", "撤销"]);
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -318,11 +332,6 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("menuitem", { name: "默认" })).toBeInTheDocument();
     fireEvent.mouseDown(editorPaper);
     expect(screen.queryByRole("menuitem", { name: "默认" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "背景" }));
-    expect(screen.getByRole("group", { name: "编辑纸张背景设置" })).toBeInTheDocument();
-    fireEvent.mouseDown(editorPaper);
-    expect(screen.queryByRole("group", { name: "编辑纸张背景设置" })).not.toBeInTheDocument();
   });
 
   it("customizes editor paper background image and opacity while keeping notebook lines", () => {
@@ -334,9 +343,8 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorPaper.className).toContain("bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
     expect(editorPaper).not.toHaveAttribute("style");
 
-    fireEvent.click(screen.getByRole("button", { name: "背景" }));
-    const backgroundPanel = screen.getByRole("group", { name: "编辑纸张背景设置" });
-    const backgroundImageInput = within(backgroundPanel).getByLabelText("上传背景图");
+    const backgroundPanel = screen.getByLabelText("背景模板选择");
+    const backgroundImageInput = screen.getByLabelText("上传背景图");
 
     expect(backgroundImageInput).toHaveAttribute("accept", "image/*");
     expect(within(backgroundPanel).queryByLabelText("背景透明度")).not.toBeInTheDocument();
@@ -584,14 +592,6 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("menuitem", { name: "默认" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "文字颜色" }));
-    fireEvent.click(screen.getByRole("button", { name: "表情包" }));
-    expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "背景" }));
-    expect(screen.queryByRole("group", { name: "表情选择器" })).not.toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "编辑纸张背景设置" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "背景" }));
     fireEvent.click(screen.getByRole("button", { name: "表情包" }));
     expect(screen.getByRole("group", { name: "表情选择器" })).toBeInTheDocument();
 

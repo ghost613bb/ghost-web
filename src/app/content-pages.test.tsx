@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album } from "@/features/album/types";
 import AboutPage from "./about/page";
@@ -518,12 +518,26 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
     expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    expect(screen.getByText("背景模板")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "横线纸" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "方格纸" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "暖色纸" })).toBeInTheDocument();
+    expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[max-content_minmax(18rem,1fr)]");
+    const editorArea = screen.getAllByLabelText("富文本编辑区")[0];
+    expect(editorArea).toHaveClass("w-fit", "max-w-full");
+    expect(within(editorArea).getByLabelText("富文本工具栏")).toHaveClass("w-full", "max-w-full");
+    expect(within(editorArea).getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full");
+    expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4", "min-w-0");
+    expect(screen.getByLabelText("背景模板列表")).toHaveClass("grid", "grid-cols-2");
+    expect(screen.getByLabelText("新建碎碎念编辑本")).toHaveClass("max-w-[1600px]");
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
-    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "背景", "图片", "视频"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
+    expect(within(screen.getByLabelText("富文本工具栏")).queryByRole("button", { name: "背景" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "上传背景图片" })).toBeInTheDocument();
     ["H4", "H5", "H6"].forEach((name) => {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     });
