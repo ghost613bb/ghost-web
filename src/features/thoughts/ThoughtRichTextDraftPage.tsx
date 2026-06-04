@@ -11,7 +11,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ArrowLeft, Bold, ChevronDown, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, PanelLeft, PanelRight, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon } from "lucide-react";
+import { ArrowLeft, Bold, ChevronDown, ChevronsLeft, ChevronsRight, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon } from "lucide-react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
@@ -176,7 +176,7 @@ export function ThoughtRichTextDraftPage() {
   const editorAreaClass = "min-w-0 w-full max-w-full";
   const editorPaperSizeClass = "h-[545px] min-w-0 w-full";
   const backgroundPanelClass = backgroundPanelCollapsed
-    ? "h-[604px] w-12 min-w-0 overflow-hidden rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] px-2 py-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)]"
+    ? "h-[604px] w-11 min-w-0 overflow-hidden rounded-full border border-[#ead7ce] bg-[#fffdf8]/90 p-1.5 shadow-[0_14px_28px_rgba(122,79,85,0.08)]"
     : "h-full min-w-0 self-stretch rounded-[1.2rem] border border-[#ead7ce] bg-[#fffdf8] p-3 shadow-[0_14px_30px_rgba(122,79,85,0.08)] xl:sticky xl:top-4";
   const paperBackgroundStyle: CSSProperties | undefined = paperBackgroundCustomized
     ? {
@@ -511,14 +511,18 @@ export function ThoughtRichTextDraftPage() {
               </div>
               <aside aria-label="背景模板选择" className={backgroundPanelClass}>
                 {backgroundPanelCollapsed ? (
-                  <button aria-label="展开背景模板" className="flex h-full w-full items-start justify-center rounded-[0.9rem] bg-[#fff4f6] py-3 text-sm font-black text-[#9a5260] transition hover:bg-[#ffe8ee] [writing-mode:vertical-rl]" onClick={() => setBackgroundPanelCollapsed(false)} type="button">
-                    背景模板
+                  <button aria-label="展开背景模板" className="group flex h-full w-full flex-col items-center justify-center gap-3 rounded-full bg-[linear-gradient(180deg,#fff9fb_0%,#fff3f5_100%)] px-1 py-3 text-sm font-black text-[#9a5260] transition hover:bg-[#ffe8ee] hover:text-[#7a3f4a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d97891]" onClick={() => setBackgroundPanelCollapsed(false)} type="button">
+                    <ChevronsLeft aria-hidden="true" className="shrink-0 transition group-hover:-translate-x-0.5" size={17} strokeWidth={2.8} />
+                    <span className="[writing-mode:vertical-rl]">背景模板</span>
                   </button>
                 ) : (
                   <>
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-base font-black text-[#4c2b2d]">背景模板</h2>
-                      <button className="rounded-full bg-[#f8cfd5] px-3 py-1 text-xs font-black text-[#9a5260]" onClick={() => setBackgroundPanelCollapsed(true)} type="button">收起</button>
+                      <button className="group inline-flex items-center gap-1 rounded-full border border-[#ead7ce] bg-[linear-gradient(180deg,#fff9fb_0%,#fff3f5_100%)] px-2.5 py-1 text-xs font-black text-[#9a5260] shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:border-[#e8b7c0] hover:bg-[#ffe8ee] hover:text-[#7a3f4a]" onClick={() => setBackgroundPanelCollapsed(true)} type="button">
+                        收起
+                        <ChevronsRight aria-hidden="true" className="transition group-hover:translate-x-0.5" size={14} strokeWidth={2.8} />
+                      </button>
                     </div>
                     <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
                       {paperTemplateOptions.map((template) => (

@@ -252,7 +252,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getAllByLabelText("富文本编辑区")[0]).toHaveClass("w-full", "max-w-full");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full", "h-[545px]");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("h-[calc(100dvh-13rem)]");
-    expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-[604px]", "w-12", "overflow-hidden", "px-2");
+    expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-[604px]", "w-11", "overflow-hidden", "rounded-full", "p-1.5");
     expect(screen.getByLabelText("背景模板选择")).not.toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4");
     expect(screen.getByRole("button", { name: "展开背景模板" })).toBeInTheDocument();
   });
