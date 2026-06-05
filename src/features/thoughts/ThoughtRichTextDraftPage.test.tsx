@@ -209,7 +209,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(within(editorArea).getByLabelText("富文本工具栏")).toHaveClass("w-full", "max-w-full", "min-w-0");
     expect(within(editorArea).getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full", "min-w-0");
     expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4", "min-w-0");
-    expect(screen.getByLabelText("背景模板列表")).toHaveClass("grid", "grid-cols-2");
+    expect(screen.getByLabelText("背景模板列表")).toHaveClass("album-page-scrollbar", "grid", "max-h-[23.875rem]", "grid-cols-2", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念编辑本")).toHaveClass("max-w-[1600px]");
     expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
     expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
@@ -392,7 +392,8 @@ describe("ThoughtRichTextDraftPage", () => {
     const backgroundOpacityInput = within(backgroundPanel).getByLabelText("背景透明度");
     expect(backgroundOpacityInput).toHaveValue("52");
     expect(within(backgroundPanel).getByText("已选择背景图")).toBeInTheDocument();
-    expect(within(backgroundPanel).getByText("把这张自定义背景保存到模板，下次可直接选择。")).toBeInTheDocument();
+    expect(screen.getByText("把这张自定义背景保存到模板，下次可直接选择。")).toHaveClass("text-xs");
+    expect(screen.getByText("把这张自定义背景保存到模板，下次可直接选择。").parentElement).toHaveClass("fixed", "bottom-5", "right-5");
 
     fireEvent.change(backgroundOpacityInput, { target: { value: "45" } });
 

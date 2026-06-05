@@ -510,9 +510,6 @@ export function ThoughtRichTextDraftPage() {
                 <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" type="button">
                   删除
                 </button>
-                <button className="rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-4 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.28)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
-                  更换背景
-                </button>
               </div>
             </header>
 
@@ -687,7 +684,7 @@ export function ThoughtRichTextDraftPage() {
                         <ChevronsRight aria-hidden="true" className="transition group-hover:translate-x-0.5" size={14} strokeWidth={2.8} />
                       </button>
                     </div>
-                    <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
+                    <div aria-label="背景模板列表" className="album-page-scrollbar mt-3 grid max-h-[23.875rem] grid-cols-2 gap-2 overflow-y-auto pr-1">
                       {visiblePaperTemplateOptions.map((template) => (
                         <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.id ?? template.label} onClick={() => applyPaperTemplate(template.imageUrl)} onContextMenu={(event) => handleCustomPaperTemplateContextMenu(event, template)} type="button">
                           <span className="block h-20 rounded-[0.8rem] border border-[#f0e2d6] bg-cover bg-center" style={{ backgroundImage: `url(${template.imageUrl})` }} />
@@ -719,7 +716,7 @@ export function ThoughtRichTextDraftPage() {
                           <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891]" max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
                         </label>
                         {pendingCustomPaperTemplate ? (
-                          <div className="mt-2 rounded-[0.9rem] border border-[#ead7ce] bg-[#fff7f8] p-3">
+                          <div className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-[1rem] border border-[#ead7ce] bg-[#fff7f8] p-3 shadow-[0_18px_34px_rgba(122,79,85,0.18)]">
                             <p className="text-xs font-black leading-5 text-[#8a5b62]">把这张自定义背景保存到模板，下次可直接选择。</p>
                             <div className="mt-2 flex gap-2">
                               <button className="flex-1 rounded-[0.75rem] bg-[#f48ca0] px-2 py-2 text-xs font-black text-white transition hover:bg-[#e97991]" onClick={saveCustomPaperTemplate} type="button">
