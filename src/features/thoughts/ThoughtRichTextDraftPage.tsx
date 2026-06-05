@@ -74,12 +74,20 @@ const colorOptions = [
 ] as const;
 
 const defaultPaperBackgroundOpacity = 52;
+const customPaperTemplateStorageKey = "ghost.thoughts.customPaperTemplates";
 const paperLineGradient = "repeating-linear-gradient(0deg, transparent 0, transparent 31px, #efe6d8 32px)";
 const paperTemplateOptions = [
   { label: "糖果波纹", imageUrl: "/thought-backgrounds/candy-waves.jpg" },
   { label: "粉心回响", imageUrl: "/thought-backgrounds/pink-heart.jpg" },
   { label: "海盐边框", imageUrl: "/thought-backgrounds/sea-salt-frame.jpg" },
 ] as const;
+
+type PaperTemplateOption = {
+  imageUrl: string;
+  label: string;
+};
+
+type PendingCustomPaperTemplate = PaperTemplateOption | null;
 
 type ToolbarState = {
   canUndo: boolean;
@@ -122,6 +130,8 @@ const defaultToolbarState: ToolbarState = {
 export function ThoughtRichTextDraftPage() {
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
   const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
+  const [customPaperTemplates, setCustomPaperTemplates] = useState<PaperTemplateOption[]>([]);
+  const [pendingCustomPaperTemplate, setPendingCustomPaperTemplate] = useState<PendingCustomPaperTemplate>(null);
   const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
@@ -170,6 +180,7 @@ export function ThoughtRichTextDraftPage() {
   const editorMissing = !editor;
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
+  const visiblePaperTemplateOptions = [...paperTemplateOptions, ...customPaperTemplates];
   const paperBackgroundCustomized = paperBackgroundImageUrl.length > 0;
   const editorLayoutClass = backgroundPanelCollapsed ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start" : "grid gap-4 xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)] xl:items-start";
   const editorAreaClass = "min-w-0 w-full max-w-full";
@@ -224,6 +235,7 @@ export function ThoughtRichTextDraftPage() {
       paperBackgroundImageUrlRef.current = "";
     }
 
+    setPendingCustomPaperTemplate(null);
     setPaperBackgroundImageUrl("");
     setPaperBackgroundOpacity(defaultPaperBackgroundOpacity);
   }
@@ -234,8 +246,22 @@ export function ThoughtRichTextDraftPage() {
       paperBackgroundImageUrlRef.current = "";
     }
 
+    setPendingCustomPaperTemplate(null);
     setPaperBackgroundImageUrl(imageUrl);
     setPaperBackgroundOpacity(defaultPaperBackgroundOpacity);
+  }
+
+  function saveCustomPaperTemplate() {
+    if (!pendingCustomPaperTemplate) {
+      return;
+    }
+
+    setCustomPaperTemplates((templates) => {
+      const nextTemplates = [...templates, pendingCustomPaperTemplate];
+      window.localStorage.setItem(customPaperTemplateStorageKey, JSON.stringify(nextTemplates));
+      return nextTemplates;
+    });
+    setPendingCustomPaperTemplate(null);
   }
 
   function handlePaperBackgroundChange(event: ChangeEvent<HTMLInputElement>) {
@@ -253,6 +279,21 @@ export function ThoughtRichTextDraftPage() {
     const nextUrl = URL.createObjectURL(file);
     paperBackgroundImageUrlRef.current = nextUrl;
     setPaperBackgroundImageUrl(nextUrl);
+    setPaperBackgroundOpacity(defaultPaperBackgroundOpacity);
+    setPendingCustomPaperTemplate(null);
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result !== "string") {
+        return;
+      }
+
+      setPendingCustomPaperTemplate({
+        imageUrl: reader.result,
+        label: `自定义背景 ${customPaperTemplates.length + 1}`,
+      });
+    });
+    reader.readAsDataURL(file);
   }
 
   async function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
@@ -308,6 +349,26 @@ export function ThoughtRichTextDraftPage() {
       window.clearTimeout(timeoutId);
     };
   }, [attachmentUploadError, attachmentUploadStatus]);
+
+  useEffect(() => {
+    try {
+      const storedTemplates = window.localStorage.getItem(customPaperTemplateStorageKey);
+      if (!storedTemplates) {
+        return;
+      }
+
+      const parsedTemplates = JSON.parse(storedTemplates);
+      if (!Array.isArray(parsedTemplates)) {
+        return;
+      }
+
+      setCustomPaperTemplates(
+        parsedTemplates.filter((template): template is PaperTemplateOption => typeof template?.label === "string" && typeof template?.imageUrl === "string"),
+      );
+    } catch {
+      setCustomPaperTemplates([]);
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -534,7 +595,7 @@ export function ThoughtRichTextDraftPage() {
                       </button>
                     </div>
                     <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
-                      {paperTemplateOptions.map((template) => (
+                      {visiblePaperTemplateOptions.map((template) => (
                         <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.label} onClick={() => applyPaperTemplate(template.imageUrl)} type="button">
                           <span className="block h-20 rounded-[0.8rem] border border-[#f0e2d6] bg-cover bg-center" style={{ backgroundImage: `url(${template.imageUrl})` }} />
                           <span className="mt-2 block text-xs font-black text-[#6f4b51]">{template.label}</span>
@@ -542,7 +603,7 @@ export function ThoughtRichTextDraftPage() {
                       ))}
                     </div>
                     <button className="mt-3 w-full rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-3 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.22)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
-                      上传背景图片
+                      自定义背景
                     </button>
                     {paperBackgroundCustomized ? (
                       <>
@@ -554,6 +615,19 @@ export function ThoughtRichTextDraftPage() {
                           </span>
                           <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891]" max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
                         </label>
+                        {pendingCustomPaperTemplate ? (
+                          <div className="mt-2 rounded-[0.9rem] border border-[#ead7ce] bg-[#fff7f8] p-3">
+                            <p className="text-xs font-black leading-5 text-[#8a5b62]">把这张自定义背景保存到模板，下次可直接选择。</p>
+                            <div className="mt-2 flex gap-2">
+                              <button className="flex-1 rounded-[0.75rem] bg-[#f48ca0] px-2 py-2 text-xs font-black text-white transition hover:bg-[#e97991]" onClick={saveCustomPaperTemplate} type="button">
+                                保存为背景模板
+                              </button>
+                              <button className="rounded-[0.75rem] border border-[#ead7ce] bg-[#fffdf8] px-2 py-2 text-xs font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={() => setPendingCustomPaperTemplate(null)} type="button">
+                                暂不保存
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
                         <button className="mt-2 w-full rounded-[0.9rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={resetPaperBackground} type="button">
                           恢复默认背景
                         </button>

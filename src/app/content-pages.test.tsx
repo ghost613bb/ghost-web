@@ -542,7 +542,7 @@ describe("content module pages", () => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
     expect(within(screen.getByLabelText("富文本工具栏")).queryByRole("button", { name: "背景" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "上传背景图片" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "自定义背景" })).toBeInTheDocument();
     ["H4", "H5", "H6"].forEach((name) => {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     });

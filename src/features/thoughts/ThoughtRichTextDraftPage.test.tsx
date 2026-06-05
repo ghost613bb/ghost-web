@@ -127,7 +127,18 @@ function chainResult() {
 
 describe("ThoughtRichTextDraftPage", () => {
   beforeEach(() => {
+    class MockFileReader extends EventTarget {
+      result: string | null = null;
+
+      readAsDataURL() {
+        this.result = "data:image/png;base64,custom-paper-bg";
+        this.dispatchEvent(new Event("load"));
+      }
+    }
+
+    vi.stubGlobal("FileReader", MockFileReader);
     capturedUseEditorOptions = undefined;
+    window.localStorage.clear();
     editorState = {
       canUndo: false,
       isBlockquote: false,
@@ -209,7 +220,7 @@ describe("ThoughtRichTextDraftPage", () => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
     expect(within(screen.getByLabelText("富文本工具栏")).queryByRole("button", { name: "背景" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "上传背景图片" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "自定义背景" })).toBeInTheDocument();
     ["H4", "H5", "H6"].forEach((name) => {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     });
@@ -247,7 +258,7 @@ describe("ThoughtRichTextDraftPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "收起" }));
 
     expect(screen.queryByLabelText("背景模板列表")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "上传背景图片" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "自定义背景" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("xl:grid-cols-[minmax(0,1fr)_auto]");
     expect(screen.getAllByLabelText("富文本编辑区")[0]).toHaveClass("w-full", "max-w-full");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full", "h-[545px]");
@@ -381,6 +392,7 @@ describe("ThoughtRichTextDraftPage", () => {
     const backgroundOpacityInput = within(backgroundPanel).getByLabelText("背景透明度");
     expect(backgroundOpacityInput).toHaveValue("52");
     expect(within(backgroundPanel).getByText("已选择背景图")).toBeInTheDocument();
+    expect(within(backgroundPanel).getByText("把这张自定义背景保存到模板，下次可直接选择。")).toBeInTheDocument();
 
     fireEvent.change(backgroundOpacityInput, { target: { value: "45" } });
 
@@ -389,6 +401,14 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorPaper.getAttribute("style")).toContain("rgba(255, 253, 247, 0.55)");
     expect(editorPaper.getAttribute("style")).toContain("repeating-linear-gradient");
     expect(editorPaper.className).toContain("bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)]");
+
+    fireEvent.click(within(backgroundPanel).getByRole("button", { name: "保存为背景模板" }));
+    expect(within(backgroundPanel).getByRole("button", { name: "自定义背景 1" })).toBeInTheDocument();
+    expect(window.localStorage.getItem("ghost.thoughts.customPaperTemplates")).toContain("data:image/png;base64,custom-paper-bg");
+    expect(within(backgroundPanel).queryByRole("button", { name: "保存为背景模板" })).not.toBeInTheDocument();
+
+    fireEvent.click(within(backgroundPanel).getByRole("button", { name: "自定义背景 1" }));
+    expect(editorPaper.getAttribute("style")).toContain("data:image/png;base64,custom-paper-bg");
 
     fireEvent.click(within(backgroundPanel).getByRole("button", { name: "恢复默认背景" }));
 
