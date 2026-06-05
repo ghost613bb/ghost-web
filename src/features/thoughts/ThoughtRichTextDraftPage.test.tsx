@@ -410,6 +410,34 @@ describe("ThoughtRichTextDraftPage", () => {
     fireEvent.click(within(backgroundPanel).getByRole("button", { name: "自定义背景 1" }));
     expect(editorPaper.getAttribute("style")).toContain("data:image/png;base64,custom-paper-bg");
 
+    fireEvent.contextMenu(within(backgroundPanel).getByRole("button", { name: "糖果波纹" }));
+    expect(screen.queryByRole("menuitem", { name: "重命名" })).not.toBeInTheDocument();
+
+    const promptSpy = vi.spyOn(window, "prompt");
+    fireEvent.contextMenu(within(backgroundPanel).getByRole("button", { name: "自定义背景 1" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "重命名" }));
+
+    expect(promptSpy).not.toHaveBeenCalled();
+    const renameDialog = screen.getByRole("dialog", { name: "重命名背景模板" });
+    const renameInput = within(renameDialog).getByLabelText("模板名称");
+    expect(renameInput).toHaveValue("自定义背景 1");
+
+    fireEvent.change(renameInput, { target: { value: "我的背景" } });
+    fireEvent.click(within(renameDialog).getByRole("button", { name: "确认重命名" }));
+
+    expect(screen.queryByRole("dialog", { name: "重命名背景模板" })).not.toBeInTheDocument();
+    expect(within(backgroundPanel).getByRole("button", { name: "我的背景" })).toBeInTheDocument();
+    expect(window.localStorage.getItem("ghost.thoughts.customPaperTemplates")).toContain("我的背景");
+
+    fireEvent.contextMenu(within(backgroundPanel).getByRole("button", { name: "我的背景" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "删除" }));
+
+    expect(within(backgroundPanel).queryByRole("button", { name: "我的背景" })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("ghost.thoughts.customPaperTemplates")).not.toContain("我的背景");
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张").getAttribute("style") ?? "").toBe("");
+
+    fireEvent.change(backgroundImageInput, { target: { files: [new File(["paper"], "paper.png", { type: "image/png" })] } });
+
     fireEvent.click(within(backgroundPanel).getByRole("button", { name: "恢复默认背景" }));
 
     expect(within(backgroundPanel).queryByLabelText("背景透明度")).not.toBeInTheDocument();

@@ -14,7 +14,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { ArrowLeft, Bold, ChevronDown, ChevronsLeft, ChevronsRight, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon } from "lucide-react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 
 const toolbarButtonBaseClass =
   "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-[0.85rem] border px-2.5 text-sm font-black shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0";
@@ -85,9 +85,21 @@ const paperTemplateOptions = [
 type PaperTemplateOption = {
   imageUrl: string;
   label: string;
+  id?: string;
+  source?: "builtin" | "custom";
 };
 
 type PendingCustomPaperTemplate = PaperTemplateOption | null;
+type CustomPaperTemplateMenu = {
+  templateId: string;
+  x: number;
+  y: number;
+} | null;
+
+type RenamingCustomPaperTemplate = {
+  label: string;
+  templateId: string;
+} | null;
 
 type ToolbarState = {
   canUndo: boolean;
@@ -130,10 +142,13 @@ const defaultToolbarState: ToolbarState = {
 export function ThoughtRichTextDraftPage() {
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
   const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
+  const [customPaperTemplateMenu, setCustomPaperTemplateMenu] = useState<CustomPaperTemplateMenu>(null);
   const [customPaperTemplates, setCustomPaperTemplates] = useState<PaperTemplateOption[]>([]);
   const [pendingCustomPaperTemplate, setPendingCustomPaperTemplate] = useState<PendingCustomPaperTemplate>(null);
   const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
+  const [renamingCustomPaperTemplate, setRenamingCustomPaperTemplate] = useState<RenamingCustomPaperTemplate>(null);
+  const [renameCustomPaperTemplateLabel, setRenameCustomPaperTemplateLabel] = useState("");
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const [emojiMenuOpen, setEmojiMenuOpen] = useState(false);
   const [backgroundPanelCollapsed, setBackgroundPanelCollapsed] = useState(false);
@@ -142,6 +157,7 @@ export function ThoughtRichTextDraftPage() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const customPaperTemplateMenuRef = useRef<HTMLDivElement | null>(null);
   const paperBackgroundImageUrlRef = useRef("");
   const toolbarRef = useRef<HTMLElement | null>(null);
   const editor = useEditor({
@@ -180,7 +196,7 @@ export function ThoughtRichTextDraftPage() {
   const editorMissing = !editor;
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
-  const visiblePaperTemplateOptions = [...paperTemplateOptions, ...customPaperTemplates];
+  const visiblePaperTemplateOptions: PaperTemplateOption[] = [...paperTemplateOptions.map((template) => ({ ...template, source: "builtin" as const })), ...customPaperTemplates];
   const paperBackgroundCustomized = paperBackgroundImageUrl.length > 0;
   const editorLayoutClass = backgroundPanelCollapsed ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start" : "grid gap-4 xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)] xl:items-start";
   const editorAreaClass = "min-w-0 w-full max-w-full";
@@ -197,9 +213,18 @@ export function ThoughtRichTextDraftPage() {
     : undefined;
   const closeMenus = () => {
     setColorMenuOpen(false);
+    setCustomPaperTemplateMenu(null);
     setEmojiMenuOpen(false);
     setTableMenuOpen(false);
   };
+
+  function persistCustomPaperTemplates(templates: PaperTemplateOption[]) {
+    window.localStorage.setItem(customPaperTemplateStorageKey, JSON.stringify(templates));
+  }
+
+  function getCustomPaperTemplateId() {
+    return `custom-paper-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
 
   function deleteTableRow() {
     editor?.chain().focus().deleteRow().run();
@@ -258,10 +283,74 @@ export function ThoughtRichTextDraftPage() {
 
     setCustomPaperTemplates((templates) => {
       const nextTemplates = [...templates, pendingCustomPaperTemplate];
-      window.localStorage.setItem(customPaperTemplateStorageKey, JSON.stringify(nextTemplates));
+      persistCustomPaperTemplates(nextTemplates);
       return nextTemplates;
     });
     setPendingCustomPaperTemplate(null);
+  }
+
+  function handleCustomPaperTemplateContextMenu(event: ReactMouseEvent<HTMLButtonElement>, template: PaperTemplateOption) {
+    if (template.source !== "custom" || !template.id) {
+      return;
+    }
+
+    event.preventDefault();
+    setCustomPaperTemplateMenu({
+      templateId: template.id,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  function openRenameCustomPaperTemplateDialog(templateId: string) {
+    const template = customPaperTemplates.find((item) => item.id === templateId);
+    if (!template) {
+      setCustomPaperTemplateMenu(null);
+      return;
+    }
+
+    setRenamingCustomPaperTemplate({ label: template.label, templateId });
+    setRenameCustomPaperTemplateLabel(template.label);
+    setCustomPaperTemplateMenu(null);
+  }
+
+  function cancelRenameCustomPaperTemplate() {
+    setRenamingCustomPaperTemplate(null);
+    setRenameCustomPaperTemplateLabel("");
+  }
+
+  function renameCustomPaperTemplate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!renamingCustomPaperTemplate) {
+      return;
+    }
+
+    const nextLabel = renameCustomPaperTemplateLabel.trim();
+    if (!nextLabel) {
+      return;
+    }
+
+    setCustomPaperTemplates((templates) => {
+      const nextTemplates = templates.map((item) => (item.id === renamingCustomPaperTemplate.templateId ? { ...item, label: nextLabel } : item));
+      persistCustomPaperTemplates(nextTemplates);
+      return nextTemplates;
+    });
+    cancelRenameCustomPaperTemplate();
+  }
+
+  function deleteCustomPaperTemplate(templateId: string) {
+    const deletedTemplate = customPaperTemplates.find((template) => template.id === templateId);
+
+    if (deletedTemplate?.imageUrl === paperBackgroundImageUrl) {
+      resetPaperBackground();
+    }
+
+    setCustomPaperTemplates((templates) => {
+      const nextTemplates = templates.filter((template) => template.id !== templateId);
+      persistCustomPaperTemplates(nextTemplates);
+      return nextTemplates;
+    });
+    setCustomPaperTemplateMenu(null);
   }
 
   function handlePaperBackgroundChange(event: ChangeEvent<HTMLInputElement>) {
@@ -289,8 +378,10 @@ export function ThoughtRichTextDraftPage() {
       }
 
       setPendingCustomPaperTemplate({
+        id: getCustomPaperTemplateId(),
         imageUrl: reader.result,
         label: `自定义背景 ${customPaperTemplates.length + 1}`,
+        source: "custom",
       });
     });
     reader.readAsDataURL(file);
@@ -363,7 +454,9 @@ export function ThoughtRichTextDraftPage() {
       }
 
       setCustomPaperTemplates(
-        parsedTemplates.filter((template): template is PaperTemplateOption => typeof template?.label === "string" && typeof template?.imageUrl === "string"),
+        parsedTemplates
+          .filter((template): template is PaperTemplateOption => typeof template?.label === "string" && typeof template?.imageUrl === "string")
+          .map((template, index) => ({ ...template, id: template.id ?? `custom-paper-${index + 1}`, source: "custom" })),
       );
     } catch {
       setCustomPaperTemplates([]);
@@ -380,7 +473,7 @@ export function ThoughtRichTextDraftPage() {
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!toolbarRef.current?.contains(event.target as Node)) {
+      if (!toolbarRef.current?.contains(event.target as Node) && !customPaperTemplateMenuRef.current?.contains(event.target as Node)) {
         closeMenus();
       }
     }
@@ -596,12 +689,22 @@ export function ThoughtRichTextDraftPage() {
                     </div>
                     <div aria-label="背景模板列表" className="mt-3 grid grid-cols-2 gap-2">
                       {visiblePaperTemplateOptions.map((template) => (
-                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.label} onClick={() => applyPaperTemplate(template.imageUrl)} type="button">
+                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.id ?? template.label} onClick={() => applyPaperTemplate(template.imageUrl)} onContextMenu={(event) => handleCustomPaperTemplateContextMenu(event, template)} type="button">
                           <span className="block h-20 rounded-[0.8rem] border border-[#f0e2d6] bg-cover bg-center" style={{ backgroundImage: `url(${template.imageUrl})` }} />
                           <span className="mt-2 block text-xs font-black text-[#6f4b51]">{template.label}</span>
                         </button>
                       ))}
                     </div>
+                    {customPaperTemplateMenu ? (
+                      <div className="fixed z-50 w-28 rounded-[0.85rem] border border-[#ead7ce] bg-[#fffdf8] p-1 shadow-[0_18px_34px_rgba(122,79,85,0.16)]" ref={customPaperTemplateMenuRef} role="menu" style={{ left: customPaperTemplateMenu.x, top: customPaperTemplateMenu.y }}>
+                        <button className="block w-full rounded-[0.65rem] px-3 py-2 text-left text-xs font-black text-[#6f4b51] transition hover:bg-[#fff1f4]" onClick={() => openRenameCustomPaperTemplateDialog(customPaperTemplateMenu.templateId)} role="menuitem" type="button">
+                          重命名
+                        </button>
+                        <button className="block w-full rounded-[0.65rem] px-3 py-2 text-left text-xs font-black text-[#c65f73] transition hover:bg-[#fff1f4]" onClick={() => deleteCustomPaperTemplate(customPaperTemplateMenu.templateId)} role="menuitem" type="button">
+                          删除
+                        </button>
+                      </div>
+                    ) : null}
                     <button className="mt-3 w-full rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-3 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.22)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
                       自定义背景
                     </button>
@@ -637,6 +740,26 @@ export function ThoughtRichTextDraftPage() {
                 )}
               </aside>
             </div>
+            {renamingCustomPaperTemplate ? (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4c2b2d]/20 px-4">
+                <form aria-modal="true" className="w-full max-w-sm rounded-[1.4rem] border border-[#ead7ce] bg-[#fffdf8] p-5 text-[#5b4347] shadow-[0_24px_60px_rgba(122,79,85,0.2)]" onSubmit={renameCustomPaperTemplate} role="dialog" aria-label="重命名背景模板">
+                  <h2 className="text-lg font-black text-[#4c2b2d]">重命名背景模板</h2>
+                  <p className="mt-2 text-sm font-bold leading-6 text-[#8a5b62]">给「{renamingCustomPaperTemplate.label}」换一个更好记的名字。</p>
+                  <label className="mt-4 block text-sm font-black text-[#6f4b51]">
+                    模板名称
+                    <input autoFocus className="mt-2 w-full rounded-[0.85rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#5b4347] outline-none transition placeholder:text-[#b89699] focus:border-[#d97891] focus:bg-[#fff7f8]" onChange={(event) => setRenameCustomPaperTemplateLabel(event.target.value)} value={renameCustomPaperTemplateLabel} />
+                  </label>
+                  <div className="mt-5 flex justify-end gap-2">
+                    <button className="rounded-[0.85rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={cancelRenameCustomPaperTemplate} type="button">
+                      取消
+                    </button>
+                    <button className="rounded-[0.85rem] border border-[#d97891] bg-[#f8cfd5] px-4 py-2 text-sm font-black text-[#7a3f4a] transition hover:bg-[#f4b8c2] disabled:cursor-not-allowed disabled:opacity-45" disabled={!renameCustomPaperTemplateLabel.trim()} type="submit">
+                      确认重命名
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : null}
             {tableHeaderDeletePending ? (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4c2b2d]/20 px-4">
                 <div aria-modal="true" className="w-full max-w-sm rounded-[1.4rem] border border-[#ead7ce] bg-[#fffdf8] p-5 text-[#5b4347] shadow-[0_24px_60px_rgba(122,79,85,0.2)]" role="dialog" aria-label="删除表头行">
