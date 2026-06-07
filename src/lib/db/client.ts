@@ -19,6 +19,13 @@ function ensureSqliteDirectory(databaseUrl: string) {
   mkdirSync(path.dirname(databaseUrl), { recursive: true });
 }
 
+function ensureColumn(tableName: string, columnName: string, columnDefinition: string) {
+  const columns = sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
+  if (!columns.some((column) => column.name === columnName)) {
+    sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`);
+  }
+}
+
 ensureSqliteDirectory(env.DATABASE_URL);
 
 export const sqlite = new Database(env.DATABASE_URL);
@@ -38,7 +45,9 @@ sqlite.exec(`
     visibility text NOT NULL,
     status text NOT NULL,
     created_at text,
-    sort_order integer
+    sort_order integer,
+    paper_background_image_url text,
+    paper_background_opacity integer
   );
 
   CREATE TABLE IF NOT EXISTS albums (
@@ -69,5 +78,8 @@ sqlite.exec(`
     photo_id text PRIMARY KEY NOT NULL
   );
 `);
+
+ensureColumn("thoughts", "paper_background_image_url", "text");
+ensureColumn("thoughts", "paper_background_opacity", "integer");
 
 export const db = drizzle(sqlite);

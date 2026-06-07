@@ -65,6 +65,8 @@ describe("/api/thoughts", () => {
           status: "published",
           createdAt: "2026-05-26",
           sortOrder: 2,
+          paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+          paperBackgroundOpacity: 45,
         }),
       }),
     );
@@ -83,6 +85,8 @@ describe("/api/thoughts", () => {
         status: "published",
         createdAt: "2026-05-26",
         sortOrder: 2,
+        paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+        paperBackgroundOpacity: 45,
       },
     });
 
@@ -99,8 +103,64 @@ describe("/api/thoughts", () => {
       status: "published",
       createdAt: "2026-05-26",
       sortOrder: 2,
+      paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+      paperBackgroundOpacity: 45,
     });
     expect(nextData.thoughts.length).toBeGreaterThanOrEqual(thoughts.length + 1);
+  });
+
+  it("rejects blob paper background urls", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/thoughts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: "thought-db-bg-blob",
+          title: "背景异常",
+          slug: "invalid-background",
+          body: "背景不能保存 blob。",
+          tags: ["背景"],
+          visibility: "public",
+          status: "published",
+          paperBackgroundImageUrl: "blob:paper-background",
+          paperBackgroundOpacity: 52,
+        }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({ error: "thought 参数不合法" });
+  });
+
+  it("rejects invalid paper background opacity", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/thoughts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: "thought-db-bg-opacity",
+          title: "背景异常",
+          slug: "invalid-background-opacity",
+          body: "背景透明度不合法。",
+          tags: ["背景"],
+          visibility: "public",
+          status: "published",
+          paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+          paperBackgroundOpacity: 101,
+        }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({ error: "thought 参数不合法" });
   });
 
   it("rejects malformed json body", async () => {

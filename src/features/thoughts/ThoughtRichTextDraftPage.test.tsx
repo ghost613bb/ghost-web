@@ -20,9 +20,10 @@ const mockEditor = {
   getHTML: vi.fn(),
   getText: vi.fn(),
   isActive: vi.fn(),
+  setEditable: vi.fn(),
 };
 
-let capturedUseEditorOptions: { content?: unknown; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown } | undefined;
+let capturedUseEditorOptions: { content?: unknown; editable?: boolean; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown } | undefined;
 let editorState = {
   canUndo: false,
   isBlockquote: false,
@@ -88,7 +89,7 @@ vi.mock("@tiptap/extension-task-item", () => ({
 
 vi.mock("@tiptap/react", () => ({
   EditorContent: ({ editor }: { editor: unknown }) => <div data-testid="editor-content">Editor ready: {String(Boolean(editor))}</div>,
-  useEditor: vi.fn((options: { content?: unknown; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown }) => {
+  useEditor: vi.fn((options: { content?: unknown; editable?: boolean; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown }) => {
     capturedUseEditorOptions = options;
     return mockEditor;
   }),
@@ -179,6 +180,7 @@ describe("ThoughtRichTextDraftPage", () => {
     mockEditor.chain.mockImplementation(chainResult);
     mockEditor.getHTML.mockReturnValue("<p>今天写了一点碎碎念</p>");
     mockEditor.getText.mockReturnValue("今天写了一点碎碎念");
+    mockEditor.setEditable.mockClear();
     mockEditor.can.mockReturnValue({ undo: () => editorState.canUndo });
     mockEditor.isActive.mockImplementation((name: string, attrs?: { level?: number }) => {
       if (name === "heading" && attrs?.level === 1) return editorState.isH1;
@@ -209,8 +211,9 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(backLink).toHaveAttribute("href", "/thoughts");
     expect(backLink).not.toHaveTextContent("←");
     expect(backLink.querySelector("svg")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "编辑" })).not.toBeInTheDocument();
     expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByText("背景模板")).toBeInTheDocument();
@@ -263,6 +266,7 @@ describe("ThoughtRichTextDraftPage", () => {
 
     expect(mockStarterKit.configure).toHaveBeenCalledWith({ underline: false });
     expect(capturedUseEditorOptions?.content).toBe("");
+    expect(capturedUseEditorOptions?.editable).toBe(true);
     expect(capturedUseEditorOptions?.immediatelyRender).toBe(false);
     expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem", "Image", "Link", "Table", "TableRow", "TableHeader", "TableCell", expect.objectContaining({ name: "video" })]);
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
@@ -273,7 +277,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(capturedUseEditorOptions).not.toHaveProperty("onUpdate");
   });
 
-  it("renders an existing thought in edit mode with escaped initial editor content", () => {
+  it("renders an existing thought in read-only mode with its title and escaped initial editor content", () => {
     const thought: Thought = {
       body: "第一行 <script>\n\n第二行 & more",
       createdAt: "2026-06-05",
@@ -287,8 +291,16 @@ describe("ThoughtRichTextDraftPage", () => {
 
     render(<ThoughtRichTextDraftPage thought={thought} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "编辑碎碎念" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 1, name: "新建碎碎念" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "已有碎碎念" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "编辑碎碎念" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "编辑" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "H1" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "加粗" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "图片" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "糖果波纹" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "自定义背景" })).toBeDisabled();
+    expect(capturedUseEditorOptions?.editable).toBe(false);
     expect(capturedUseEditorOptions?.content).toBe("<p>第一行 &lt;script&gt;</p><p></p><p>第二行 &amp; more</p>");
   });
 
@@ -296,6 +308,24 @@ describe("ThoughtRichTextDraftPage", () => {
     render(<ThoughtRichTextDraftPage thought={{ body: "<p>已经保存的<strong>富文本</strong></p>", id: "html-thought", slug: "html-thought", status: "published", title: "富文本", visibility: "public" }} />);
 
     expect(capturedUseEditorOptions?.content).toBe("<p>已经保存的<strong>富文本</strong></p>");
+  });
+
+  it("enters edit mode from an existing thought", () => {
+    render(<ThoughtRichTextDraftPage thought={{ body: "正文", id: "thought-edit", slug: "thought-edit", status: "published", title: "可编辑碎碎念", visibility: "public" }} />);
+
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "H1" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+
+    expect(screen.getByRole("button", { name: "保存" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "H1" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "加粗" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "图片" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "糖果波纹" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "自定义背景" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "编辑" })).toBeDisabled();
+    expect(mockEditor.setEditable).toHaveBeenCalledWith(true);
   });
 
   it("saves an existing thought with editor HTML and keeps its metadata", async () => {
@@ -315,12 +345,18 @@ describe("ThoughtRichTextDraftPage", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ thought: { ...thought, body: "<p>更新后的富文本</p>" } }) } as Response);
 
     render(<ThoughtRichTextDraftPage thought={thought} />);
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    fireEvent.click(screen.getByRole("button", { name: "糖果波纹" }));
+    fireEvent.change(screen.getByLabelText("背景透明度"), { target: { value: "45" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/thoughts", expect.objectContaining({ method: "POST" })));
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(request.body))).toEqual({ ...thought, body: "<p>更新后的富文本</p>" });
-    expect(await screen.findByText("保存成功")).toBeInTheDocument();
+    expect(JSON.parse(String(request.body))).toEqual({ ...thought, body: "<p>更新后的富文本</p>", paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg", paperBackgroundOpacity: 45 });
+    const successToast = await screen.findByText("保存成功");
+    expect(successToast).toHaveClass("fixed", "left-1/2", "top-24", "-translate-x-1/2");
+    expect(successToast).not.toHaveClass("right-6");
     expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/thought-editing");
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
   });
@@ -340,6 +376,66 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(payload.id).toMatch(/^thought-created-/);
     expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/new-thought-slug");
+  });
+
+  it("saves a pending custom background as a data url instead of a blob url", async () => {
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:thought-paper-bg");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    mockEditor.getHTML.mockReturnValue("<p>带自定义背景</p>");
+    mockEditor.getText.mockReturnValue("带自定义背景");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementationOnce(async (_input, init) => ({ ok: true, json: async () => ({ thought: { ...JSON.parse(String(init?.body)), slug: "custom-bg" } }) }) as Response);
+
+    render(<ThoughtRichTextDraftPage />);
+    fireEvent.change(screen.getByLabelText("上传背景图"), { target: { files: [new File(["paper"], "paper.png", { type: "image/png" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const payload = JSON.parse(String(request.body));
+    expect(payload.paperBackgroundImageUrl).toBe("data:image/png;base64,custom-paper-bg");
+    expect(payload.paperBackgroundImageUrl).not.toContain("blob:");
+  });
+
+  it("restores a saved paper background and can clear it when editing", async () => {
+    const thought: Thought = { body: "旧内容", id: "thought-bg", slug: "thought-bg", status: "published", title: "背景碎碎念", visibility: "public", paperBackgroundImageUrl: "/thought-backgrounds/pink-heart.jpg", paperBackgroundOpacity: 40 };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ thought: { ...thought, body: "<p>今天写了一点碎碎念</p>", paperBackgroundImageUrl: undefined, paperBackgroundOpacity: undefined } }) } as Response);
+
+    render(<ThoughtRichTextDraftPage thought={thought} />);
+
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张").getAttribute("style")).toContain("/thought-backgrounds/pink-heart.jpg");
+    expect(screen.getByLabelText("碎碎念富文本编辑纸张").getAttribute("style")).toContain("rgba(255, 253, 247, 0.6)");
+    expect(screen.getByLabelText("背景透明度")).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    expect(screen.getByLabelText("背景透明度")).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "恢复默认背景" }));
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const payload = JSON.parse(String(request.body));
+    expect(payload).not.toHaveProperty("paperBackgroundImageUrl");
+    expect(payload).not.toHaveProperty("paperBackgroundOpacity");
+  });
+
+  it("blocks saving while a blob background is still being processed", () => {
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:thought-paper-bg");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    vi.stubGlobal(
+      "FileReader",
+      class MockSlowFileReader extends EventTarget {
+        result: string | null = null;
+        readAsDataURL() {}
+      },
+    );
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    render(<ThoughtRichTextDraftPage />);
+    fireEvent.change(screen.getByLabelText("上传背景图"), { target: { files: [new File(["paper"], "paper.png", { type: "image/png" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("背景图处理中，请稍后保存");
   });
 
   it("blocks saving empty content", async () => {

@@ -78,6 +78,8 @@ describe("thoughts service", () => {
       status: "published",
       createdAt: "2026-05-27",
       sortOrder: 3,
+      paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+      paperBackgroundOpacity: 45,
     });
 
     await expect(getThoughtBySlug("detail-thought")).resolves.toEqual({
@@ -90,6 +92,8 @@ describe("thoughts service", () => {
       status: "published",
       createdAt: "2026-05-27",
       sortOrder: 3,
+      paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+      paperBackgroundOpacity: 45,
     });
   });
 

@@ -16,6 +16,8 @@ export const thoughts = sqliteTable("thoughts", {
   status: text("status", { enum: ["draft", "published"] }).notNull(), // 发布状态
   createdAt: text("created_at"), // 创建时间
   sortOrder: integer("sort_order"), // 排序权重/顺序
+  paperBackgroundImageUrl: text("paper_background_image_url"),
+  paperBackgroundOpacity: integer("paper_background_opacity"),
 });
 
 export const albums = sqliteTable("albums", {

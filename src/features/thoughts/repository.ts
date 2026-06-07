@@ -14,6 +14,8 @@ type StoredThoughtRow = {
   status: Thought["status"];
   createdAt: string | null;
   sortOrder: number | null;
+  paperBackgroundImageUrl: string | null;
+  paperBackgroundOpacity: number | null;
 };
 
 function toThought(row: StoredThoughtRow): Thought {
@@ -27,6 +29,8 @@ function toThought(row: StoredThoughtRow): Thought {
     status: row.status,
     createdAt: row.createdAt ?? undefined,
     sortOrder: row.sortOrder ?? undefined,
+    paperBackgroundImageUrl: row.paperBackgroundImageUrl ?? undefined,
+    paperBackgroundOpacity: row.paperBackgroundOpacity ?? undefined,
   };
 }
 
@@ -62,6 +66,8 @@ export async function upsertStoredThought(thought: Thought) {
       status: thought.status,
       createdAt: thought.createdAt ?? null,
       sortOrder: thought.sortOrder ?? null,
+      paperBackgroundImageUrl: thought.paperBackgroundImageUrl ?? null,
+      paperBackgroundOpacity: thought.paperBackgroundOpacity ?? null,
     })
     .onConflictDoUpdate({
       target: thoughtsTable.id,
@@ -74,6 +80,8 @@ export async function upsertStoredThought(thought: Thought) {
         status: thought.status,
         createdAt: thought.createdAt ?? null,
         sortOrder: thought.sortOrder ?? null,
+        paperBackgroundImageUrl: thought.paperBackgroundImageUrl ?? null,
+        paperBackgroundOpacity: thought.paperBackgroundOpacity ?? null,
       },
     });
 }

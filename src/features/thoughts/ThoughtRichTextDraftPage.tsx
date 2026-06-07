@@ -194,13 +194,14 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   const [customPaperTemplateMenu, setCustomPaperTemplateMenu] = useState<CustomPaperTemplateMenu>(null);
   const [customPaperTemplates, setCustomPaperTemplates] = useState<PaperTemplateOption[]>([]);
   const [pendingCustomPaperTemplate, setPendingCustomPaperTemplate] = useState<PendingCustomPaperTemplate>(null);
-  const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState("");
-  const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
+  const [paperBackgroundImageUrl, setPaperBackgroundImageUrl] = useState(thought?.paperBackgroundImageUrl ?? "");
+  const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(thought?.paperBackgroundOpacity ?? defaultPaperBackgroundOpacity);
   const [renamingCustomPaperTemplate, setRenamingCustomPaperTemplate] = useState<RenamingCustomPaperTemplate>(null);
   const [renameCustomPaperTemplateLabel, setRenameCustomPaperTemplateLabel] = useState("");
   const [deleteThoughtDialogOpen, setDeleteThoughtDialogOpen] = useState(false);
   const [deleteThoughtError, setDeleteThoughtError] = useState("");
   const [isDeletingThought, setIsDeletingThought] = useState(false);
+  const [isEditing, setIsEditing] = useState(!thought);
   const [isSavingThought, setIsSavingThought] = useState(false);
   const [saveToast, setSaveToast] = useState<SaveToast>(null);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
@@ -214,11 +215,13 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   const customPaperTemplateMenuRef = useRef<HTMLDivElement | null>(null);
   const paperBackgroundImageUrlRef = useRef("");
   const toolbarRef = useRef<HTMLElement | null>(null);
-  const pageTitle = currentThought ? "编辑碎碎念" : "新建碎碎念";
+  const isReadOnly = Boolean(currentThought) && !isEditing;
+  const pageTitle = currentThought?.title ?? "新建碎碎念";
   const editorInitialContent = currentThought ? thoughtBodyToEditorContent(currentThought.body) : "";
   const editor = useEditor({
     extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, LinkExtension, Table, TableRow, TableHeader, TableCell, Video],
     content: editorInitialContent,
+    editable: isEditing,
     immediatelyRender: false,
   });
   const toolbarState =
@@ -250,6 +253,9 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       },
     }) ?? defaultToolbarState;
   const editorMissing = !editor;
+  const editorActionDisabled = editorMissing || isReadOnly;
+  const attachmentActionDisabled = editorActionDisabled || attachmentUploadStatus === "uploading";
+  const backgroundActionDisabled = isReadOnly || isSavingThought;
   const toolbarButtonClass = (active = false, iconOnly = false) => `${toolbarButtonBaseClass} ${iconOnly ? toolbarIconButtonClass : ""} ${active ? activeToolbarButtonClass : inactiveToolbarButtonClass}`;
   const activeHeadingLevel = headingLevels.find((level) => toolbarState[`isH${level}` as keyof ToolbarState]);
   const visiblePaperTemplateOptions: PaperTemplateOption[] = [...paperTemplateOptions.map((template) => ({ ...template, source: "builtin" as const })), ...customPaperTemplates];
@@ -282,18 +288,40 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
     return `custom-paper-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
+  function getPersistablePaperBackgroundImageUrl() {
+    if (!paperBackgroundImageUrl) {
+      return undefined;
+    }
+
+    if (paperBackgroundImageUrl.startsWith("blob:")) {
+      return pendingCustomPaperTemplate?.imageUrl;
+    }
+
+    return paperBackgroundImageUrl;
+  }
+
+  function applyPaperBackgroundToThought(thought: Thought): Thought {
+    const nextPaperBackgroundImageUrl = getPersistablePaperBackgroundImageUrl();
+
+    return {
+      ...thought,
+      paperBackgroundImageUrl: nextPaperBackgroundImageUrl,
+      paperBackgroundOpacity: nextPaperBackgroundImageUrl ? paperBackgroundOpacity : undefined,
+    };
+  }
+
   function buildThoughtPayload(html: string, text: string): Thought {
     if (currentThought) {
-      return {
+      return applyPaperBackgroundToThought({
         ...currentThought,
         body: html,
-      };
+      });
     }
 
     const timestamp = Date.now();
     const title = text.split("\n").find((line) => line.trim())?.trim().slice(0, 24) || "未命名碎碎念";
 
-    return {
+    return applyPaperBackgroundToThought({
       id: `thought-created-${timestamp}`,
       title,
       slug: getThoughtSlug(title, timestamp),
@@ -303,16 +331,21 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       status: "published",
       createdAt: formatThoughtDate(new Date()),
       sortOrder: timestamp,
-    };
+    });
   }
 
   async function saveThought() {
-    if (!editor || isSavingThought) {
+    if (!editor || isSavingThought || isReadOnly) {
       return;
     }
 
     const html = editor.getHTML();
     const text = editor.getText().trim();
+    if (paperBackgroundImageUrl.startsWith("blob:") && !pendingCustomPaperTemplate?.imageUrl) {
+      setSaveToast({ message: "背景图处理中，请稍后保存", type: "error" });
+      return;
+    }
+
     if (!text && !/<(img|video)(\s|>|\/)/i.test(html)) {
       setSaveToast({ message: "先写一点内容再保存", type: "error" });
       return;
@@ -336,6 +369,9 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       }
 
       setCurrentThought(data.thought);
+      setPaperBackgroundImageUrl(data.thought.paperBackgroundImageUrl ?? "");
+      setPaperBackgroundOpacity(data.thought.paperBackgroundOpacity ?? defaultPaperBackgroundOpacity);
+      setIsEditing(false);
       setSaveToast({ message: "保存成功", type: "success" });
       router.replace(`/thoughts/${data.thought.slug}`);
       router.refresh();
@@ -403,6 +439,10 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function resetPaperBackground() {
+    if (backgroundActionDisabled) {
+      return;
+    }
+
     if (paperBackgroundImageUrlRef.current) {
       URL.revokeObjectURL(paperBackgroundImageUrlRef.current);
       paperBackgroundImageUrlRef.current = "";
@@ -414,6 +454,10 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function applyPaperTemplate(imageUrl: string) {
+    if (backgroundActionDisabled) {
+      return;
+    }
+
     if (paperBackgroundImageUrlRef.current) {
       URL.revokeObjectURL(paperBackgroundImageUrlRef.current);
       paperBackgroundImageUrlRef.current = "";
@@ -425,7 +469,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function saveCustomPaperTemplate() {
-    if (!pendingCustomPaperTemplate) {
+    if (backgroundActionDisabled || !pendingCustomPaperTemplate) {
       return;
     }
 
@@ -438,7 +482,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function handleCustomPaperTemplateContextMenu(event: ReactMouseEvent<HTMLButtonElement>, template: PaperTemplateOption) {
-    if (template.source !== "custom" || !template.id) {
+    if (backgroundActionDisabled || template.source !== "custom" || !template.id) {
       return;
     }
 
@@ -451,6 +495,10 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function openRenameCustomPaperTemplateDialog(templateId: string) {
+    if (backgroundActionDisabled) {
+      return;
+    }
+
     const template = customPaperTemplates.find((item) => item.id === templateId);
     if (!template) {
       setCustomPaperTemplateMenu(null);
@@ -469,7 +517,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
 
   function renameCustomPaperTemplate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!renamingCustomPaperTemplate) {
+    if (backgroundActionDisabled || !renamingCustomPaperTemplate) {
       return;
     }
 
@@ -487,6 +535,10 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function deleteCustomPaperTemplate(templateId: string) {
+    if (backgroundActionDisabled) {
+      return;
+    }
+
     const deletedTemplate = customPaperTemplates.find((template) => template.id === templateId);
 
     if (deletedTemplate?.imageUrl === paperBackgroundImageUrl) {
@@ -502,6 +554,11 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function handlePaperBackgroundChange(event: ChangeEvent<HTMLInputElement>) {
+    if (backgroundActionDisabled) {
+      event.target.value = "";
+      return;
+    }
+
     const file = event.target.files?.[0];
     event.target.value = "";
 
@@ -604,6 +661,10 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }, [saveToast]);
 
   useEffect(() => {
+    editor?.setEditable(isEditing);
+  }, [editor, isEditing]);
+
+  useEffect(() => {
     try {
       const storedTemplates = window.localStorage.getItem(customPaperTemplateStorageKey);
       if (!storedTemplates) {
@@ -666,7 +727,12 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                 <h1 className="text-xl font-black tracking-tight text-[#4c2b2d] sm:text-2xl">{pageTitle}</h1>
               </div>
               <div aria-label="碎碎念操作" className="flex flex-wrap items-center gap-2">
-                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8] disabled:cursor-not-allowed disabled:opacity-45" disabled={editorMissing || isSavingThought || attachmentUploadStatus === "uploading"} onClick={saveThought} type="button">
+                {currentThought ? (
+                  <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8] disabled:cursor-not-allowed disabled:opacity-45" disabled={isEditing} onClick={() => setIsEditing(true)} type="button">
+                    编辑
+                  </button>
+                ) : null}
+                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8] disabled:cursor-not-allowed disabled:opacity-45" disabled={isReadOnly || editorMissing || isSavingThought || attachmentUploadStatus === "uploading"} onClick={saveThought} type="button">
                   {isSavingThought ? "保存中" : "保存"}
                 </button>
                 <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" onClick={() => { setDeleteThoughtError(""); setDeleteThoughtDialogOpen(true); }} type="button">
@@ -683,7 +749,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                   aria-label={`H${level}`}
                   aria-pressed={activeHeadingLevel === level}
                   className={toolbarButtonClass(activeHeadingLevel === level)}
-                  disabled={editorMissing}
+                  disabled={editorActionDisabled}
                   key={level}
                   onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
                   title={`H${level}`}
@@ -693,29 +759,29 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                 </button>
               ))}
               <span aria-hidden="true" className={toolbarDividerClass} data-testid="toolbar-divider" />
-              <button aria-label="无序列表" aria-pressed={toolbarState.isBulletList} className={toolbarButtonClass(toolbarState.isBulletList, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="无序列表" type="button">
+              <button aria-label="无序列表" aria-pressed={toolbarState.isBulletList} className={toolbarButtonClass(toolbarState.isBulletList, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="无序列表" type="button">
                 <List aria-hidden="true" size={18} strokeWidth={2.6} />
               </button>
-              <button aria-label="有序列表" aria-pressed={toolbarState.isOrderedList} className={toolbarButtonClass(toolbarState.isOrderedList, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="有序列表" type="button">
+              <button aria-label="有序列表" aria-pressed={toolbarState.isOrderedList} className={toolbarButtonClass(toolbarState.isOrderedList, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="有序列表" type="button">
                 <ListOrdered aria-hidden="true" size={18} strokeWidth={2.6} />
               </button>
-              <button aria-label="任务列表" aria-pressed={toolbarState.isTaskList} className={toolbarButtonClass(toolbarState.isTaskList, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleTaskList().run()} title="任务列表" type="button">
+              <button aria-label="任务列表" aria-pressed={toolbarState.isTaskList} className={toolbarButtonClass(toolbarState.isTaskList, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleTaskList().run()} title="任务列表" type="button">
                 <ListTodo aria-hidden="true" size={18} strokeWidth={2.6} />
               </button>
               <span aria-hidden="true" className={toolbarDividerClass} data-testid="toolbar-divider" />
-              <button aria-label="加粗" aria-pressed={toolbarState.isBold} className={toolbarButtonClass(toolbarState.isBold, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleBold().run()} title="加粗" type="button">
+              <button aria-label="加粗" aria-pressed={toolbarState.isBold} className={toolbarButtonClass(toolbarState.isBold, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleBold().run()} title="加粗" type="button">
                 <Bold aria-hidden="true" size={17} strokeWidth={2.8} />
               </button>
-              <button aria-label="删除线" aria-pressed={toolbarState.isStrike} className={toolbarButtonClass(toolbarState.isStrike, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleStrike().run()} title="删除线" type="button">
+              <button aria-label="删除线" aria-pressed={toolbarState.isStrike} className={toolbarButtonClass(toolbarState.isStrike, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleStrike().run()} title="删除线" type="button">
                 <Strikethrough aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
-              <button aria-label="斜体" aria-pressed={toolbarState.isItalic} className={toolbarButtonClass(toolbarState.isItalic, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleItalic().run()} title="斜体" type="button">
+              <button aria-label="斜体" aria-pressed={toolbarState.isItalic} className={toolbarButtonClass(toolbarState.isItalic, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleItalic().run()} title="斜体" type="button">
                 <Italic aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
-              <button aria-label="下划线" aria-pressed={toolbarState.isUnderline} className={toolbarButtonClass(toolbarState.isUnderline, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="下划线" type="button">
+              <button aria-label="下划线" aria-pressed={toolbarState.isUnderline} className={toolbarButtonClass(toolbarState.isUnderline, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="下划线" type="button">
                 <UnderlineIcon aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
-              <button aria-label="代码块" aria-pressed={toolbarState.isCodeBlock} className={toolbarButtonClass(toolbarState.isCodeBlock, true)} disabled={editorMissing} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} title="代码块" type="button">
+              <button aria-label="代码块" aria-pressed={toolbarState.isCodeBlock} className={toolbarButtonClass(toolbarState.isCodeBlock, true)} disabled={editorActionDisabled} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} title="代码块" type="button">
                 <Code2 aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
               <div className="relative">
@@ -724,7 +790,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                   aria-haspopup="menu"
                   aria-label="表格"
                   className={toolbarButtonClass(false)}
-                  disabled={editorMissing}
+                  disabled={editorActionDisabled}
                   onClick={() => {
                     setColorMenuOpen(false);
                     setEmojiMenuOpen(false);
@@ -752,7 +818,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                   aria-haspopup="dialog"
                   aria-label="表情包"
                   className={toolbarButtonClass(emojiMenuOpen, true)}
-                  disabled={editorMissing}
+                  disabled={editorActionDisabled}
                   onClick={() => {
                     setColorMenuOpen(false);
                     setTableMenuOpen(false);
@@ -775,7 +841,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                   aria-haspopup="menu"
                   aria-label="文字颜色"
                   className={toolbarButtonClass()}
-                  disabled={editorMissing}
+                  disabled={editorActionDisabled}
                   onClick={() => {
                     setEmojiMenuOpen(false);
                     setTableMenuOpen(false);
@@ -813,14 +879,14 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
               </div>
               <input aria-label="上传背景图" accept="image/*" className="sr-only" onChange={handlePaperBackgroundChange} ref={backgroundInputRef} type="file" />
               <input aria-label="上传图片附件" accept="image/*" className="sr-only" onChange={handleAttachmentChange} ref={imageInputRef} type="file" />
-              <button aria-label="图片" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => imageInputRef.current?.click()} title="上传图片附件" type="button">
+              <button aria-label="图片" className={toolbarButtonClass(false, true)} disabled={attachmentActionDisabled} onClick={() => imageInputRef.current?.click()} title="上传图片附件" type="button">
                 <ImagePlus aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
               <input aria-label="上传视频附件" accept="video/*" className="sr-only" onChange={handleAttachmentChange} ref={videoInputRef} type="file" />
-              <button aria-label="视频" className={toolbarButtonClass(false, true)} disabled={editorMissing || attachmentUploadStatus === "uploading"} onClick={() => videoInputRef.current?.click()} title="上传视频附件" type="button">
+              <button aria-label="视频" className={toolbarButtonClass(false, true)} disabled={attachmentActionDisabled} onClick={() => videoInputRef.current?.click()} title="上传视频附件" type="button">
                 <VideoIcon aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
-              <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={!toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
+              <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={editorActionDisabled || !toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
                 </nav>
@@ -828,7 +894,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                 {attachmentUploadStatus === "uploaded" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">附件上传完成</div> : null}
                 {attachmentUploadError ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{attachmentUploadError}</div> : null}
                 {saveToast?.type === "saving" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">{saveToast.message}</div> : null}
-                {saveToast?.type === "success" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">{saveToast.message}</div> : null}
+                {saveToast?.type === "success" ? <div className="fixed left-1/2 top-24 z-50 -translate-x-1/2 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">{saveToast.message}</div> : null}
                 {saveToast?.type === "error" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{saveToast.message}</div> : null}
                 <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative ${editorPaperSizeClass} overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`} style={paperBackgroundStyle}>
                   {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
@@ -851,7 +917,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                     </div>
                     <div aria-label="背景模板列表" className="album-page-scrollbar mt-3 grid max-h-[23.875rem] grid-cols-2 gap-2 overflow-y-auto pr-1">
                       {visiblePaperTemplateOptions.map((template) => (
-                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8]" key={template.id ?? template.label} onClick={() => applyPaperTemplate(template.imageUrl)} onContextMenu={(event) => handleCustomPaperTemplateContextMenu(event, template)} type="button">
+                        <button aria-label={template.label} className="group rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] p-2 text-left shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 hover:border-[#e8b7c0] hover:bg-[#fff7f8] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0" disabled={backgroundActionDisabled} key={template.id ?? template.label} onClick={() => applyPaperTemplate(template.imageUrl)} onContextMenu={(event) => handleCustomPaperTemplateContextMenu(event, template)} type="button">
                           <span className="block h-20 rounded-[0.8rem] border border-[#f0e2d6] bg-cover bg-center" style={{ backgroundImage: `url(${template.imageUrl})` }} />
                           <span className="mt-2 block text-xs font-black text-[#6f4b51]">{template.label}</span>
                         </button>
@@ -867,7 +933,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                         </button>
                       </div>
                     ) : null}
-                    <button className="mt-3 w-full rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-3 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.22)] transition hover:bg-[#e97991]" onClick={() => backgroundInputRef.current?.click()} type="button">
+                    <button className="mt-3 w-full rounded-[0.9rem] border border-[#d97891] bg-[#f48ca0] px-3 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(217,120,145,0.22)] transition hover:bg-[#e97991] disabled:cursor-not-allowed disabled:opacity-45" disabled={backgroundActionDisabled} onClick={() => backgroundInputRef.current?.click()} type="button">
                       自定义背景
                     </button>
                     {paperBackgroundCustomized ? (
@@ -878,22 +944,22 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                             背景透明度
                             <span>{paperBackgroundOpacity}%</span>
                           </span>
-                          <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891]" max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
+                          <input aria-label="背景透明度" className="mt-2 w-full accent-[#d97891] disabled:cursor-not-allowed disabled:opacity-45" disabled={backgroundActionDisabled} max="100" min="0" onChange={(event) => setPaperBackgroundOpacity(Number(event.target.value))} type="range" value={paperBackgroundOpacity} />
                         </label>
                         {pendingCustomPaperTemplate ? (
                           <div className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-[1rem] border border-[#ead7ce] bg-[#fff7f8] p-3 shadow-[0_18px_34px_rgba(122,79,85,0.18)]">
                             <p className="text-xs font-black leading-5 text-[#8a5b62]">把这张自定义背景保存到模板，下次可直接选择。</p>
                             <div className="mt-2 flex gap-2">
-                              <button className="flex-1 rounded-[0.75rem] bg-[#f48ca0] px-2 py-2 text-xs font-black text-white transition hover:bg-[#e97991]" onClick={saveCustomPaperTemplate} type="button">
+                              <button className="flex-1 rounded-[0.75rem] bg-[#f48ca0] px-2 py-2 text-xs font-black text-white transition hover:bg-[#e97991] disabled:cursor-not-allowed disabled:opacity-45" disabled={backgroundActionDisabled} onClick={saveCustomPaperTemplate} type="button">
                                 保存为背景模板
                               </button>
-                              <button className="rounded-[0.75rem] border border-[#ead7ce] bg-[#fffdf8] px-2 py-2 text-xs font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={() => setPendingCustomPaperTemplate(null)} type="button">
+                              <button className="rounded-[0.75rem] border border-[#ead7ce] bg-[#fffdf8] px-2 py-2 text-xs font-black text-[#7a4f55] transition hover:bg-[#fff1f4] disabled:cursor-not-allowed disabled:opacity-45" disabled={backgroundActionDisabled} onClick={() => setPendingCustomPaperTemplate(null)} type="button">
                                 暂不保存
                               </button>
                             </div>
                           </div>
                         ) : null}
-                        <button className="mt-2 w-full rounded-[0.9rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" onClick={resetPaperBackground} type="button">
+                        <button className="mt-2 w-full rounded-[0.9rem] border border-[#ead7ce] bg-[#fffaf4] px-3 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4] disabled:cursor-not-allowed disabled:opacity-45" disabled={backgroundActionDisabled} onClick={resetPaperBackground} type="button">
                           恢复默认背景
                         </button>
                       </>

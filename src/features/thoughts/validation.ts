@@ -12,6 +12,34 @@ function isThoughtStatus(value: unknown): value is Thought["status"] {
   return typeof value === "string" && thoughtStatuses.includes(value as Thought["status"]);
 }
 
+function normalizePaperBackgroundImageUrl(value: unknown) {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (typeof value !== "string" || value.startsWith("blob:") || (!value.startsWith("/") && !value.startsWith("data:image/"))) {
+    throw new Error("thought 参数不合法");
+  }
+
+  return value;
+}
+
+function normalizePaperBackgroundOpacity(value: unknown, hasBackground: boolean) {
+  if (!hasBackground) {
+    return undefined;
+  }
+
+  if (value === undefined || value === null) {
+    return 52;
+  }
+
+  if (typeof value !== "number" || value < 0 || value > 100) {
+    throw new Error("thought 参数不合法");
+  }
+
+  return value;
+}
+
 export function parseCreateThought(body: unknown): Thought {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new Error("请求体必须是对象");
@@ -55,6 +83,9 @@ export function parseCreateThought(body: unknown): Thought {
     throw new Error("thought 参数不合法");
   }
 
+  const paperBackgroundImageUrl = normalizePaperBackgroundImageUrl(thought.paperBackgroundImageUrl);
+  const paperBackgroundOpacity = normalizePaperBackgroundOpacity(thought.paperBackgroundOpacity, Boolean(paperBackgroundImageUrl));
+
   return {
     id: thought.id,
     title: thought.title,
@@ -65,5 +96,7 @@ export function parseCreateThought(body: unknown): Thought {
     status: thought.status,
     createdAt: thought.createdAt,
     sortOrder: thought.sortOrder,
+    paperBackgroundImageUrl,
+    paperBackgroundOpacity,
   };
 }

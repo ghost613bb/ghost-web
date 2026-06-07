@@ -3,6 +3,8 @@ import type { BaseContent } from "@/features/content-modules/types";
 export type Thought = Omit<BaseContent, "description"> & {
   slug: string;
   body: string;
+  paperBackgroundImageUrl?: string;
+  paperBackgroundOpacity?: number;
 };
 
 export const thoughts: Thought[] = [

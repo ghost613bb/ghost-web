@@ -59,6 +59,7 @@ vi.mock("@tiptap/react", () => {
         can: () => ({ undo: () => false }),
         chain: () => chain,
         isActive: () => false,
+        setEditable: () => undefined,
       };
     },
     useEditorState: () => ({
@@ -500,7 +501,7 @@ describe("content module pages", () => {
   it("renders the thought rich text page from a slug", async () => {
     render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
 
-    expect(screen.getByRole("heading", { level: 1, name: "编辑碎碎念" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(mockTiptapState.useEditorOptions?.content).toContain(thoughts[0].body);

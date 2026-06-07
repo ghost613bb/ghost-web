@@ -30,6 +30,8 @@ describe("db client", () => {
     const { sqlite } = await importDbClientWithDatabaseUrl(databaseUrl);
 
     expect(sqlite.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get("thoughts")).toMatchObject({ name: "thoughts" });
+    const thoughtColumns = sqlite.prepare("PRAGMA table_info(thoughts)").all() as { name: string }[];
+    expect(thoughtColumns.map((column) => column.name)).toEqual(expect.arrayContaining(["paper_background_image_url", "paper_background_opacity"]));
     sqlite.close();
   });
 
