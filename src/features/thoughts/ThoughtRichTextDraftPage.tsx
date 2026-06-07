@@ -14,7 +14,9 @@ import StarterKit from "@tiptap/starter-kit";
 import { ArrowLeft, Bold, ChevronDown, ChevronsLeft, ChevronsRight, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon } from "lucide-react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
+import type { Thought } from "@/data/thoughts";
 
 const toolbarButtonBaseClass =
   "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-[0.85rem] border px-2.5 text-sm font-black shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0";
@@ -101,6 +103,15 @@ type RenamingCustomPaperTemplate = {
   templateId: string;
 } | null;
 
+type ThoughtRichTextDraftPageProps = {
+  thought?: Thought;
+};
+
+type SaveToast = {
+  message: string;
+  type: "error" | "success" | "saving";
+} | null;
+
 type ToolbarState = {
   canUndo: boolean;
   isBlockquote: boolean;
@@ -139,9 +150,47 @@ const defaultToolbarState: ToolbarState = {
   isUnderline: false,
 };
 
-export function ThoughtRichTextDraftPage() {
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function looksLikeEditorHtml(body: string) {
+  return /<(p|h[1-6]|ul|ol|li|blockquote|pre|img|video|table|tbody|tr|td|th)(\s|>|\/)/i.test(body);
+}
+
+function thoughtBodyToEditorContent(body: string) {
+  if (looksLikeEditorHtml(body)) {
+    return body;
+  }
+
+  return body
+    .split("\n")
+    .map((line) => (line ? `<p>${escapeHtml(line)}</p>` : "<p></p>"))
+    .join("");
+}
+
+function formatThoughtDate(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function getThoughtSlug(title: string, timestamp: number) {
+  const normalizedTitle = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return normalizedTitle ? `${normalizedTitle}-${timestamp}` : `thought-${timestamp}`;
+}
+
+export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPageProps = {}) {
+  const router = useRouter();
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
   const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
+  const [currentThought, setCurrentThought] = useState<Thought | null>(thought ?? null);
   const [customPaperTemplateMenu, setCustomPaperTemplateMenu] = useState<CustomPaperTemplateMenu>(null);
   const [customPaperTemplates, setCustomPaperTemplates] = useState<PaperTemplateOption[]>([]);
   const [pendingCustomPaperTemplate, setPendingCustomPaperTemplate] = useState<PendingCustomPaperTemplate>(null);
@@ -149,6 +198,11 @@ export function ThoughtRichTextDraftPage() {
   const [paperBackgroundOpacity, setPaperBackgroundOpacity] = useState(defaultPaperBackgroundOpacity);
   const [renamingCustomPaperTemplate, setRenamingCustomPaperTemplate] = useState<RenamingCustomPaperTemplate>(null);
   const [renameCustomPaperTemplateLabel, setRenameCustomPaperTemplateLabel] = useState("");
+  const [deleteThoughtDialogOpen, setDeleteThoughtDialogOpen] = useState(false);
+  const [deleteThoughtError, setDeleteThoughtError] = useState("");
+  const [isDeletingThought, setIsDeletingThought] = useState(false);
+  const [isSavingThought, setIsSavingThought] = useState(false);
+  const [saveToast, setSaveToast] = useState<SaveToast>(null);
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const [emojiMenuOpen, setEmojiMenuOpen] = useState(false);
   const [backgroundPanelCollapsed, setBackgroundPanelCollapsed] = useState(false);
@@ -160,9 +214,11 @@ export function ThoughtRichTextDraftPage() {
   const customPaperTemplateMenuRef = useRef<HTMLDivElement | null>(null);
   const paperBackgroundImageUrlRef = useRef("");
   const toolbarRef = useRef<HTMLElement | null>(null);
+  const pageTitle = currentThought ? "编辑碎碎念" : "新建碎碎念";
+  const editorInitialContent = currentThought ? thoughtBodyToEditorContent(currentThought.body) : "";
   const editor = useEditor({
     extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, LinkExtension, Table, TableRow, TableHeader, TableCell, Video],
-    content: "",
+    content: editorInitialContent,
     immediatelyRender: false,
   });
   const toolbarState =
@@ -224,6 +280,98 @@ export function ThoughtRichTextDraftPage() {
 
   function getCustomPaperTemplateId() {
     return `custom-paper-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function buildThoughtPayload(html: string, text: string): Thought {
+    if (currentThought) {
+      return {
+        ...currentThought,
+        body: html,
+      };
+    }
+
+    const timestamp = Date.now();
+    const title = text.split("\n").find((line) => line.trim())?.trim().slice(0, 24) || "未命名碎碎念";
+
+    return {
+      id: `thought-created-${timestamp}`,
+      title,
+      slug: getThoughtSlug(title, timestamp),
+      body: html,
+      tags: ["日常"],
+      visibility: "public",
+      status: "published",
+      createdAt: formatThoughtDate(new Date()),
+      sortOrder: timestamp,
+    };
+  }
+
+  async function saveThought() {
+    if (!editor || isSavingThought) {
+      return;
+    }
+
+    const html = editor.getHTML();
+    const text = editor.getText().trim();
+    if (!text && !/<(img|video)(\s|>|\/)/i.test(html)) {
+      setSaveToast({ message: "先写一点内容再保存", type: "error" });
+      return;
+    }
+
+    setIsSavingThought(true);
+    setSaveToast({ message: "保存中...", type: "saving" });
+
+    try {
+      const response = await fetch("/api/thoughts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(buildThoughtPayload(html, text)),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "保存失败");
+      }
+
+      setCurrentThought(data.thought);
+      setSaveToast({ message: "保存成功", type: "success" });
+      router.replace(`/thoughts/${data.thought.slug}`);
+      router.refresh();
+    } catch (error) {
+      setSaveToast({ message: error instanceof Error ? error.message : "保存失败", type: "error" });
+    } finally {
+      setIsSavingThought(false);
+    }
+  }
+
+  async function confirmDeleteThought() {
+    if (!currentThought) {
+      router.push("/thoughts");
+      return;
+    }
+
+    setIsDeletingThought(true);
+    setDeleteThoughtError("");
+
+    try {
+      const response = await fetch(`/api/thoughts/${encodeURIComponent(currentThought.id)}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "删除失败");
+      }
+
+      router.push("/thoughts");
+      router.refresh();
+    } catch (error) {
+      setDeleteThoughtError(error instanceof Error ? error.message : "删除失败");
+    } finally {
+      setIsDeletingThought(false);
+    }
   }
 
   function deleteTableRow() {
@@ -442,6 +590,20 @@ export function ThoughtRichTextDraftPage() {
   }, [attachmentUploadError, attachmentUploadStatus]);
 
   useEffect(() => {
+    if (!saveToast || saveToast.type === "saving") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSaveToast(null);
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [saveToast]);
+
+  useEffect(() => {
     try {
       const storedTemplates = window.localStorage.getItem(customPaperTemplateStorageKey);
       if (!storedTemplates) {
@@ -501,13 +663,13 @@ export function ThoughtRichTextDraftPage() {
                 <Link aria-label="返回碎碎念" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
                   <ArrowLeft aria-hidden="true" size={22} strokeWidth={3} />
                 </Link>
-                <h1 className="text-xl font-black tracking-tight text-[#4c2b2d] sm:text-2xl">新建碎碎念</h1>
+                <h1 className="text-xl font-black tracking-tight text-[#4c2b2d] sm:text-2xl">{pageTitle}</h1>
               </div>
               <div aria-label="碎碎念操作" className="flex flex-wrap items-center gap-2">
-                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" type="button">
-                  保存
+                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8] disabled:cursor-not-allowed disabled:opacity-45" disabled={editorMissing || isSavingThought || attachmentUploadStatus === "uploading"} onClick={saveThought} type="button">
+                  {isSavingThought ? "保存中" : "保存"}
                 </button>
-                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" type="button">
+                <button className="rounded-[0.9rem] border border-[#ead7ce] bg-[#fffdf8] px-4 py-2 text-sm font-black text-[#6f4b51] shadow-[0_8px_20px_rgba(120,90,75,0.05)] transition hover:border-[#e8b7c0] hover:bg-[#fff7f8]" onClick={() => { setDeleteThoughtError(""); setDeleteThoughtDialogOpen(true); }} type="button">
                   删除
                 </button>
               </div>
@@ -665,6 +827,9 @@ export function ThoughtRichTextDraftPage() {
                 {attachmentUploadStatus === "uploading" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">附件上传中...</div> : null}
                 {attachmentUploadStatus === "uploaded" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">附件上传完成</div> : null}
                 {attachmentUploadError ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{attachmentUploadError}</div> : null}
+                {saveToast?.type === "saving" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">{saveToast.message}</div> : null}
+                {saveToast?.type === "success" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">{saveToast.message}</div> : null}
+                {saveToast?.type === "error" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{saveToast.message}</div> : null}
                 <section aria-label="碎碎念富文本编辑纸张" className={`album-page-scrollbar thought-rich-text-editor relative ${editorPaperSizeClass} overflow-y-auto rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 text-[1rem] font-normal leading-8 text-[#5b4347] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6 ${richTextFrameClass}`} style={paperBackgroundStyle}>
                   {editor ? <EditorContent editor={editor} /> : <p>富文本编辑器加载中...</p>}
                 </section>
@@ -755,6 +920,23 @@ export function ThoughtRichTextDraftPage() {
                     </button>
                   </div>
                 </form>
+              </div>
+            ) : null}
+            {deleteThoughtDialogOpen ? (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#4c2b2d]/20 px-4">
+                <div aria-modal="true" className="w-full max-w-sm rounded-[1.4rem] border border-[#ead7ce] bg-[#fffdf8] p-5 text-[#5b4347] shadow-[0_24px_60px_rgba(122,79,85,0.2)]" role="dialog" aria-label="删除碎碎念确认弹窗">
+                  <h2 className="text-lg font-black text-[#4c2b2d]">{currentThought ? "删除碎碎念" : "放弃草稿"}</h2>
+                  <p className="mt-2 text-sm font-bold leading-6 text-[#8a5b62]">{currentThought ? `确认删除「${currentThought.title}」吗？删除后会从碎碎念列表中移除。` : "确认放弃当前未保存的碎碎念吗？当前编辑内容不会保存。"}</p>
+                  {deleteThoughtError ? <p className="mt-3 rounded-[0.75rem] border border-[#f0c6cf] bg-[#fff4f6] px-3 py-2 text-sm font-black text-[#c65f73]" role="alert">{deleteThoughtError}</p> : null}
+                  <div className="mt-5 flex justify-end gap-2">
+                    <button className="rounded-[0.85rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-2 text-sm font-black text-[#7a4f55] transition hover:bg-[#fff1f4]" disabled={isDeletingThought} onClick={() => setDeleteThoughtDialogOpen(false)} type="button">
+                      取消
+                    </button>
+                    <button className="rounded-[0.85rem] border border-[#d97891] bg-[#f8cfd5] px-4 py-2 text-sm font-black text-[#7a3f4a] transition hover:bg-[#f4b8c2] disabled:cursor-not-allowed disabled:opacity-45" disabled={isDeletingThought} onClick={confirmDeleteThought} type="button">
+                      {isDeletingThought ? "删除中" : currentThought ? "确认删除" : "确认放弃"}
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : null}
             {tableHeaderDeletePending ? (

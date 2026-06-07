@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { thoughts } from "@/data/thoughts";
 import { resetStoredThoughts, upsertStoredThought } from "./repository";
-import { createThought, getLatestThought, getThoughtBySlug, listThoughts } from "./service";
+import { createThought, deleteThought, getLatestThought, getThoughtBySlug, listThoughts } from "./service";
 
 describe("thoughts service", () => {
   beforeEach(async () => {
@@ -12,7 +12,7 @@ describe("thoughts service", () => {
     await expect(listThoughts()).resolves.toEqual(thoughts);
   });
 
-  it("returns the latest stored thought when storage has data", async () => {
+  it("returns the latest stored thought before fallback thoughts when storage has data", async () => {
     await upsertStoredThought({
       id: "thought-db-001",
       title: "数据库里的碎碎念",
@@ -36,6 +36,7 @@ describe("thoughts service", () => {
       createdAt: "2026-05-25",
       sortOrder: 1,
     });
+    await expect(listThoughts()).resolves.toHaveLength(thoughts.length + 1);
   });
 
   it("creates a stored thought", async () => {
@@ -51,19 +52,19 @@ describe("thoughts service", () => {
       sortOrder: 2,
     });
 
-    await expect(listThoughts()).resolves.toEqual([
-      {
-        id: "thought-db-002",
-        title: "新写入的碎碎念",
-        slug: "new-thought",
-        body: "先把最小写入链路跑通。",
-        tags: ["写入", "service"],
-        visibility: "public",
-        status: "published",
-        createdAt: "2026-05-26",
-        sortOrder: 2,
-      },
-    ]);
+    const storedThoughts = await listThoughts();
+    expect(storedThoughts).toContainEqual({
+      id: "thought-db-002",
+      title: "新写入的碎碎念",
+      slug: "new-thought",
+      body: "先把最小写入链路跑通。",
+      tags: ["写入", "service"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-26",
+      sortOrder: 2,
+    });
+    expect(storedThoughts).toHaveLength(thoughts.length + 1);
   });
 
   it("gets a stored thought by slug", async () => {
@@ -98,5 +99,54 @@ describe("thoughts service", () => {
 
   it("returns null when no thought matches the slug", async () => {
     await expect(getThoughtBySlug("missing-thought")).resolves.toBeNull();
+  });
+
+  it("overrides a fallback thought with a stored thought using the same id", async () => {
+    await upsertStoredThought({
+      ...thoughts[0],
+      body: "编辑后的本地碎碎念。",
+      title: "编辑后的标题",
+    });
+
+    const nextThoughts = await listThoughts();
+
+    expect(nextThoughts).toContainEqual({
+      ...thoughts[0],
+      body: "编辑后的本地碎碎念。",
+      title: "编辑后的标题",
+    });
+    expect(nextThoughts.filter((thought) => thought.id === thoughts[0].id)).toHaveLength(1);
+    expect(nextThoughts).toHaveLength(thoughts.length);
+  });
+
+  it("deletes a stored thought", async () => {
+    await createThought({
+      id: "thought-db-delete",
+      title: "待删除碎碎念",
+      slug: "delete-stored-thought",
+      body: "这条内容会被删除。",
+      tags: ["删除"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-28",
+      sortOrder: 4,
+    });
+
+    await expect(deleteThought("thought-db-delete")).resolves.toBe(true);
+    expect((await listThoughts()).some((thought) => thought.id === "thought-db-delete")).toBe(false);
+  });
+
+  it("hides a fallback thought through delete without hiding other fallback thoughts", async () => {
+    await expect(deleteThought(thoughts[0].id)).resolves.toBe(true);
+
+    const nextThoughts = await listThoughts();
+
+    expect(nextThoughts.some((thought) => thought.id === thoughts[0].id)).toBe(false);
+    expect(nextThoughts.some((thought) => thought.id === thoughts[1].id)).toBe(true);
+    await expect(getThoughtBySlug(thoughts[0].slug)).resolves.toBeNull();
+  });
+
+  it("returns false when deleting a missing thought", async () => {
+    await expect(deleteThought("missing-thought")).resolves.toBe(false);
   });
 });

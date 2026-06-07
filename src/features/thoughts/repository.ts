@@ -35,6 +35,20 @@ export async function listStoredThoughts(): Promise<Thought[]> {
   return rows.map((row) => toThought(row));
 }
 
+export async function listVisibleStoredThoughts(): Promise<Thought[]> {
+  return (await listStoredThoughts()).filter((thought) => thought.status !== "draft");
+}
+
+export async function getStoredThoughtById(id: string): Promise<Thought | null> {
+  const rows = await db.select().from(thoughtsTable).where(eq(thoughtsTable.id, id)).limit(1);
+  return rows[0] ? toThought(rows[0]) : null;
+}
+
+export async function getStoredThoughtIds(): Promise<Set<string>> {
+  const rows = await db.select({ id: thoughtsTable.id }).from(thoughtsTable);
+  return new Set(rows.map((row) => row.id));
+}
+
 export async function upsertStoredThought(thought: Thought) {
   await db
     .insert(thoughtsTable)
@@ -64,6 +78,10 @@ export async function upsertStoredThought(thought: Thought) {
     });
 }
 
+export async function deleteStoredThought(id: string) {
+  await db.delete(thoughtsTable).where(eq(thoughtsTable.id, id));
+}
+
 export async function resetStoredThoughts() {
-  await db.delete(thoughtsTable).where(eq(thoughtsTable.id, thoughtsTable.id));
+  await db.delete(thoughtsTable);
 }

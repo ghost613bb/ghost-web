@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDisplayMode } from "@/features/module-display-mode/service";
-import { ThoughtDetailPageView } from "@/features/thoughts/ThoughtDetailPage";
+import { ThoughtRichTextDraftPage } from "@/features/thoughts/ThoughtRichTextDraftPage";
 import { getThoughtBySlug } from "@/features/thoughts/service";
 
 type ThoughtDetailPageProps = {
@@ -27,5 +27,5 @@ export default async function ThoughtDetailPage({ params }: ThoughtDetailPagePro
     notFound();
   }
 
-  return <ThoughtDetailPageView thought={thought} />;
+  return <ThoughtRichTextDraftPage thought={thought} />;
 }

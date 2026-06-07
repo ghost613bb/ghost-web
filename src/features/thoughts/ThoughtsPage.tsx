@@ -29,12 +29,25 @@ function thoughtImageRatioClass(index: number) {
   return ["aspect-[4/5]", "aspect-square", "aspect-[5/4]", "aspect-[3/4]"][index % 4];
 }
 
+function thoughtBodyToPlainText(body: string) {
+  return body
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function matchesQuery(thought: Thought, normalizedQuery: string) {
   if (!normalizedQuery) {
     return true;
   }
 
-  return [thought.title, thought.body, thoughtTags(thought).join(" ")].some((value) => value.toLowerCase().includes(normalizedQuery));
+  return [thought.title, thoughtBodyToPlainText(thought.body), thoughtTags(thought).join(" ")].some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
 function renderHighlightedText(value: string, query: string) {
@@ -139,7 +152,10 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
 
         {filteredThoughts.length > 0 ? (
           <section className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-5">
-            {filteredThoughts.map((thought, index) => (
+            {filteredThoughts.map((thought, index) => {
+              const thoughtBody = thoughtBodyToPlainText(thought.body);
+
+              return (
               <article
                 className="mb-4 break-inside-avoid overflow-hidden rounded-[1.45rem] border-[2px] border-[#e8d4d1] bg-white p-2.5 shadow-[0_12px_24px_rgba(112,84,84,0.12)] transition hover:-translate-y-1 hover:shadow-[0_16px_30px_rgba(112,84,84,0.16)]"
                 key={thought.id}
@@ -150,7 +166,7 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                   </div>
                   <div className="px-1 pb-1">
                     <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thought.body, trimmedQuery)}</p>
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thoughtBody, trimmedQuery)}</p>
                     <div className="mt-3 flex items-center justify-between gap-2 text-sm font-bold text-stone-600">
                       <p>{formatThoughtDate(thought.createdAt)}</p>
                       <span className="rounded-full bg-[#f7c9d0] px-2.5 py-1 text-xs font-black text-[#6f343b] shadow-[0_4px_10px_rgba(112,84,84,0.12)]">
@@ -160,7 +176,8 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                   </div>
                 </Link>
               </article>
-            ))}
+              );
+            })}
           </section>
         ) : (
           <section className="rounded-[1.5rem] border-[2px] border-dashed border-[#e1c5c3] bg-white/60 px-6 py-12 text-center shadow-[0_12px_24px_rgba(112,84,84,0.08)]">

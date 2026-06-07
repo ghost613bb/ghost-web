@@ -1,19 +1,28 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorState } from "@tiptap/react";
+import type { Thought } from "@/data/thoughts";
 import { ThoughtRichTextDraftPage } from "./ThoughtRichTextDraftPage";
 
 const mockStarterKit = vi.hoisted(() => ({
   configure: vi.fn((options: unknown) => ({ name: "StarterKit", options })),
 }));
 
+const mockRouter = vi.hoisted(() => ({
+  push: vi.fn(),
+  refresh: vi.fn(),
+  replace: vi.fn(),
+}));
+
 const mockEditor = {
   chain: vi.fn(),
   can: vi.fn(),
+  getHTML: vi.fn(),
+  getText: vi.fn(),
   isActive: vi.fn(),
 };
 
-let capturedUseEditorOptions: { extensions?: unknown[]; onUpdate?: unknown } | undefined;
+let capturedUseEditorOptions: { content?: unknown; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown } | undefined;
 let editorState = {
   canUndo: false,
   isBlockquote: false,
@@ -33,6 +42,10 @@ let editorState = {
   isTaskList: false,
   isUnderline: false,
 };
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => mockRouter,
+}));
 
 vi.mock("@tiptap/starter-kit", () => ({
   default: mockStarterKit,
@@ -75,7 +88,7 @@ vi.mock("@tiptap/extension-task-item", () => ({
 
 vi.mock("@tiptap/react", () => ({
   EditorContent: ({ editor }: { editor: unknown }) => <div data-testid="editor-content">Editor ready: {String(Boolean(editor))}</div>,
-  useEditor: vi.fn((options: { extensions?: unknown[]; onUpdate?: unknown }) => {
+  useEditor: vi.fn((options: { content?: unknown; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown }) => {
     capturedUseEditorOptions = options;
     return mockEditor;
   }),
@@ -136,6 +149,7 @@ describe("ThoughtRichTextDraftPage", () => {
       }
     }
 
+    vi.restoreAllMocks();
     vi.stubGlobal("FileReader", MockFileReader);
     capturedUseEditorOptions = undefined;
     window.localStorage.clear();
@@ -159,7 +173,12 @@ describe("ThoughtRichTextDraftPage", () => {
       isUnderline: false,
     };
     mockStarterKit.configure.mockClear();
+    mockRouter.push.mockClear();
+    mockRouter.refresh.mockClear();
+    mockRouter.replace.mockClear();
     mockEditor.chain.mockImplementation(chainResult);
+    mockEditor.getHTML.mockReturnValue("<p>今天写了一点碎碎念</p>");
+    mockEditor.getText.mockReturnValue("今天写了一点碎碎念");
     mockEditor.can.mockReturnValue({ undo: () => editorState.canUndo });
     mockEditor.isActive.mockImplementation((name: string, attrs?: { level?: number }) => {
       if (name === "heading" && attrs?.level === 1) return editorState.isH1;
@@ -243,6 +262,8 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByRole("button", { name: "引用" })).not.toBeInTheDocument();
 
     expect(mockStarterKit.configure).toHaveBeenCalledWith({ underline: false });
+    expect(capturedUseEditorOptions?.content).toBe("");
+    expect(capturedUseEditorOptions?.immediatelyRender).toBe(false);
     expect(capturedUseEditorOptions?.extensions).toEqual([{ name: "StarterKit", options: { underline: false } }, "Underline", "TextStyle", "Color", "TaskList", "TaskItem", "Image", "Link", "Table", "TableRow", "TableHeader", "TableCell", expect.objectContaining({ name: "video" })]);
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
     expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
@@ -250,6 +271,137 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
     expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
     expect(capturedUseEditorOptions).not.toHaveProperty("onUpdate");
+  });
+
+  it("renders an existing thought in edit mode with escaped initial editor content", () => {
+    const thought: Thought = {
+      body: "第一行 <script>\n\n第二行 & more",
+      createdAt: "2026-06-05",
+      id: "thought-editing",
+      slug: "thought-editing",
+      status: "published",
+      tags: ["日常"],
+      title: "已有碎碎念",
+      visibility: "public",
+    };
+
+    render(<ThoughtRichTextDraftPage thought={thought} />);
+
+    expect(screen.getByRole("heading", { level: 1, name: "编辑碎碎念" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "新建碎碎念" })).not.toBeInTheDocument();
+    expect(capturedUseEditorOptions?.content).toBe("<p>第一行 &lt;script&gt;</p><p></p><p>第二行 &amp; more</p>");
+  });
+
+  it("keeps stored HTML content as editor content", () => {
+    render(<ThoughtRichTextDraftPage thought={{ body: "<p>已经保存的<strong>富文本</strong></p>", id: "html-thought", slug: "html-thought", status: "published", title: "富文本", visibility: "public" }} />);
+
+    expect(capturedUseEditorOptions?.content).toBe("<p>已经保存的<strong>富文本</strong></p>");
+  });
+
+  it("saves an existing thought with editor HTML and keeps its metadata", async () => {
+    const thought: Thought = {
+      body: "旧内容",
+      createdAt: "2026-06-05",
+      id: "thought-editing",
+      slug: "thought-editing",
+      sortOrder: 3,
+      status: "published",
+      tags: ["日常"],
+      title: "已有碎碎念",
+      visibility: "public",
+    };
+    mockEditor.getHTML.mockReturnValue("<p>更新后的富文本</p>");
+    mockEditor.getText.mockReturnValue("更新后的富文本");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ thought: { ...thought, body: "<p>更新后的富文本</p>" } }) } as Response);
+
+    render(<ThoughtRichTextDraftPage thought={thought} />);
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/thoughts", expect.objectContaining({ method: "POST" })));
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toEqual({ ...thought, body: "<p>更新后的富文本</p>" });
+    expect(await screen.findByText("保存成功")).toBeInTheDocument();
+    expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/thought-editing");
+    expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves a new thought with generated metadata", async () => {
+    mockEditor.getHTML.mockReturnValue("<p>新的碎碎念内容</p>");
+    mockEditor.getText.mockReturnValue("新的碎碎念内容");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementationOnce(async (_input, init) => ({ ok: true, json: async () => ({ thought: { ...JSON.parse(String(init?.body)), slug: "new-thought-slug" } }) }) as Response);
+
+    render(<ThoughtRichTextDraftPage />);
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/thoughts", expect.objectContaining({ method: "POST" })));
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const payload = JSON.parse(String(request.body));
+    expect(payload).toEqual(expect.objectContaining({ body: "<p>新的碎碎念内容</p>", tags: ["日常"], title: "新的碎碎念内容", visibility: "public", status: "published" }));
+    expect(payload.id).toMatch(/^thought-created-/);
+    expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/new-thought-slug");
+  });
+
+  it("blocks saving empty content", async () => {
+    mockEditor.getHTML.mockReturnValue("<p></p>");
+    mockEditor.getText.mockReturnValue("");
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    render(<ThoughtRichTextDraftPage />);
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("先写一点内容再保存");
+  });
+
+  it("shows save API errors", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: false, json: async () => ({ error: "保存被拒绝" }) } as Response);
+
+    render(<ThoughtRichTextDraftPage />);
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("保存被拒绝"));
+  });
+
+  it("confirms deleting an existing thought before calling the delete API", async () => {
+    const thought: Thought = { body: "要删除", id: "thought-delete", slug: "thought-delete", status: "published", title: "要删除的碎碎念", visibility: "public" };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response);
+
+    render(<ThoughtRichTextDraftPage thought={thought} />);
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+
+    const dialog = screen.getByRole("dialog", { name: "删除碎碎念确认弹窗" });
+    expect(dialog).toHaveTextContent("确认删除「要删除的碎碎念」吗？");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "确认删除" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/thoughts/thought-delete", { method: "DELETE" }));
+    expect(mockRouter.push).toHaveBeenCalledWith("/thoughts");
+    expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the delete dialog open when delete fails", async () => {
+    const thought: Thought = { body: "要删除", id: "thought-delete", slug: "thought-delete", status: "published", title: "要删除的碎碎念", visibility: "public" };
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: false, json: async () => ({ error: "删除失败了" }) } as Response);
+
+    render(<ThoughtRichTextDraftPage thought={thought} />);
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "删除碎碎念确认弹窗" })).getByRole("button", { name: "确认删除" }));
+
+    await waitFor(() => expect(within(screen.getByRole("dialog", { name: "删除碎碎念确认弹窗" })).getByRole("alert")).toHaveTextContent("删除失败了"));
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it("confirms discarding a new draft without calling delete API", () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    render(<ThoughtRichTextDraftPage />);
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "删除碎碎念确认弹窗" })).getByRole("button", { name: "确认放弃" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockRouter.push).toHaveBeenCalledWith("/thoughts");
   });
 
   it("collapses the background template panel and lets the editor fill the remaining space", () => {

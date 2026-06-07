@@ -57,4 +57,16 @@ describe("ThoughtsPageView", () => {
 
     expect(screen.getByRole("link", { name: /有标签的碎碎念/ })).toHaveAttribute("href", "/thoughts/thought-with-tags");
   });
+
+  it("shows rich text bodies as plain text and searches their content", () => {
+    render(<ThoughtsPageView initialThoughts={[{ ...taggedThought, body: "<p>富文本 <strong>摘要</strong></p>" }]} />);
+
+    expect(screen.getByText("富文本 摘要")).toBeInTheDocument();
+    expect(screen.queryByText("<p>富文本 <strong>摘要</strong></p>")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "搜索碎碎念" }), { target: { value: "摘要" } });
+
+    expect(screen.getByRole("heading", { level: 2, name: "有标签的碎碎念" })).toBeInTheDocument();
+    expect(screen.getByText("摘要", { selector: "mark" })).toBeInTheDocument();
+  });
 });

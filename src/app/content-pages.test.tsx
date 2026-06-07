@@ -18,6 +18,10 @@ import { resetStoredAlbums, upsertStoredAlbum, upsertStoredAlbumPhoto } from "@/
 import * as albumService from "@/features/album/service";
 import { resetStoredThoughts } from "@/features/thoughts/repository";
 
+const mockTiptapState = vi.hoisted(() => ({
+  useEditorOptions: undefined as { content?: unknown } | undefined,
+}));
+
 vi.mock("next/navigation", async () => {
   const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
   return {
@@ -49,11 +53,14 @@ vi.mock("@tiptap/react", () => {
 
   return {
     EditorContent: () => <div aria-label="富文本编辑区" />,
-    useEditor: () => ({
-      can: () => ({ undo: () => false }),
-      chain: () => chain,
-      isActive: () => false,
-    }),
+    useEditor: (options: { content?: unknown }) => {
+      mockTiptapState.useEditorOptions = options;
+      return {
+        can: () => ({ undo: () => false }),
+        chain: () => chain,
+        isActive: () => false,
+      };
+    },
     useEditorState: () => ({
       canUndo: false,
       isBlockquote: false,
@@ -96,6 +103,7 @@ describe("content module pages", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
+    mockTiptapState.useEditorOptions = undefined;
     vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-001" ? albumServiceFallbackAlbum : null));
     await resetDisplayModes();
     await resetStoredAlbums();
@@ -489,12 +497,13 @@ describe("content module pages", () => {
     expect(screen.getByText("你可以先体验基础编辑交互，但这里不会展示我的真实内容。")).toBeInTheDocument();
   });
 
-  it("renders the thought detail page from a slug", async () => {
+  it("renders the thought rich text page from a slug", async () => {
     render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
 
-    expect(screen.getByRole("link", { name: "返回" })).toHaveAttribute("href", "/thoughts");
-    expect(screen.queryByRole("heading", { level: 1, name: thoughts[0].title })).not.toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "编辑碎碎念" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
+    expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    expect(mockTiptapState.useEditorOptions?.content).toContain(thoughts[0].body);
   });
 
   it("renders the thoughts detail demo page in demo mode", async () => {
