@@ -525,7 +525,7 @@ function LyricsPanel({ song }: { song: PlaylistSong }) {
 
   return (
     <aside aria-label="歌词播放器" className="xl:sticky xl:top-5 xl:self-start">
-      <section className="lyrics-panel-enter min-h-[40rem] overflow-hidden rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff4d8] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)]">
+      <section className="lyrics-panel-enter h-[40rem] overflow-hidden rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff4d8] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)]">
         <div className="mb-4 flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#aa6a70] bg-[#fbd4d9] text-lg font-black text-[#7a3d3f]">
             词
@@ -536,7 +536,7 @@ function LyricsPanel({ song }: { song: PlaylistSong }) {
           </div>
         </div>
 
-        <div className="flex min-h-[32rem] flex-col items-center rounded-[1.45rem] border-2 border-stone-700/70 bg-[#fffaf3] px-4 py-8 shadow-[inset_0_-18px_0_rgba(255,230,173,0.38)]">
+        <div className="flex h-[32rem] flex-col items-center rounded-[1.45rem] border-2 border-stone-700/70 bg-[#fffaf3] px-4 py-8 shadow-[inset_0_-18px_0_rgba(255,230,173,0.38)]">
           <div className="lyrics-disc relative grid h-36 w-36 place-items-center rounded-full border-[3px] border-[#5f514b] bg-[repeating-radial-gradient(circle,#4f4744_0_2px,#3d3735_3px_7px,#5a5150_8px_10px)] shadow-[0_12px_0_rgba(112,84,84,0.13)]">
             <div className="absolute inset-4 rounded-full border border-white/10 bg-[radial-gradient(circle,#f8cfd5_0_18%,#fff4d8_19%_30%,transparent_31%)]" />
             <div className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-full border-2 border-[#fff4d8] bg-[#f8cfd5]">
@@ -549,7 +549,7 @@ function LyricsPanel({ song }: { song: PlaylistSong }) {
             <span aria-hidden="true" className="absolute h-4 w-4 rounded-full border-2 border-[#5f514b] bg-[#fffaf3]" />
           </div>
 
-          <div className="mt-5 w-full space-y-3 text-center">
+          <div className="album-page-scrollbar mt-5 w-full flex-1 space-y-3 overflow-y-auto pr-1 text-center">
             {lyrics.map((line, index) => (
               <p className={`lyrics-line rounded-full px-3 py-1.5 font-black ${index === 1 ? "bg-[#f9d7db] text-base text-[#4f2525]" : "text-sm text-stone-500"}`} key={`${song.id}-${line}-${index}`} style={{ animationDelay: `${index * 90 + 120}ms` }}>
                 {line}
