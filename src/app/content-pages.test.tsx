@@ -574,6 +574,14 @@ describe("content module pages", () => {
     render(await PlaylistsPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
+    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
+    expect(screen.getByLabelText("歌单列表")).toBeInTheDocument();
+    expect(screen.getByLabelText("今日循环歌曲")).toBeInTheDocument();
+    expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();
+    expect(screen.getByLabelText("当前播放栏")).toBeInTheDocument();
+    expect(screen.getAllByText("晚风循环曲").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("电子充电器").length).toBeGreaterThan(0);
   });
 
   it("renders the playlists demo page in demo mode", async () => {
@@ -583,6 +591,8 @@ describe("content module pages", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "歌单-演示模式" })).toBeInTheDocument();
     expect(screen.getByText("这是歌单模块的基础演示内容。")).toBeInTheDocument();
+    expect(screen.queryByLabelText("歌单列表")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("当前播放栏")).not.toBeInTheDocument();
   });
 
   it("renders the coffee page heading", async () => {

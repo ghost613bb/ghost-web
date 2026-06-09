@@ -7,7 +7,7 @@ import {
   getAlbumPhotoById,
   getAlbumPhotosByAlbumId,
 } from "./albumPhotos";
-import { playlistSongs } from "./playlists";
+import { featuredPlaylistSongId, playlistCollections, playlistPlayerSnapshot, playlistSongs } from "./playlists";
 import { thoughts } from "./thoughts";
 import { lifeTodos } from "./todo";
 
@@ -21,6 +21,18 @@ describe("local content data", () => {
     expect(albumCollections.every((album) => album.visibility === "public" && album.status === "published")).toBe(true);
     expect(playlistSongs.every((song) => song.visibility === "public" && song.status === "published")).toBe(true);
     expect(lifeTodos.map((item) => item.state)).toEqual(["planned", "planned"]);
+  });
+
+  it("defines playlist page display data", () => {
+    const songIds = new Set(playlistSongs.map((song) => song.id));
+
+    expect(songIds.has(featuredPlaylistSongId)).toBe(true);
+    expect(playlistCollections.length).toBeGreaterThan(0);
+    expect(playlistCollections.every((collection) => collection.songIds.every((songId) => songIds.has(songId)))).toBe(true);
+    expect(playlistPlayerSnapshot.progressPercent).toBeGreaterThanOrEqual(0);
+    expect(playlistPlayerSnapshot.progressPercent).toBeLessThanOrEqual(100);
+    expect(playlistPlayerSnapshot.volumePercent).toBeGreaterThanOrEqual(0);
+    expect(playlistPlayerSnapshot.volumePercent).toBeLessThanOrEqual(100);
   });
 
   it("defines thoughts for public, interview-hidden, and masked visibility", () => {
