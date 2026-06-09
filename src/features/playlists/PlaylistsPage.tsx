@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -35,6 +35,7 @@ type PlaylistPlayerControls = {
   currentSong: PlaylistSong;
   currentSongId: string;
   currentTimeLabel: string;
+  currentTimeSeconds: number;
   durationLabel: string;
   handleEnded: () => void;
   handleLoadedMetadata: () => void;
@@ -291,6 +292,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     currentSong,
     currentSongId: currentSong.id,
     currentTimeLabel: formatTime(currentTimeSeconds),
+    currentTimeSeconds,
     durationLabel,
     handleEnded,
     handleLoadedMetadata,
@@ -520,8 +522,28 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
   );
 }
 
-function LyricsPanel({ song }: { song: PlaylistSong }) {
-  const lyrics = song.lyrics?.length ? song.lyrics : [song.feeling];
+function LyricsPanel({ currentTimeSeconds, song }: { currentTimeSeconds: number; song: PlaylistSong }) {
+  const activeLineRef = useRef<HTMLParagraphElement | null>(null);
+  const lyricsListRef = useRef<HTMLDivElement | null>(null);
+  const lyrics = song.lyrics?.length ? song.lyrics : [{ time: 0, text: song.feeling }];
+  const activeLyricIndex = lyrics.reduce((activeIndex, line, index) => (currentTimeSeconds >= line.time ? index : activeIndex), -1);
+
+  useEffect(() => {
+    const activeLine = activeLineRef.current;
+    const lyricsList = lyricsListRef.current;
+
+    if (!activeLine || !lyricsList) {
+      return;
+    }
+
+    const listRect = lyricsList.getBoundingClientRect();
+    const lineRect = activeLine.getBoundingClientRect();
+
+    lyricsList.scrollTo({
+      behavior: "smooth",
+      top: lyricsList.scrollTop + lineRect.top - listRect.top - lyricsList.clientHeight / 2 + lineRect.height / 2,
+    });
+  }, [activeLyricIndex, song.id]);
 
   return (
     <aside aria-label="歌词播放器" className="xl:sticky xl:top-5 xl:self-start">
@@ -549,12 +571,22 @@ function LyricsPanel({ song }: { song: PlaylistSong }) {
             <span aria-hidden="true" className="absolute h-4 w-4 rounded-full border-2 border-[#5f514b] bg-[#fffaf3]" />
           </div>
 
-          <div className="album-page-scrollbar mt-5 w-full flex-1 space-y-3 overflow-y-auto pr-1 text-center">
-            {lyrics.map((line, index) => (
-              <p className={`lyrics-line rounded-full px-3 py-1.5 font-black ${index === 1 ? "bg-[#f9d7db] text-base text-[#4f2525]" : "text-sm text-stone-500"}`} key={`${song.id}-${line}-${index}`} style={{ animationDelay: `${index * 90 + 120}ms` }}>
-                {line}
-              </p>
-            ))}
+          <div className="album-page-scrollbar mt-5 w-full flex-1 space-y-3 overflow-y-auto pr-1 text-center" ref={lyricsListRef}>
+            {lyrics.map((line, index) => {
+              const isActive = index === activeLyricIndex;
+
+              return (
+                <p
+                  aria-current={isActive ? "true" : undefined}
+                  className={`lyrics-line rounded-full px-3 py-1.5 font-black transition-all duration-300 ${isActive ? "bg-[#f9d7db] text-base text-[#4f2525] shadow-[0_4px_0_rgba(112,84,84,0.08)]" : "text-sm text-stone-500"}`}
+                  key={`${song.id}-${line.time}-${line.text}`}
+                  ref={isActive ? activeLineRef : null}
+                  style={{ animationDelay: `${index * 35 + 80}ms` }}
+                >
+                  {line.text}
+                </p>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -720,7 +752,7 @@ export function PlaylistsPageView({ collections, featuredSongId, notes, playerSn
             <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
             <SongTable currentSongId={player.currentSongId} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
           </div>
-          {isLyricsOpen ? <LyricsPanel song={player.currentSong} /> : <CommentPlayerPanel featuredSong={player.currentSong} notes={notes} />}
+          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel featuredSong={player.currentSong} notes={notes} />}
         </div>
         <BottomPlayerBar isLyricsOpen={isLyricsOpen} onToggleLyrics={() => setIsLyricsOpen((open) => !open)} player={player} />
       </div>

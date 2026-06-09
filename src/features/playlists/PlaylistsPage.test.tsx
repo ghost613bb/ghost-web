@@ -24,6 +24,7 @@ function renderPlaylistsPage() {
 describe("PlaylistsPageView", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    window.HTMLElement.prototype.scrollTo = vi.fn();
     vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => undefined);
     vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(function (this: HTMLMediaElement) {
       this.dispatchEvent(new Event("play"));
@@ -142,6 +143,24 @@ describe("PlaylistsPageView", () => {
     expect(within(lyricsPanel).getByText("Lyrics Room")).toBeInTheDocument();
     expect(within(lyricsPanel).getByRole("img", { name: `${featuredSong?.title}歌词光盘封面` })).toHaveAttribute("src", featuredSong?.coverImageSrc);
     expect(within(lyricsPanel).getByText("凛冽的风捶打在肩")).toBeInTheDocument();
+    expect(within(lyricsPanel).getByText("凛冽的风捶打在肩")).not.toHaveAttribute("aria-current");
+  });
+
+  it("syncs the active lyric with playback progress", () => {
+    renderPlaylistsPage();
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+
+    fireEvent.click(within(playerBar).getByRole("button", { name: "打开歌词" }));
+
+    const lyricsPanel = screen.getByLabelText("歌词播放器");
+
+    audio.currentTime = 20;
+    fireEvent.timeUpdate(audio);
+
+    expect(within(lyricsPanel).getByText("乌鸦在低空下盘旋")).toHaveAttribute("aria-current", "true");
+    expect(window.HTMLElement.prototype.scrollTo).toHaveBeenCalled();
   });
 
   it("plays and pauses the current song from the bottom player", () => {
