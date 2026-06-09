@@ -581,7 +581,7 @@ describe("content module pages", () => {
     expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();
     expect(screen.getByLabelText("当前播放栏")).toBeInTheDocument();
     expect(screen.getAllByText("doll").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("电子充电器").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("云朵软糖拍").length).toBeGreaterThan(0);
   });
 
   it("renders the playlists demo page in demo mode", async () => {

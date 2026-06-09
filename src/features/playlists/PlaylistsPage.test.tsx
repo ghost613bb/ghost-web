@@ -53,20 +53,43 @@ describe("PlaylistsPageView", () => {
     expect(screen.getByRole("button", { name: "New Collection" })).toBeInTheDocument();
   });
 
-  it("renders playlist collections and songs from data", () => {
+  it("renders playlist collections and active collection songs from data", () => {
     renderPlaylistsPage();
 
     playlistCollections.forEach((collection) => {
       expect(screen.getByRole("heading", { level: 3, name: collection.title })).toBeInTheDocument();
     });
 
-    playlistSongs.forEach((song) => {
+    const activeCollection = playlistCollections[0];
+    const activeSongs = playlistSongs.filter((song) => activeCollection.songIds.includes(song.id));
+
+    activeSongs.forEach((song) => {
       expect(screen.getAllByText(song.title).length).toBeGreaterThan(0);
       expect(screen.getAllByText(song.artist).length).toBeGreaterThan(0);
       song.tags.forEach((tag) => {
         expect(screen.getAllByText(tag).length).toBeGreaterThan(0);
       });
     });
+
+    expect(screen.queryByText("电子充电器")).not.toBeInTheDocument();
+  });
+
+  it("switches collections and updates the main content together", () => {
+    renderPlaylistsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /Coding Spark/ }));
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+    const commentPanel = screen.getByLabelText("耳机留言播放器");
+
+    expect(screen.getByRole("heading", { level: 2, name: "Coding Spark" })).toBeInTheDocument();
+    expect(screen.getByText("像给自己插上电源，适合写代码前听。")).toBeInTheDocument();
+    expect(screen.getAllByText("电子充电器").length).toBeGreaterThan(0);
+    expect(screen.queryByText("doll")).not.toBeInTheDocument();
+    expect(within(playerBar).getByRole("heading", { level: 2, name: "电子充电器" })).toBeInTheDocument();
+    expect(within(playerBar).getByText("像素汽水")).toBeInTheDocument();
+    expect(within(commentPanel).getByText("Ranima", { exact: false })).toBeInTheDocument();
+    expect(within(commentPanel).queryByText("Name", { exact: false })).not.toBeInTheDocument();
   });
 
   it("highlights the featured song in the table and bottom player", () => {
@@ -93,10 +116,13 @@ describe("PlaylistsPageView", () => {
     const commentPanel = screen.getByLabelText("耳机留言播放器");
 
     expect(within(commentPanel).getByPlaceholderText("Add a cute comment...")).toBeInTheDocument();
-    playlistNotes.forEach((note) => {
+    const featuredNotes = playlistNotes.filter((note) => note.songId === featuredPlaylistSongId);
+
+    featuredNotes.forEach((note) => {
       expect(within(commentPanel).getByText(note.author, { exact: false })).toBeInTheDocument();
       expect(within(commentPanel).getByText(note.content)).toBeInTheDocument();
     });
+    expect(within(commentPanel).queryByText("Ranima", { exact: false })).not.toBeInTheDocument();
   });
 
   it("plays and pauses the current song from the bottom player", () => {
@@ -124,12 +150,12 @@ describe("PlaylistsPageView", () => {
 
     const playerBar = screen.getByLabelText("当前播放栏");
 
-    fireEvent.click(screen.getAllByRole("button", { name: "播放电子充电器" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "播放云朵软糖拍" })[0]);
 
-    expect(within(playerBar).getByText("电子充电器")).toBeInTheDocument();
-    expect(within(playerBar).getByText("像素汽水")).toBeInTheDocument();
-    expect(within(playerBar).getByText("正在播放 电子充电器")).toBeInTheDocument();
-    expect(screen.getByText("像给自己插上电源，适合写代码前听。")).toBeInTheDocument();
+    expect(within(playerBar).getByText("云朵软糖拍")).toBeInTheDocument();
+    expect(within(playerBar).getByText("棉花兔")).toBeInTheDocument();
+    expect(within(playerBar).getByText("正在播放 云朵软糖拍")).toBeInTheDocument();
+    expect(screen.getByText("像被一朵毛茸茸的云接住，适合下午发呆。")).toBeInTheDocument();
   });
 
   it("seeks progress and changes volume from the bottom player", () => {

@@ -46,6 +46,7 @@ type PlaylistPlayerControls = {
   playPrevious: () => void;
   playSong: (songId: string) => void;
   progressPercent: number;
+  selectSong: (songId: string) => void;
   seekToPercent: (percent: number) => void;
   setVolumePercent: (percent: number) => void;
   shuffleEnabled: boolean;
@@ -175,6 +176,22 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     [playAudio, songs],
   );
 
+  const selectSong = useCallback((songId: string) => {
+    const audio = audioRef.current;
+
+    audio?.pause();
+    setCurrentSongId(songId);
+    setCurrentTimeSeconds(0);
+    setDurationSeconds(0);
+    setIsPlaying(false);
+    setPlaybackError(null);
+
+    if (audio) {
+      audio.removeAttribute("src");
+      audio.load();
+    }
+  }, []);
+
   const playNext = useCallback(() => {
     void playAudio(getSiblingSong(1));
   }, [getSiblingSong, playAudio]);
@@ -273,6 +290,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     playPrevious,
     playSong,
     progressPercent,
+    selectSong,
     seekToPercent,
     setVolumePercent,
     shuffleEnabled,
@@ -320,7 +338,7 @@ function PlaylistHeader() {
   );
 }
 
-function PlaylistSidebar({ collections, featuredSongId }: Pick<PlaylistsPageViewProps, "collections" | "featuredSongId">) {
+function PlaylistSidebar({ activeCollectionId, collections, onSelectCollection }: Pick<PlaylistsPageViewProps, "collections"> & { activeCollectionId: string; onSelectCollection: (collectionId: string) => void }) {
   return (
     <aside aria-label="歌单列表" className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:self-start">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -332,13 +350,16 @@ function PlaylistSidebar({ collections, featuredSongId }: Pick<PlaylistsPageView
         New Collection
       </button>
       <div className="flex snap-x gap-3 overflow-x-auto pb-1 xl:block xl:space-y-3 xl:overflow-visible xl:pb-0">
-        {collections.map((collection, index) => {
-          const isActive = collection.songIds.includes(featuredSongId);
+        {collections.map((collection) => {
+          const isActive = collection.id === activeCollectionId;
 
           return (
-            <article
-              className={`min-w-[14rem] snap-start rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 shadow-[0_6px_0_rgba(112,84,84,0.11)] xl:min-w-0 ${collection.accentClass} ${isActive && index === 0 ? "outline outline-2 outline-offset-2 outline-[#c65f70]" : ""}`}
+            <button
+              aria-pressed={isActive}
+              className={`min-w-[14rem] snap-start rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 text-left shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_0_rgba(112,84,84,0.13)] xl:min-w-0 ${collection.accentClass} ${isActive ? "outline outline-2 outline-offset-2 outline-[#c65f70]" : ""}`}
               key={collection.id}
+              onClick={() => onSelectCollection(collection.id)}
+              type="button"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -348,12 +369,12 @@ function PlaylistSidebar({ collections, featuredSongId }: Pick<PlaylistsPageView
                   </div>
                   <p className="mt-1 text-xs font-semibold leading-relaxed text-stone-700">{collection.description}</p>
                 </div>
-                {index === 0 ? <X aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /> : <ChevronDown aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />}
+                {isActive ? <X aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /> : <ChevronDown aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />}
               </div>
               <p className="mt-3 inline-flex rounded-full border border-stone-700/30 bg-white/55 px-2.5 py-1 text-[0.68rem] font-black text-[#6d3b39]">
                 {collection.songIds.length} songs
               </p>
-            </article>
+            </button>
           );
         })}
       </div>
@@ -361,7 +382,7 @@ function PlaylistSidebar({ collections, featuredSongId }: Pick<PlaylistsPageView
   );
 }
 
-function HeroPanel({ featuredSong, isPlaying, onPlayAll, songs }: { featuredSong: PlaylistSong; isPlaying: boolean; onPlayAll: () => void; songs: PlaylistSong[] }) {
+function HeroPanel({ collection, featuredSong, isPlaying, onPlayAll, songs }: { collection: PlaylistCollection; featuredSong: PlaylistSong; isPlaying: boolean; onPlayAll: () => void; songs: PlaylistSong[] }) {
   return (
     <section className="grid gap-4 rounded-[1.8rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.08)] md:grid-cols-[13rem_minmax(0,1fr)] md:p-5" aria-label="歌单概览">
       <PlaylistCover />
@@ -369,7 +390,7 @@ function HeroPanel({ featuredSong, isPlaying, onPlayAll, songs }: { featuredSong
         <p className="mb-2 inline-flex w-fit rounded-full border border-[#e4b7b9] bg-[#fff0c4] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#7a3d3f]">
           Playlist detail · {songs.length * 2 + 2} minutes
         </p>
-        <h2 className="text-[2.45rem] font-black leading-none tracking-tight text-[#4f2525] sm:text-[3.35rem]">Daily Moods</h2>
+        <h2 className="text-[2.45rem] font-black leading-none tracking-tight text-[#4f2525] sm:text-[3.35rem]">{collection.title}</h2>
         <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-stone-700 sm:text-base">{featuredSong.feeling}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button aria-label={`${isPlaying ? "暂停" : "播放"}${featuredSong.title}`} className="inline-flex items-center gap-2 rounded-[1.2rem] border-[2.5px] border-stone-700/80 bg-[#ffe6a7] px-5 py-2 text-base font-black text-stone-900 shadow-[0_5px_0_rgba(112,84,84,0.15)] transition hover:-translate-y-0.5" onClick={onPlayAll} type="button">
@@ -488,6 +509,8 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
 }
 
 function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSong; notes: PlaylistNote[] }) {
+  const visibleNotes = notes.filter((note) => note.songId === featuredSong.id);
+
   return (
     <aside aria-label="耳机留言播放器" className="space-y-4 xl:sticky xl:top-5 xl:self-start">
       <section className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff4d8] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)]">
@@ -517,7 +540,7 @@ function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSon
           <h2 className="text-lg font-black text-[#4f2525]">耳机留言</h2>
         </div>
         <div className="space-y-3">
-          {notes.map((note) => (
+          {visibleNotes.map((note) => (
             <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
               <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
                 {note.avatar}
@@ -607,17 +630,39 @@ function BottomPlayerBar({ player }: { player: PlaylistPlayerControls }) {
 }
 
 export function PlaylistsPageView({ collections, featuredSongId, notes, playerSnapshot, songs }: PlaylistsPageViewProps) {
-  const player = usePlaylistPlayer(songs, featuredSongId, playerSnapshot);
+  const initialCollection = collections.find((collection) => collection.songIds.includes(featuredSongId)) ?? collections[0];
+  const [activeCollectionId, setActiveCollectionId] = useState(initialCollection.id);
+  const activeCollection = collections.find((collection) => collection.id === activeCollectionId) ?? initialCollection;
+  const visibleSongs = songs.filter((song) => activeCollection.songIds.includes(song.id));
+  const activeFeaturedSong = visibleSongs.find((song) => song.id === featuredSongId) ?? visibleSongs[0] ?? getFeaturedSong(songs, featuredSongId);
+  const player = usePlaylistPlayer(visibleSongs.length > 0 ? visibleSongs : songs, activeFeaturedSong.id, playerSnapshot);
+
+  const handleSelectCollection = (collectionId: string) => {
+    const nextCollection = collections.find((collection) => collection.id === collectionId);
+
+    if (!nextCollection) {
+      return;
+    }
+
+    const nextSongs = songs.filter((song) => nextCollection.songIds.includes(song.id));
+    const nextSong = nextSongs[0];
+
+    setActiveCollectionId(nextCollection.id);
+
+    if (nextSong) {
+      player.selectSong(nextSong.id);
+    }
+  };
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <PlaylistHeader />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">
-          <PlaylistSidebar collections={collections} featuredSongId={player.currentSongId} />
+          <PlaylistSidebar activeCollectionId={activeCollection.id} collections={collections} onSelectCollection={handleSelectCollection} />
           <div className="min-w-0 space-y-5">
-            <HeroPanel featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={songs} />
-            <SongTable currentSongId={player.currentSongId} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={songs} />
+            <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
+            <SongTable currentSongId={player.currentSongId} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
           </div>
           <CommentPlayerPanel featuredSong={player.currentSong} notes={notes} />
         </div>
