@@ -29,6 +29,8 @@ describe("local content data", () => {
     expect(songIds.has(featuredPlaylistSongId)).toBe(true);
     expect(playlistCollections.length).toBeGreaterThan(0);
     expect(playlistSongs.find((song) => song.id === "song-001")?.coverImageSrc).toBe("/audio/playlists/xiaoxue-doll-cover.jpg");
+    expect(playlistSongs.find((song) => song.id === "song-007")?.audioSrc).toBe("/audio/playlists/kui-kui-zhouyi-yuxing.mp3");
+    expect(playlistSongs.find((song) => song.id === "song-007")?.coverImageSrc).toBe("/audio/playlists/kui-kui-zhouyi-yuxing-cover.jpg");
     expect(playlistCollections.every((collection) => collection.songIds.every((songId) => songIds.has(songId)))).toBe(true);
     expect(playlistPlayerSnapshot.progressPercent).toBeGreaterThanOrEqual(0);
     expect(playlistPlayerSnapshot.progressPercent).toBeLessThanOrEqual(100);

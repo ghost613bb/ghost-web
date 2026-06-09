@@ -108,6 +108,19 @@ export const playlistSongs: PlaylistSong[] = [
     status: "published",
     sortOrder: 6,
   },
+  {
+    id: "song-007",
+    title: "予星",
+    artist: "Kui Kui, 周一",
+    audioSrc: "/audio/playlists/kui-kui-zhouyi-yuxing.mp3",
+    coverImageSrc: "/audio/playlists/kui-kui-zhouyi-yuxing-cover.jpg",
+    description: "来自本地导入的试听曲。",
+    feeling: "把夜空里的一颗星留给耳机，适合慢慢循环。",
+    tags: ["试听", "星光"],
+    visibility: "public",
+    status: "published",
+    sortOrder: 7,
+  },
 ];
 
 export const featuredPlaylistSongId = "song-001";
@@ -118,7 +131,7 @@ export const playlistCollections: PlaylistCollection[] = [
     title: "Daily Moods",
     description: "今天的心情放进一个奶油色收藏夹。",
     emoji: "🌸",
-    songIds: ["song-001", "song-003", "song-005"],
+    songIds: ["song-001", "song-003", "song-005", "song-007"],
     accentClass: "bg-[#fde2e7]",
   },
   {
