@@ -2,6 +2,7 @@ import type { BaseContent } from "@/features/content-modules/types";
 
 export type PlaylistSong = BaseContent & {
   artist: string;
+  audioSrc?: string;
   feeling: string;
   link?: string;
 };
@@ -37,6 +38,7 @@ export const playlistSongs: PlaylistSong[] = [
     id: "song-001",
     title: "晚风循环曲",
     artist: "小镇电台",
+    audioSrc: "/audio/playlists/song-001.wav",
     description: "适合边走路边把脑袋放空。",
     feeling: "听的时候会觉得今天还可以再温柔一点。",
     tags: ["治愈", "散步"],
@@ -48,6 +50,7 @@ export const playlistSongs: PlaylistSong[] = [
     id: "song-002",
     title: "电子充电器",
     artist: "像素汽水",
+    audioSrc: "/audio/playlists/song-002.wav",
     description: "需要把状态拉起来时播放。",
     feeling: "像给自己插上电源，适合写代码前听。",
     tags: ["电子", "提神"],
@@ -59,6 +62,7 @@ export const playlistSongs: PlaylistSong[] = [
     id: "song-003",
     title: "云朵软糖拍",
     artist: "棉花兔",
+    audioSrc: "/audio/playlists/song-003.wav",
     description: "把焦虑揉成很小一颗，再慢慢含化。",
     feeling: "像被一朵毛茸茸的云接住，适合下午发呆。",
     tags: ["软糖", "下午"],
@@ -70,6 +74,7 @@ export const playlistSongs: PlaylistSong[] = [
     id: "song-004",
     title: "雨点小鼓手",
     artist: "窗边乐队",
+    audioSrc: "/audio/playlists/song-004.wav",
     description: "窗外下雨时用来给房间加一点节奏。",
     feeling: "雨声和鼓点一起落下来，心里会安静很多。",
     tags: ["雨天", "房间"],
@@ -81,6 +86,7 @@ export const playlistSongs: PlaylistSong[] = [
     id: "song-005",
     title: "热可可尾奏",
     artist: "睡前便利店",
+    audioSrc: "/audio/playlists/song-005.wav",
     description: "收尾一天时播放，像给夜晚盖上小毯子。",
     feeling: "最后一个音符落下时，今天就被好好收起来了。",
     tags: ["睡前", "温暖"],
@@ -92,6 +98,7 @@ export const playlistSongs: PlaylistSong[] = [
     id: "song-006",
     title: "星星晾衣绳",
     artist: "月台合唱团",
+    audioSrc: "/audio/playlists/song-006.wav",
     description: "低能量晚上也能听的轻轻摇摆。",
     feeling: "像把小烦恼挂到夜空晾一晾，明早再说。",
     tags: ["夜晚", "轻摇"],

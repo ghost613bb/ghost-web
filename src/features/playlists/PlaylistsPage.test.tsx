@@ -1,5 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   featuredPlaylistSongId,
   playlistCollections,
@@ -22,6 +22,23 @@ function renderPlaylistsPage() {
 }
 
 describe("PlaylistsPageView", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => undefined);
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(function (this: HTMLMediaElement) {
+      this.dispatchEvent(new Event("play"));
+      return Promise.resolve();
+    });
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(function (this: HTMLMediaElement) {
+      this.dispatchEvent(new Event("pause"));
+    });
+
+    Object.defineProperty(HTMLMediaElement.prototype, "duration", {
+      configurable: true,
+      get: () => 120,
+    });
+  });
+
   it("renders the warm playlist workspace", () => {
     renderPlaylistsPage();
 
@@ -63,7 +80,7 @@ describe("PlaylistsPageView", () => {
     const playerBar = screen.getByLabelText("当前播放栏");
     expect(within(playerBar).getByRole("heading", { level: 2, name: featuredSong?.title })).toBeInTheDocument();
     expect(within(playerBar).getByText(featuredSong?.artist ?? "")).toBeInTheDocument();
-    expect(within(playerBar).getByText(playlistPlayerSnapshot.currentTime)).toBeInTheDocument();
+    expect(within(playerBar).getByText("0:00")).toBeInTheDocument();
     expect(within(playerBar).getByText(playlistPlayerSnapshot.duration)).toBeInTheDocument();
     expect(within(playerBar).getByText(playlistPlayerSnapshot.statusLabel)).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "上一首" })).toBeInTheDocument();
@@ -80,5 +97,52 @@ describe("PlaylistsPageView", () => {
       expect(within(commentPanel).getByText(note.author, { exact: false })).toBeInTheDocument();
       expect(within(commentPanel).getByText(note.content)).toBeInTheDocument();
     });
+  });
+
+  it("plays and pauses the current song from the bottom player", () => {
+    const playMock = vi.spyOn(HTMLMediaElement.prototype, "play");
+    const pauseMock = vi.spyOn(HTMLMediaElement.prototype, "pause");
+
+    renderPlaylistsPage();
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+
+    fireEvent.click(within(playerBar).getByRole("button", { name: "播放晚风循环曲" }));
+
+    expect(playMock).toHaveBeenCalledTimes(1);
+    expect(within(playerBar).getByText("正在播放 晚风循环曲")).toBeInTheDocument();
+    expect(within(playerBar).getByRole("button", { name: "暂停晚风循环曲" })).toBeInTheDocument();
+
+    fireEvent.click(within(playerBar).getByRole("button", { name: "暂停晚风循环曲" }));
+
+    expect(pauseMock).toHaveBeenCalledTimes(1);
+    expect(within(playerBar).getByRole("button", { name: "播放晚风循环曲" })).toBeInTheDocument();
+  });
+
+  it("switches songs from the song table and updates the shared player state", () => {
+    renderPlaylistsPage();
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+
+    fireEvent.click(screen.getAllByRole("button", { name: "播放电子充电器" })[0]);
+
+    expect(within(playerBar).getByText("电子充电器")).toBeInTheDocument();
+    expect(within(playerBar).getByText("像素汽水")).toBeInTheDocument();
+    expect(within(playerBar).getByText("正在播放 电子充电器")).toBeInTheDocument();
+    expect(screen.getByText("像给自己插上电源，适合写代码前听。")).toBeInTheDocument();
+  });
+
+  it("seeks progress and changes volume from the bottom player", () => {
+    renderPlaylistsPage();
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+
+    fireEvent.click(within(playerBar).getByRole("button", { name: "播放晚风循环曲" }));
+    fireEvent.change(within(playerBar).getByLabelText("播放进度"), { target: { value: "50" } });
+    fireEvent.change(within(playerBar).getByLabelText("播放器音量"), { target: { value: "25" } });
+
+    expect(audio.currentTime).toBe(60);
+    expect(audio.volume).toBe(0.25);
   });
 });
