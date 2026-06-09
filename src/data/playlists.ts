@@ -36,12 +36,12 @@ export type PlaylistPlayerSnapshot = {
 export const playlistSongs: PlaylistSong[] = [
   {
     id: "song-001",
-    title: "晚风循环曲",
-    artist: "小镇电台",
-    audioSrc: "/audio/playlists/song-001.wav",
-    description: "适合边走路边把脑袋放空。",
-    feeling: "听的时候会觉得今天还可以再温柔一点。",
-    tags: ["治愈", "散步"],
+    title: "doll",
+    artist: "小雪",
+    audioSrc: "/audio/playlists/xiaoxue-doll.mp3",
+    description: "来自本地导入的试听曲。",
+    feeling: "先把这首歌放进今日循环，测试真实 MP3 播放。",
+    tags: ["试听", "本地导入"],
     visibility: "public",
     status: "published",
     sortOrder: 1,

@@ -107,16 +107,16 @@ describe("PlaylistsPageView", () => {
 
     const playerBar = screen.getByLabelText("当前播放栏");
 
-    fireEvent.click(within(playerBar).getByRole("button", { name: "播放晚风循环曲" }));
+    fireEvent.click(within(playerBar).getByRole("button", { name: "播放doll" }));
 
     expect(playMock).toHaveBeenCalledTimes(1);
-    expect(within(playerBar).getByText("正在播放 晚风循环曲")).toBeInTheDocument();
-    expect(within(playerBar).getByRole("button", { name: "暂停晚风循环曲" })).toBeInTheDocument();
+    expect(within(playerBar).getByText("正在播放 doll")).toBeInTheDocument();
+    expect(within(playerBar).getByRole("button", { name: "暂停doll" })).toBeInTheDocument();
 
-    fireEvent.click(within(playerBar).getByRole("button", { name: "暂停晚风循环曲" }));
+    fireEvent.click(within(playerBar).getByRole("button", { name: "暂停doll" }));
 
     expect(pauseMock).toHaveBeenCalledTimes(1);
-    expect(within(playerBar).getByRole("button", { name: "播放晚风循环曲" })).toBeInTheDocument();
+    expect(within(playerBar).getByRole("button", { name: "播放doll" })).toBeInTheDocument();
   });
 
   it("switches songs from the song table and updates the shared player state", () => {
@@ -138,7 +138,7 @@ describe("PlaylistsPageView", () => {
     const playerBar = screen.getByLabelText("当前播放栏");
     const audio = document.querySelector("audio") as HTMLAudioElement;
 
-    fireEvent.click(within(playerBar).getByRole("button", { name: "播放晚风循环曲" }));
+    fireEvent.click(within(playerBar).getByRole("button", { name: "播放doll" }));
     fireEvent.change(within(playerBar).getByLabelText("播放进度"), { target: { value: "50" } });
     fireEvent.change(within(playerBar).getByLabelText("播放器音量"), { target: { value: "25" } });
 
