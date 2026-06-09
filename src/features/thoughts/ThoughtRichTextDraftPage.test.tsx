@@ -569,7 +569,12 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(editorFrame.className).not.toContain("bg-[url(");
     expect(editorFrame.className).toContain("thought-rich-text-editor");
     expect(editorFrame.className).toContain("[&_blockquote]:border-l-4");
-    expect(editorFrame.className).toContain("[&_img]:max-w-full");
+    expect(editorFrame.className).not.toContain("[&_img]:max-w-full");
+    expect(editorFrame.className).toContain("[&_img]:float-left");
+    expect(editorFrame.className).toContain("[&_img]:max-w-[45%]");
+    expect(editorFrame.className).toContain("[&_img]:mr-4");
+    expect(editorFrame.className).not.toContain("[&_img]:align-middle");
+    expect(editorFrame.className).not.toContain("[&_img]:my-0");
     expect(editorFrame.className).toContain("[&_pre]:my-3");
     expect(editorFrame.className).toContain("[&_pre]:rounded-[1rem]");
     expect(editorFrame.className).toContain("[&_pre]:border-[#ead7ce]");
