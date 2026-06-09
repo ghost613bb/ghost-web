@@ -5,6 +5,7 @@ export type PlaylistSong = BaseContent & {
   audioSrc?: string;
   coverImageSrc?: string;
   feeling: string;
+  lyrics?: string[];
   link?: string;
 };
 
@@ -43,6 +44,7 @@ export const playlistSongs: PlaylistSong[] = [
     coverImageSrc: "/audio/playlists/xiaoxue-doll-cover.jpg",
     description: "来自本地导入的试听曲。",
     feeling: "先把这首歌放进今日循环，测试真实 MP3 播放。",
+    lyrics: ["歌词待补充", "先让旋律在这里转一圈", "等你把词贴过来", "这里会变成完整歌词本"],
     tags: ["试听", "本地导入"],
     visibility: "public",
     status: "published",
@@ -116,6 +118,7 @@ export const playlistSongs: PlaylistSong[] = [
     coverImageSrc: "/audio/playlists/kui-kui-zhouyi-yuxing-cover.jpg",
     description: "来自本地导入的试听曲。",
     feeling: "把夜空里的一颗星留给耳机，适合慢慢循环。",
+    lyrics: ["歌词待补充", "先让予星在光盘里转一圈", "等你把正式歌词贴过来", "这里会替换成完整歌词本"],
     tags: ["试听", "星光"],
     visibility: "public",
     status: "published",

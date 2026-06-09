@@ -109,6 +109,7 @@ describe("PlaylistsPageView", () => {
     expect(within(playerBar).getByText(playlistPlayerSnapshot.statusLabel)).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "上一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "下一首" })).toBeInTheDocument();
+    expect(within(playerBar).getByRole("button", { name: "打开歌词" })).toBeInTheDocument();
   });
 
   it("renders comment notes for the featured listening panel", () => {
@@ -124,6 +125,23 @@ describe("PlaylistsPageView", () => {
       expect(within(commentPanel).getByText(note.content)).toBeInTheDocument();
     });
     expect(within(commentPanel).queryByText("Ranima", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("switches the right panel to lyrics from the bottom player", () => {
+    renderPlaylistsPage();
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+
+    fireEvent.click(within(playerBar).getByRole("button", { name: "打开歌词" }));
+
+    const lyricsPanel = screen.getByLabelText("歌词播放器");
+    const featuredSong = playlistSongs.find((song) => song.id === featuredPlaylistSongId);
+
+    expect(screen.queryByLabelText("耳机留言播放器")).not.toBeInTheDocument();
+    expect(within(playerBar).getByRole("button", { name: "关闭歌词" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(lyricsPanel).getByText("Lyrics Room")).toBeInTheDocument();
+    expect(within(lyricsPanel).getByRole("img", { name: `${featuredSong?.title}歌词光盘封面` })).toHaveAttribute("src", featuredSong?.coverImageSrc);
+    expect(within(lyricsPanel).getByText("歌词待补充")).toBeInTheDocument();
   });
 
   it("plays and pauses the current song from the bottom player", () => {

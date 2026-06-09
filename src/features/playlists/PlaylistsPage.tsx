@@ -520,6 +520,48 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
   );
 }
 
+function LyricsPanel({ song }: { song: PlaylistSong }) {
+  const lyrics = song.lyrics?.length ? song.lyrics : [song.feeling];
+
+  return (
+    <aside aria-label="歌词播放器" className="xl:sticky xl:top-5 xl:self-start">
+      <section className="lyrics-panel-enter min-h-[40rem] overflow-hidden rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff4d8] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)]">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#aa6a70] bg-[#fbd4d9] text-lg font-black text-[#7a3d3f]">
+            词
+          </span>
+          <div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-[#4f2525]">Lyrics Room</h2>
+            <p className="text-xs font-bold text-stone-600">{song.title}</p>
+          </div>
+        </div>
+
+        <div className="flex min-h-[32rem] flex-col items-center rounded-[1.45rem] border-2 border-stone-700/70 bg-[#fffaf3] px-4 py-8 shadow-[inset_0_-18px_0_rgba(255,230,173,0.38)]">
+          <div className="lyrics-disc relative grid h-36 w-36 place-items-center rounded-full border-[3px] border-[#5f514b] bg-[repeating-radial-gradient(circle,#4f4744_0_2px,#3d3735_3px_7px,#5a5150_8px_10px)] shadow-[0_12px_0_rgba(112,84,84,0.13)]">
+            <div className="absolute inset-4 rounded-full border border-white/10 bg-[radial-gradient(circle,#f8cfd5_0_18%,#fff4d8_19%_30%,transparent_31%)]" />
+            <div className="relative grid h-20 w-20 place-items-center overflow-hidden rounded-full border-2 border-[#fff4d8] bg-[#f8cfd5]">
+              {song.coverImageSrc ? (
+                <img alt={`${song.title}歌词光盘封面`} className="h-full w-full object-cover" src={song.coverImageSrc} />
+              ) : (
+                <Grid2X2 aria-hidden="true" className="h-8 w-8 text-[#7b7de0]" />
+              )}
+            </div>
+            <span aria-hidden="true" className="absolute h-4 w-4 rounded-full border-2 border-[#5f514b] bg-[#fffaf3]" />
+          </div>
+
+          <div className="mt-5 w-full space-y-3 text-center">
+            {lyrics.map((line, index) => (
+              <p className={`lyrics-line rounded-full px-3 py-1.5 font-black ${index === 1 ? "bg-[#f9d7db] text-base text-[#4f2525]" : "text-sm text-stone-500"}`} key={`${song.id}-${line}-${index}`} style={{ animationDelay: `${index * 90 + 120}ms` }}>
+                {line}
+              </p>
+            ))}
+          </div>
+        </div>
+      </section>
+    </aside>
+  );
+}
+
 function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSong; notes: PlaylistNote[] }) {
   const visibleNotes = notes.filter((note) => note.songId === featuredSong.id);
 
@@ -577,7 +619,7 @@ function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSon
   );
 }
 
-function BottomPlayerBar({ player }: { player: PlaylistPlayerControls }) {
+function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpen: boolean; onToggleLyrics: () => void; player: PlaylistPlayerControls }) {
   const handleSeekChange = (event: ChangeEvent<HTMLInputElement>) => {
     player.seekToPercent(Number(event.currentTarget.value));
   };
@@ -613,6 +655,9 @@ function BottomPlayerBar({ player }: { player: PlaylistPlayerControls }) {
             <button aria-label="喜欢当前歌曲" className="rounded-full p-1 transition hover:bg-white/50" type="button">
               <Heart aria-hidden="true" className="h-4 w-4" />
             </button>
+            <button aria-label={isLyricsOpen ? "关闭歌词" : "打开歌词"} aria-pressed={isLyricsOpen} className={`grid h-7 w-7 place-items-center rounded-full border border-transparent text-sm font-black transition hover:bg-white/50 ${isLyricsOpen ? "border-[#a54454] bg-white/65 text-[#a54454]" : ""}`} onClick={onToggleLyrics} type="button">
+              词
+            </button>
           </div>
           <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs font-black text-[#5a332f]">
             <span>{player.currentTimeLabel}</span>
@@ -642,6 +687,7 @@ function BottomPlayerBar({ player }: { player: PlaylistPlayerControls }) {
 export function PlaylistsPageView({ collections, featuredSongId, notes, playerSnapshot, songs }: PlaylistsPageViewProps) {
   const initialCollection = collections.find((collection) => collection.songIds.includes(featuredSongId)) ?? collections[0];
   const [activeCollectionId, setActiveCollectionId] = useState(initialCollection.id);
+  const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const activeCollection = collections.find((collection) => collection.id === activeCollectionId) ?? initialCollection;
   const visibleSongs = songs.filter((song) => activeCollection.songIds.includes(song.id));
   const activeFeaturedSong = visibleSongs.find((song) => song.id === featuredSongId) ?? visibleSongs[0] ?? getFeaturedSong(songs, featuredSongId);
@@ -674,9 +720,9 @@ export function PlaylistsPageView({ collections, featuredSongId, notes, playerSn
             <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
             <SongTable currentSongId={player.currentSongId} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
           </div>
-          <CommentPlayerPanel featuredSong={player.currentSong} notes={notes} />
+          {isLyricsOpen ? <LyricsPanel song={player.currentSong} /> : <CommentPlayerPanel featuredSong={player.currentSong} notes={notes} />}
         </div>
-        <BottomPlayerBar player={player} />
+        <BottomPlayerBar isLyricsOpen={isLyricsOpen} onToggleLyrics={() => setIsLyricsOpen((open) => !open)} player={player} />
       </div>
       <audio
         ref={player.audioRef}

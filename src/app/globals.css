@@ -52,6 +52,48 @@ body {
   background: linear-gradient(180deg, #e88f9f 0%, #ca6e84 100%);
 }
 
+.lyrics-panel-enter {
+  animation: lyrics-panel-enter 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.lyrics-disc {
+  animation: lyrics-disc-spin 12s linear infinite;
+}
+
+.lyrics-line {
+  animation: lyrics-line-enter 320ms ease-out both;
+}
+
+@keyframes lyrics-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes lyrics-disc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lyrics-line-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
