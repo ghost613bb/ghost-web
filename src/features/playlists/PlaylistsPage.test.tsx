@@ -102,6 +102,7 @@ describe("PlaylistsPageView", () => {
 
     const playerBar = screen.getByLabelText("当前播放栏");
     expect(within(playerBar).getByRole("heading", { level: 2, name: featuredSong?.title })).toBeInTheDocument();
+    expect(within(playerBar).getByRole("img", { name: `${featuredSong?.title}封面` })).toHaveAttribute("src", featuredSong?.coverImageSrc);
     expect(within(playerBar).getByText(featuredSong?.artist ?? "")).toBeInTheDocument();
     expect(within(playerBar).getByText("0:00")).toBeInTheDocument();
     expect(within(playerBar).getByText(playlistPlayerSnapshot.duration)).toBeInTheDocument();

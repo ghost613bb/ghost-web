@@ -3,6 +3,7 @@ import type { BaseContent } from "@/features/content-modules/types";
 export type PlaylistSong = BaseContent & {
   artist: string;
   audioSrc?: string;
+  coverImageSrc?: string;
   feeling: string;
   link?: string;
 };
@@ -39,6 +40,7 @@ export const playlistSongs: PlaylistSong[] = [
     title: "doll",
     artist: "小雪",
     audioSrc: "/audio/playlists/xiaoxue-doll.mp3",
+    coverImageSrc: "/audio/playlists/xiaoxue-doll-cover.jpg",
     description: "来自本地导入的试听曲。",
     feeling: "先把这首歌放进今日循环，测试真实 MP3 播放。",
     tags: ["试听", "本地导入"],

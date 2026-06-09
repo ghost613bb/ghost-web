@@ -5,10 +5,10 @@ import Link from "next/link";
 import {
   ChevronDown,
   Disc3,
+  Grid2X2,
   Heart,
   ListMusic,
   MessageCircle,
-  Music2,
   Pause,
   Play,
   Plus,
@@ -79,6 +79,18 @@ function formatTime(seconds: number) {
 
 function getFeaturedSong(songs: PlaylistSong[], featuredSongId: string) {
   return songs.find((song) => song.id === featuredSongId) ?? songs[0];
+}
+
+function SongArtwork({ song }: { song: PlaylistSong }) {
+  return (
+    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[0.9rem] border-2 border-stone-700/70 bg-[#fffaf3]">
+      {song.coverImageSrc ? (
+        <img alt={`${song.title}封面`} className="h-full w-full object-cover" src={song.coverImageSrc} />
+      ) : (
+        <Grid2X2 aria-hidden="true" className="h-7 w-7 text-[#7b7de0]" />
+      )}
+    </div>
+  );
 }
 
 function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, playerSnapshot: PlaylistPlayerSnapshot): PlaylistPlayerControls {
@@ -356,7 +368,7 @@ function PlaylistSidebar({ activeCollectionId, collections, onSelectCollection }
           return (
             <button
               aria-pressed={isActive}
-              className={`min-w-[14rem] snap-start rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 text-left shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_0_rgba(112,84,84,0.13)] xl:min-w-0 ${collection.accentClass} ${isActive ? "outline outline-2 outline-offset-2 outline-[#c65f70]" : ""}`}
+              className={`flex h-[9rem] min-w-[14rem] snap-start flex-col justify-between rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 text-left shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_0_rgba(112,84,84,0.13)] xl:w-full xl:min-w-0 ${collection.accentClass} ${isActive ? "outline outline-2 outline-offset-2 outline-[#c65f70]" : ""}`}
               key={collection.id}
               onClick={() => onSelectCollection(collection.id)}
               type="button"
@@ -577,9 +589,7 @@ function BottomPlayerBar({ player }: { player: PlaylistPlayerControls }) {
     <section aria-label="当前播放栏" className="sticky bottom-3 z-20 mt-5 rounded-[1.5rem] border-[2.5px] border-stone-700/80 bg-[#ffe6ad]/95 p-3 shadow-[0_16px_32px_rgba(112,84,84,0.2)] backdrop-blur">
       <div className="grid gap-3 lg:grid-cols-[minmax(13rem,18rem)_minmax(0,1fr)_12rem] lg:items-center">
         <div className="flex items-center gap-3">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[0.9rem] border-2 border-stone-700/70 bg-[#fffaf3]">
-            <Music2 aria-hidden="true" className="h-7 w-7 text-[#9b4d57]" />
-          </div>
+          <SongArtwork song={player.currentSong} />
           <div className="min-w-0">
             <h2 className="truncate text-base font-black text-[#4f2525]">{player.currentSong.title}</h2>
             <p className="truncate text-sm font-semibold text-stone-700">{player.currentSong.artist}</p>
