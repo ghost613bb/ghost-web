@@ -58,6 +58,7 @@ type PlaylistPlayerControls = {
 };
 
 const songDurations = ["3:43", "3:46", "3:19", "3:08", "3:43", "3:42"];
+const lyricSyncOffsetSeconds = 0.35;
 const tableHeaderClass = "px-3 py-3 text-left text-xs font-black uppercase tracking-[0.12em] text-[#5a332f]";
 const topActionClass =
   "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
@@ -526,7 +527,8 @@ function LyricsPanel({ currentTimeSeconds, song }: { currentTimeSeconds: number;
   const activeLineRef = useRef<HTMLParagraphElement | null>(null);
   const lyricsListRef = useRef<HTMLDivElement | null>(null);
   const lyrics = song.lyrics?.length ? song.lyrics : [{ time: 0, text: song.feeling }];
-  const activeLyricIndex = lyrics.reduce((activeIndex, line, index) => (currentTimeSeconds >= line.time ? index : activeIndex), -1);
+  const lyricTimeSeconds = currentTimeSeconds + lyricSyncOffsetSeconds;
+  const activeLyricIndex = lyrics.reduce((activeIndex, line, index) => (lyricTimeSeconds >= line.time ? index : activeIndex), -1);
 
   useEffect(() => {
     const activeLine = activeLineRef.current;
