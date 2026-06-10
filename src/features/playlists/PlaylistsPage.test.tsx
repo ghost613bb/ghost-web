@@ -69,9 +69,6 @@ describe("PlaylistsPageView", () => {
     activeSongs.forEach((song) => {
       expect(screen.getAllByText(song.title).length).toBeGreaterThan(0);
       expect(screen.getAllByText(song.artist).length).toBeGreaterThan(0);
-      song.tags.forEach((tag) => {
-        expect(screen.getAllByText(tag).length).toBeGreaterThan(0);
-      });
     });
 
     expect(screen.queryByText("电子充电器")).not.toBeInTheDocument();

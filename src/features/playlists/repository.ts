@@ -10,7 +10,6 @@ type PlaylistSongRow = {
   cover_image_src: string | null;
   lyric_lines: unknown;
   short_review: string | null;
-  tags: unknown;
   visibility: PlaylistSong["visibility"] | null;
   status: PlaylistSong["status"] | null;
   sort_order: number | null;
@@ -64,10 +63,6 @@ function parseJsonArray(value: unknown): unknown[] {
   return [];
 }
 
-function parseTags(value: unknown): string[] {
-  return parseJsonArray(value).filter((tag): tag is string => typeof tag === "string");
-}
-
 function parseLyrics(value: unknown): PlaylistLyricLine[] {
   return parseJsonArray(value)
     .map((line) => {
@@ -119,7 +114,6 @@ export function toPlaylistSong(row: PlaylistSongRow): PlaylistSong {
     feeling: row.feeling ?? "",
     lyrics: parseLyrics(row.lyric_lines),
     shortReview: row.short_review ?? undefined,
-    tags: parseTags(row.tags),
     visibility: row.visibility ?? "public",
     status: row.status ?? "published",
     sortOrder: row.sort_order ?? undefined,
@@ -160,7 +154,7 @@ export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
   const [songsResult, collectionsResult, collectionSongsResult, notesResult] = await Promise.all([
     supabase
       .from("playlist_songs")
-      .select("id,title,artist,feeling,audio_src,cover_image_src,lyric_lines,short_review,tags,visibility,status,sort_order,created_at")
+      .select("id,title,artist,feeling,audio_src,cover_image_src,lyric_lines,short_review,visibility,status,sort_order,created_at")
       .eq("status", "published")
       .order("sort_order", { ascending: true }),
     supabase.from("playlist_collections").select("id,title,description,emoji,accent_class,sort_order").order("sort_order", { ascending: true }),

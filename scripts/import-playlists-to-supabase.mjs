@@ -109,7 +109,6 @@ function toSongRow(song) {
     cover_image_src: song.coverImageSrc ?? null,
     lyric_lines: song.lyrics ?? [],
     short_review: song.shortReview ?? null,
-    tags: song.tags ?? [],
     visibility: song.visibility ?? "public",
     status: song.status ?? "published",
     sort_order: song.sortOrder ?? 0,

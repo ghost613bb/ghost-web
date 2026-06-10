@@ -50,14 +50,6 @@ function parseLyrics(value) {
     .filter(Boolean);
 }
 
-function parseTags(value) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((tag) => typeof tag === "string");
-}
-
 function normalizeReview(value) {
   return value
     .replace(/^['\"“”‘’]+|['\"“”‘’]+$/g, "")
@@ -68,9 +60,8 @@ function normalizeReview(value) {
 }
 
 function buildPrompt(song) {
-  const tags = parseTags(song.tags);
   const lyrics = parseLyrics(song.lyric_lines).join("\n").slice(0, 2200);
-  const fallbackText = [song.feeling, tags.join("、")].filter(Boolean).join("\n");
+  const fallbackText = [song.feeling].filter(Boolean).join("\n");
 
   return `请根据歌曲信息生成一句中文短音评，用于个人歌单页面的「听感」列。
 
@@ -85,7 +76,6 @@ function buildPrompt(song) {
 
 歌曲名：${song.title}
 歌手：${song.artist}
-标签：${tags.join("、") || "无"}
 ${lyrics ? `歌词：\n${lyrics}` : `补充信息：\n${fallbackText || "无"}`}`;
 }
 
@@ -158,7 +148,7 @@ async function main() {
 
   const { data: songs, error } = await supabase
     .from("playlist_songs")
-    .select("id,title,artist,feeling,lyric_lines,tags,short_review,status,sort_order")
+    .select("id,title,artist,feeling,lyric_lines,short_review,status,sort_order")
     .eq("status", "published")
     .order("sort_order", { ascending: true });
 
