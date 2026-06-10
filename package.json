@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "supabase:import-playlists": "node scripts/import-playlists-to-supabase.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
