@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "supabase:generate-playlist-reviews": "node scripts/generate-playlist-short-reviews.mjs",
     "supabase:import-playlists": "node scripts/import-playlists-to-supabase.mjs"
   },
   "dependencies": {

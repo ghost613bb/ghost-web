@@ -12,6 +12,7 @@ export type PlaylistSong = BaseContent & {
   feeling: string;
   lyrics?: PlaylistLyricLine[];
   link?: string;
+  shortReview?: string;
 };
 
 export type PlaylistCollection = {

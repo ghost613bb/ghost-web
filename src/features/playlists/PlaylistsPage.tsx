@@ -482,7 +482,7 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
                     </div>
                   </td>
                   <td className="px-3 py-3 align-top font-semibold text-stone-700">{song.artist}</td>
-                  <td className="max-w-[17rem] px-3 py-3 align-top text-xs font-semibold leading-5 text-stone-700">{song.description}</td>
+                  <td className="max-w-[17rem] px-3 py-3 align-top text-xs font-semibold leading-5 text-stone-700">{song.shortReview ?? song.description}</td>
                   <td className="px-3 py-3 text-right align-top font-black text-[#5a332f]">{getSongDuration(index)}</td>
                 </tr>
               );
@@ -509,7 +509,7 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
                   {getSongDuration(index)}
                 </button>
               </div>
-              <p className="mt-2 text-sm font-semibold leading-6 text-stone-700">{song.description}</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-stone-700">{song.shortReview ?? song.description}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {(song.tags ?? []).map((tag) => (
                   <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.68rem] font-black text-[#8d4b55]" key={tag}>
