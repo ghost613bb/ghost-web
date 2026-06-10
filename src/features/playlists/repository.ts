@@ -5,7 +5,6 @@ type PlaylistSongRow = {
   id: string;
   title: string;
   artist: string;
-  description: string | null;
   feeling: string | null;
   audio_src: string | null;
   cover_image_src: string | null;
@@ -116,7 +115,7 @@ export function toPlaylistSong(row: PlaylistSongRow): PlaylistSong {
     audioSrc: row.audio_src ?? undefined,
     coverImageSrc: row.cover_image_src ?? undefined,
     createdAt: row.created_at ?? undefined,
-    description: row.description ?? "",
+    description: row.short_review ?? "",
     feeling: row.feeling ?? "",
     lyrics: parseLyrics(row.lyric_lines),
     shortReview: row.short_review ?? undefined,
@@ -161,7 +160,7 @@ export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
   const [songsResult, collectionsResult, collectionSongsResult, notesResult] = await Promise.all([
     supabase
       .from("playlist_songs")
-      .select("id,title,artist,description,feeling,audio_src,cover_image_src,lyric_lines,short_review,tags,visibility,status,sort_order,created_at")
+      .select("id,title,artist,feeling,audio_src,cover_image_src,lyric_lines,short_review,tags,visibility,status,sort_order,created_at")
       .eq("status", "published")
       .order("sort_order", { ascending: true }),
     supabase.from("playlist_collections").select("id,title,description,emoji,accent_class,sort_order").order("sort_order", { ascending: true }),

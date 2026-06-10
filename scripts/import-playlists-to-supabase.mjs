@@ -104,7 +104,6 @@ function toSongRow(song) {
     id: song.id,
     title: song.title,
     artist: song.artist,
-    description: song.description ?? null,
     feeling: song.feeling ?? null,
     audio_src: song.audioSrc ?? null,
     cover_image_src: song.coverImageSrc ?? null,
