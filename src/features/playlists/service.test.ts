@@ -27,6 +27,7 @@ describe("playlist service", () => {
 
   it("returns static playlist data when Supabase env is not configured", async () => {
     await expect(getPlaylistPageData()).resolves.toEqual(getStaticPlaylistPageData());
+    await expect(getPlaylistPageData()).resolves.toMatchObject({ dataSource: "static" });
     expect(supabaseDataState.getSupabasePlaylistData).not.toHaveBeenCalled();
   });
 
@@ -42,6 +43,7 @@ describe("playlist service", () => {
 
     expect(data.songs).toBe(playlistSongs);
     expect(data.collections).toBe(playlistCollections);
+    expect(data.dataSource).toBe("supabase");
     expect(data.notes).toBe(playlistNotes);
     expect(data.featuredSongId).toBe(playlistCollections[0].songIds[0]);
     expect(data.playerSnapshot.currentTime).toBe("0:00");

@@ -21,9 +21,11 @@ import {
   X,
 } from "lucide-react";
 import type { PlaylistCollection, PlaylistNote, PlaylistPlayerSnapshot, PlaylistSong } from "@/data/playlists";
+import type { PlaylistDataSource } from "./service";
 
 type PlaylistsPageViewProps = {
   collections: PlaylistCollection[];
+  dataSource?: PlaylistDataSource;
   featuredSongId: string;
   notes: PlaylistNote[];
   playerSnapshot: PlaylistPlayerSnapshot;
@@ -653,6 +655,20 @@ function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSon
   );
 }
 
+function DataSourceBadge({ source }: { source?: PlaylistDataSource }) {
+  if (process.env.NODE_ENV === "production" || !source) {
+    return null;
+  }
+
+  const label = source === "supabase" ? "数据源：Supabase" : "数据源：本地 fallback";
+
+  return (
+    <span className="fixed right-4 top-4 z-30 rounded-full border-2 border-stone-700/70 bg-white/85 px-3 py-1 text-xs font-black text-[#4f2525] shadow-[0_4px_0_rgba(112,84,84,0.12)] backdrop-blur">
+      {label}
+    </span>
+  );
+}
+
 function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpen: boolean; onToggleLyrics: () => void; player: PlaylistPlayerControls }) {
   const handleSeekChange = (event: ChangeEvent<HTMLInputElement>) => {
     player.seekToPercent(Number(event.currentTarget.value));
@@ -718,7 +734,7 @@ function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpe
   );
 }
 
-export function PlaylistsPageView({ collections, featuredSongId, notes, playerSnapshot, songs }: PlaylistsPageViewProps) {
+export function PlaylistsPageView({ collections, dataSource, featuredSongId, notes, playerSnapshot, songs }: PlaylistsPageViewProps) {
   const initialCollection = collections.find((collection) => collection.songIds.includes(featuredSongId)) ?? collections[0];
   const [activeCollectionId, setActiveCollectionId] = useState(initialCollection.id);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
@@ -746,6 +762,7 @@ export function PlaylistsPageView({ collections, featuredSongId, notes, playerSn
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
+      <DataSourceBadge source={dataSource} />
       <PlaylistHeader />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">

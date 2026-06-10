@@ -13,6 +13,7 @@ function renderPlaylistsPage() {
   render(
     <PlaylistsPageView
       collections={playlistCollections}
+      dataSource="supabase"
       featuredSongId={featuredPlaylistSongId}
       notes={playlistNotes}
       playerSnapshot={playlistPlayerSnapshot}
@@ -51,6 +52,7 @@ describe("PlaylistsPageView", () => {
     expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();
     expect(screen.getByLabelText("当前播放栏")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Daily Moods" })).toBeInTheDocument();
+    expect(screen.getByText("数据源：Supabase")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New Collection" })).toBeInTheDocument();
   });
 

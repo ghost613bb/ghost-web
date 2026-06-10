@@ -12,8 +12,11 @@ import {
 import { hasSupabaseServerEnv } from "@/lib/supabase/server";
 import { getSupabasePlaylistData } from "./repository";
 
+export type PlaylistDataSource = "static" | "supabase";
+
 export type PlaylistPageData = {
   collections: PlaylistCollection[];
+  dataSource: PlaylistDataSource;
   featuredSongId: string;
   notes: PlaylistNote[];
   playerSnapshot: PlaylistPlayerSnapshot;
@@ -23,6 +26,7 @@ export type PlaylistPageData = {
 export function getStaticPlaylistPageData(): PlaylistPageData {
   return {
     collections: playlistCollections,
+    dataSource: "static",
     featuredSongId: featuredPlaylistSongId,
     notes: playlistNotes,
     playerSnapshot: playlistPlayerSnapshot,
@@ -53,6 +57,7 @@ export async function getPlaylistPageData(): Promise<PlaylistPageData> {
 
     return {
       ...data,
+      dataSource: "supabase",
       featuredSongId: data.collections[0]?.songIds[0] ?? data.songs[0]?.id ?? featuredPlaylistSongId,
       playerSnapshot: buildPlayerSnapshot(data.collections),
     };
