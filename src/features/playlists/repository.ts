@@ -198,6 +198,10 @@ export function requireSupabasePlaylistWriteEnv() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("导入歌单需要配置 SUPABASE_SERVICE_ROLE_KEY");
   }
+
+  if (!process.env.PLAYLIST_IMPORT_ADMIN_TOKEN) {
+    throw new Error("导入歌单需要配置 PLAYLIST_IMPORT_ADMIN_TOKEN");
+  }
 }
 
 export async function ensureSupabasePlaylistCollection(collectionId: string) {

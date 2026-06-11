@@ -25,6 +25,7 @@ function renderPlaylistsPage(dataSource: "static" | "supabase" = "supabase") {
 describe("PlaylistsPageView", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    window.sessionStorage.clear();
     window.HTMLElement.prototype.scrollTo = vi.fn();
     vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => undefined);
     vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(function (this: HTMLMediaElement) {
@@ -125,6 +126,7 @@ describe("PlaylistsPageView", () => {
     fireEvent.click(screen.getByRole("button", { name: "批量导入歌曲" }));
 
     expect(screen.getByLabelText("批量导入歌曲")).toBeInTheDocument();
+    expect(screen.getByLabelText("管理 Token")).toBeInTheDocument();
     expect(screen.getByText("上传 MP3 和同名 LRC，自动解析封面、歌词和短音评。", { exact: false })).toBeInTheDocument();
   });
 

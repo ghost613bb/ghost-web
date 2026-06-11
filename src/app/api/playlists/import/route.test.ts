@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 vi.mock("@/features/playlists/metadata", () => ({
@@ -26,15 +26,43 @@ vi.mock("@/features/playlists/repository", () => ({
   uploadSupabasePlaylistAsset: vi.fn(async ({ path }: { path: string }) => `https://cdn.example.com/${path}`),
 }));
 
-function buildRequest(formData: FormData) {
+function buildRequest(formData: FormData, token = "test-token") {
   return {
     formData: async () => formData,
+    headers: new Headers({ "x-playlist-import-token": token }),
   } as Request;
 }
 
 describe("/api/playlists/import", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("PLAYLIST_IMPORT_ADMIN_TOKEN", "test-token");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects requests without the import token", async () => {
+    const formData = new FormData();
+    formData.set("collectionId", "daily-moods");
+
+    const response = await POST(buildRequest(formData, ""));
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data).toEqual({ error: "无权限导入歌单" });
+  });
+
+  it("rejects requests with a wrong import token", async () => {
+    const formData = new FormData();
+    formData.set("collectionId", "daily-moods");
+
+    const response = await POST(buildRequest(formData, "wrong-token"));
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data).toEqual({ error: "无权限导入歌单" });
   });
 
   it("rejects empty import requests", async () => {

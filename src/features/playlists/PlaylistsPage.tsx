@@ -657,6 +657,7 @@ function getImportFileBaseName(fileName: string) {
 }
 
 function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }: { activeCollectionId: string; collections: PlaylistCollection[]; onClose: () => void }) {
+  const [adminToken, setAdminToken] = useState("");
   const [audioFiles, setAudioFiles] = useState<File[]>([]);
   const [lyricFiles, setLyricFiles] = useState<File[]>([]);
   const [collectionId, setCollectionId] = useState(activeCollectionId);
@@ -665,10 +666,19 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
   const [result, setResult] = useState<PlaylistImportResult | null>(null);
   const lyricBaseNames = new Set(lyricFiles.map((file) => getImportFileBaseName(file.name)));
 
+  useEffect(() => {
+    setAdminToken(window.sessionStorage.getItem("playlistImportAdminToken") ?? "");
+  }, []);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setResult(null);
+
+    if (!adminToken.trim()) {
+      setError("请输入管理 Token");
+      return;
+    }
 
     if (audioFiles.length === 0) {
       setError("请先选择 MP3 文件");
@@ -686,6 +696,9 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
     try {
       const response = await fetch("/api/playlists/import", {
         body: formData,
+        headers: {
+          "x-playlist-import-token": adminToken.trim(),
+        },
         method: "POST",
       });
       const data = (await response.json()) as PlaylistImportResult & { error?: string };
@@ -694,6 +707,7 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
         throw new Error(data.error ?? "导入失败");
       }
 
+      window.sessionStorage.setItem("playlistImportAdminToken", adminToken.trim());
       setResult(data);
       window.setTimeout(() => window.location.reload(), 900);
     } catch (submitError) {
@@ -718,6 +732,11 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
+          <label className="block text-sm font-black text-[#4f2525]">
+            管理 Token
+            <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setAdminToken(event.currentTarget.value)} placeholder="输入导入管理 Token" type="password" value={adminToken} />
+          </label>
+
           <label className="block rounded-[1.2rem] border-2 border-dashed border-stone-700/60 bg-[#fff4d8] p-3 text-sm font-black text-[#4f2525]">
             MP3 文件
             <input accept=".mp3,audio/mpeg" className="mt-2 block w-full text-sm font-semibold text-stone-700 file:mr-3 file:rounded-full file:border-2 file:border-stone-700/70 file:bg-[#f8cfd5] file:px-3 file:py-1 file:font-black" multiple onChange={(event) => setAudioFiles(Array.from(event.currentTarget.files ?? []))} type="file" />
