@@ -44,11 +44,11 @@ function normalizeBaseName(fileName: string) {
   return stripExtension(fileName).trim().toLowerCase();
 }
 
-// 把歌曲标题转成适合放进存储路径的短标识，避免特殊字符影响文件路径。
+// 把歌曲标题转成适合放进 Supabase Storage 的 ASCII 路径片段。
 function slugify(value: string) {
   return value
     .normalize("NFKD")
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase()
     .slice(0, 48) || "song";

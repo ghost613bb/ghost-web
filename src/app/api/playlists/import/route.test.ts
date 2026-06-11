@@ -92,8 +92,8 @@ describe("/api/playlists/import", () => {
     const repository = await import("@/features/playlists/repository");
     const formData = new FormData();
     formData.set("collectionId", "daily-moods");
-    formData.append("audioFiles", new File(["mp3"], "doll.mp3", { type: "audio/mpeg" }), "doll.mp3");
-    formData.append("lyricFiles", new File(["[00:15.66]凛冽的风捶打在肩"], "doll.lrc", { type: "text/plain" }), "doll.lrc");
+    formData.append("audioFiles", new File(["mp3"], "我好想你-苏打绿版.mp3", { type: "audio/mpeg" }), "我好想你-苏打绿版.mp3");
+    formData.append("lyricFiles", new File(["[00:15.66]凛冽的风捶打在肩"], "我好想你-苏打绿版.lrc", { type: "text/plain" }), "我好想你-苏打绿版.lrc");
 
     const response = await POST(buildRequest(formData));
     const data = await response.json();
@@ -105,12 +105,17 @@ describe("/api/playlists/import", () => {
       shortReview: "风吹过枷锁",
       title: "doll",
     });
-    expect(repository.insertSupabasePlaylistSongs).toHaveBeenCalledWith([
+    const insertedSongs = vi.mocked(repository.insertSupabasePlaylistSongs).mock.calls[0]?.[0];
+    const insertedSong = insertedSongs?.[0];
+
+    expect(insertedSong).toEqual(
       expect.objectContaining({
         lyrics: [{ time: 15.66, text: "凛冽的风捶打在肩" }],
         shortReview: "风吹过枷锁",
       }),
-    ]);
+    );
+    expect(insertedSong?.audioSrc).toMatch(/^https:\/\/cdn\.example\.com\/audio\/song-\d+-1-doll\.mp3$/);
+    expect(insertedSong?.coverImageSrc).toMatch(/^https:\/\/cdn\.example\.com\/covers\/song-\d+-1-doll\.jpg$/);
     expect(repository.insertSupabasePlaylistCollectionSongs).toHaveBeenCalledWith("daily-moods", [expect.stringMatching(/^song-/)]);
   });
 });
