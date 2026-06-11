@@ -726,19 +726,26 @@ function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: 
           <MessageCircle aria-hidden="true" className="h-5 w-5 text-[#9b4d57]" />
           <h2 className="text-lg font-black text-[#4f2525]">耳机留言</h2>
         </div>
-        <div className="space-y-3">
-          {visibleNotes.map((note) => (
-            <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
-              <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
-                {note.avatar}
-              </span>
-              <p className="text-sm font-black text-[#4f2525]">
-                {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
-              </p>
-              <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
-            </article>
-          ))}
-        </div>
+        {visibleNotes.length === 0 ? (
+          <div className="rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] px-4 py-5 text-center">
+            <p className="text-sm font-black text-[#4f2525]">这片声波还没有回信。</p>
+            <p className="mt-1 text-xs font-semibold text-stone-500">写一句，让它有第一个回声。</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {visibleNotes.map((note) => (
+              <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
+                <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
+                  {note.avatar}
+                </span>
+                <p className="text-sm font-black text-[#4f2525]">
+                  {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
+                </p>
+                <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </aside>
   );
