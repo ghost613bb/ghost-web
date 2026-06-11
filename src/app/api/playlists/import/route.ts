@@ -15,7 +15,7 @@ import { parseLrcToLyricLines } from "@/features/playlists/lyrics";
 export const runtime = "nodejs";
 
 // 单次导入的基础限制，避免一次请求上传过多或过大的文件。
-const maxSongsPerImport = 10;
+const maxSongsPerImport = 30;
 const maxAudioSize = 20 * 1024 * 1024;
 const maxLyricSize = 512 * 1024;
 
