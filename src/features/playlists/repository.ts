@@ -181,3 +181,98 @@ export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
     notes: ((notesResult.data ?? []) as PlaylistNoteRow[]).map((row) => toPlaylistNote(row)),
   };
 }
+
+export type PlaylistSongInsert = {
+  artist: string;
+  audioSrc: string;
+  coverImageSrc?: string;
+  feeling: string;
+  id: string;
+  lyrics: PlaylistLyricLine[];
+  shortReview: string;
+  sortOrder: number;
+  title: string;
+};
+
+export function requireSupabasePlaylistWriteEnv() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("导入歌单需要配置 SUPABASE_SERVICE_ROLE_KEY");
+  }
+}
+
+export async function ensureSupabasePlaylistCollection(collectionId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_collections").select("id").eq("id", collectionId).maybeSingle();
+
+  throwSupabaseError("校验 Supabase 歌单失败", error);
+
+  if (!data) {
+    throw new Error("目标歌单不存在");
+  }
+}
+
+export async function getNextSupabasePlaylistSongSortOrder() {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_songs").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+
+  throwSupabaseError("读取 Supabase 歌曲排序失败", error);
+
+  return ((data?.[0] as { sort_order?: number } | undefined)?.sort_order ?? 0) + 1;
+}
+
+export async function uploadSupabasePlaylistAsset({ buffer, contentType, path }: { buffer: Buffer; contentType: string; path: string }) {
+  const supabase = createSupabaseServerClient();
+  const bucket = process.env.PLAYLIST_STORAGE_BUCKET ?? "playlist-assets";
+  const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
+    contentType,
+    upsert: true,
+  });
+
+  throwSupabaseError("上传 Supabase 歌单资源失败", error);
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+export async function insertSupabasePlaylistSongs(songs: PlaylistSongInsert[]) {
+  const supabase = createSupabaseServerClient();
+  const rows = songs.map((song) => ({
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
+    feeling: song.feeling,
+    audio_src: song.audioSrc,
+    cover_image_src: song.coverImageSrc ?? null,
+    lyric_lines: song.lyrics,
+    short_review: song.shortReview,
+    visibility: "public",
+    status: "published",
+    sort_order: song.sortOrder,
+  }));
+  const { error } = await supabase.from("playlist_songs").insert(rows);
+
+  throwSupabaseError("写入 Supabase 歌曲失败", error);
+}
+
+export async function insertSupabasePlaylistCollectionSongs(collectionId: string, songIds: string[]) {
+  if (songIds.length === 0) {
+    return;
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error: readError } = await supabase.from("playlist_collection_songs").select("sort_order").eq("collection_id", collectionId).order("sort_order", { ascending: false }).limit(1);
+
+  throwSupabaseError("读取 Supabase 歌单歌曲排序失败", readError);
+
+  const nextSortOrder = ((data?.[0] as { sort_order?: number } | undefined)?.sort_order ?? 0) + 1;
+  const { error } = await supabase.from("playlist_collection_songs").insert(
+    songIds.map((songId, index) => ({
+      collection_id: collectionId,
+      song_id: songId,
+      sort_order: nextSortOrder + index,
+    })),
+  );
+
+  throwSupabaseError("写入 Supabase 歌单歌曲关系失败", error);
+}

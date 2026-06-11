@@ -9,11 +9,11 @@ import {
 } from "@/data/playlists";
 import { PlaylistsPageView } from "./PlaylistsPage";
 
-function renderPlaylistsPage() {
+function renderPlaylistsPage(dataSource: "static" | "supabase" = "supabase") {
   render(
     <PlaylistsPageView
       collections={playlistCollections}
-      dataSource="supabase"
+      dataSource={dataSource}
       featuredSongId={featuredPlaylistSongId}
       notes={playlistNotes}
       playerSnapshot={playlistPlayerSnapshot}
@@ -54,6 +54,13 @@ describe("PlaylistsPageView", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Daily Moods" })).toBeInTheDocument();
     expect(screen.getByText("数据源：Supabase")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New Collection" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "批量导入歌曲" })).toBeInTheDocument();
+  });
+
+  it("disables batch import for static fallback data", () => {
+    renderPlaylistsPage("static");
+
+    expect(screen.getByRole("button", { name: "批量导入歌曲" })).toBeDisabled();
   });
 
   it("renders playlist collections and active collection songs from data", () => {
@@ -110,6 +117,15 @@ describe("PlaylistsPageView", () => {
     expect(within(playerBar).getByRole("button", { name: "上一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "下一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "打开歌词" })).toBeInTheDocument();
+  });
+
+  it("opens the batch import dialog", () => {
+    renderPlaylistsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "批量导入歌曲" }));
+
+    expect(screen.getByLabelText("批量导入歌曲")).toBeInTheDocument();
+    expect(screen.getByText("上传 MP3 和同名 LRC，自动解析封面、歌词和短音评。", { exact: false })).toBeInTheDocument();
   });
 
   it("renders comment notes for the featured listening panel", () => {
