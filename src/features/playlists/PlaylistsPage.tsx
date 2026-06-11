@@ -42,6 +42,8 @@ type PlaylistImportResult = {
   warnings?: Array<{ fileName?: string; message: string }>;
 };
 
+type SongDurationLabels = Record<string, string>;
+
 type PlaylistPlayerControls = {
   audioRef: RefObject<HTMLAudioElement | null>;
   currentSong: PlaylistSong;
@@ -53,6 +55,7 @@ type PlaylistPlayerControls = {
   handleLoadedMetadata: () => void;
   handlePause: () => void;
   handlePlay: () => void;
+  handleSongDurationLoaded: (songId: string, durationLabel: string) => void;
   handleTimeUpdate: () => void;
   isPlaying: boolean;
   playNext: () => void;
@@ -61,6 +64,7 @@ type PlaylistPlayerControls = {
   progressPercent: number;
   selectSong: (songId: string) => void;
   seekToPercent: (percent: number) => void;
+  songDurationLabels: SongDurationLabels;
   setVolumePercent: (percent: number) => void;
   shuffleEnabled: boolean;
   statusLabel: string;
@@ -69,7 +73,6 @@ type PlaylistPlayerControls = {
   volumePercent: number;
 };
 
-const songDurations = ["3:43", "3:46", "3:19", "3:08", "3:43", "3:42"];
 const collectionAccentOptions = [
   { className: "bg-[#fde2e7]", label: "樱花粉" },
   { className: "bg-[#fff2c7]", label: "日落黄" },
@@ -83,8 +86,8 @@ const tableHeaderClass = "px-3 py-3 text-left text-xs font-black uppercase track
 const topActionClass =
   "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
-function getSongDuration(index: number) {
-  return songDurations[index % songDurations.length];
+function getSongDuration(song: PlaylistSong, durationLabels: SongDurationLabels = {}) {
+  return durationLabels[song.id] ?? song.duration ?? "--:--";
 }
 
 function formatTime(seconds: number) {
@@ -115,11 +118,35 @@ function SongArtwork({ song }: { song: PlaylistSong }) {
   );
 }
 
+function SongDurationPreloader({ onDurationLoaded, songs }: Pick<PlaylistsPageViewProps, "songs"> & { onDurationLoaded: (songId: string, durationLabel: string) => void }) {
+  return (
+    <div aria-hidden="true" className="hidden">
+      {songs.map((song) =>
+        song.audioSrc ? (
+          <audio
+            key={song.id}
+            onLoadedMetadata={(event) => {
+              const duration = event.currentTarget.duration;
+
+              if (Number.isFinite(duration) && duration > 0) {
+                onDurationLoaded(song.id, formatTime(duration));
+              }
+            }}
+            preload="metadata"
+            src={song.audioSrc}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}
+
 function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, playerSnapshot: PlaylistPlayerSnapshot): PlaylistPlayerControls {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentSongId, setCurrentSongId] = useState(() => getFeaturedSong(songs, featuredSongId).id);
   const [currentTimeSeconds, setCurrentTimeSeconds] = useState(0);
   const [durationSeconds, setDurationSeconds] = useState(0);
+  const [songDurationLabels, setSongDurationLabels] = useState<SongDurationLabels>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
@@ -166,6 +193,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
       setPlaybackError(null);
       setCurrentSongId(song.id);
       setCurrentTimeSeconds(0);
+      setDurationSeconds(0);
 
       if (!audio) {
         setIsPlaying(false);
@@ -269,6 +297,10 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     setVolumePercentState(nextVolumePercent);
   }, []);
 
+  const handleSongDurationLoaded = useCallback((songId: string, durationLabel: string) => {
+    setSongDurationLabels((currentLabels) => (currentLabels[songId] === durationLabel ? currentLabels : { ...currentLabels, [songId]: durationLabel }));
+  }, []);
+
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current;
 
@@ -276,9 +308,14 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
       return;
     }
 
-    setDurationSeconds(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const nextDurationSeconds = Number.isFinite(audio.duration) ? audio.duration : 0;
+
+    setDurationSeconds(nextDurationSeconds);
+    if (nextDurationSeconds > 0) {
+      handleSongDurationLoaded(currentSong.id, formatTime(nextDurationSeconds));
+    }
     audio.volume = volumePercent / 100;
-  }, [volumePercent]);
+  }, [currentSong.id, handleSongDurationLoaded, volumePercent]);
 
   const handleTimeUpdate = useCallback(() => {
     const audio = audioRef.current;
@@ -305,7 +342,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
   }, []);
 
   const progressPercent = durationSeconds > 0 ? Math.min(100, Math.max(0, (currentTimeSeconds / durationSeconds) * 100)) : 0;
-  const durationLabel = durationSeconds > 0 ? formatTime(durationSeconds) : getSongDuration(currentSongIndex);
+  const durationLabel = durationSeconds > 0 ? formatTime(durationSeconds) : getSongDuration(currentSong, songDurationLabels);
   const statusLabel = playbackError ?? (isPlaying ? `正在播放 ${currentSong.title}` : playerSnapshot.statusLabel);
 
   return {
@@ -319,6 +356,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     handleLoadedMetadata,
     handlePause,
     handlePlay,
+    handleSongDurationLoaded,
     handleTimeUpdate,
     isPlaying,
     playNext,
@@ -328,6 +366,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     selectSong,
     seekToPercent,
     setVolumePercent,
+    songDurationLabels,
     shuffleEnabled,
     statusLabel,
     togglePlay,
@@ -450,7 +489,7 @@ function HeroPanel({ collection, featuredSong, isPlaying, onPlayAll, songs }: { 
   );
 }
 
-function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }: Pick<PlaylistsPageViewProps, "songs"> & { currentSongId: string; isPlaying: boolean; onPlaySong: (songId: string) => void; onTogglePlay: () => void }) {
+function SongTable({ currentSongId, durationLabels, isPlaying, onPlaySong, onTogglePlay, songs }: Pick<PlaylistsPageViewProps, "songs"> & { currentSongId: string; durationLabels: SongDurationLabels; isPlaying: boolean; onPlaySong: (songId: string) => void; onTogglePlay: () => void }) {
   const handleSongButtonClick = (songId: string) => {
     if (songId === currentSongId) {
       onTogglePlay();
@@ -508,7 +547,7 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
                   </td>
                   <td className="px-3 py-3 align-top font-semibold text-stone-700">{song.artist}</td>
                   <td className="max-w-[17rem] px-3 py-3 align-top text-xs font-semibold leading-5 text-stone-700">{song.shortReview}</td>
-                  <td className="px-3 py-3 text-right align-top font-black text-[#5a332f]">{getSongDuration(index)}</td>
+                  <td className="px-3 py-3 text-right align-top font-black text-[#5a332f]">{getSongDuration(song, durationLabels)}</td>
                 </tr>
               );
             })}
@@ -531,7 +570,7 @@ function SongTable({ currentSongId, isPlaying, onPlaySong, onTogglePlay, songs }
                 </div>
                 <button aria-label={songButtonLabel} className="inline-flex items-center gap-1 rounded-full bg-[#fff3c7] px-2.5 py-1 text-xs font-black text-[#6d3b39]" onClick={() => handleSongButtonClick(song.id)} type="button">
                   {isCurrent && isPlaying ? <Pause aria-hidden="true" className="h-3.5 w-3.5 fill-[#4f2525] text-[#4f2525]" /> : <Play aria-hidden="true" className="h-3.5 w-3.5 fill-[#4f2525] text-[#4f2525]" />}
-                  {getSongDuration(index)}
+                  {getSongDuration(song, durationLabels)}
                 </button>
               </div>
               <p className="mt-2 text-sm font-semibold leading-6 text-stone-700">{song.shortReview}</p>
@@ -1149,7 +1188,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
           <PlaylistSidebar activeCollectionId={activeCollection.id} collections={displayCollections} createDisabled={dataSource !== "supabase"} importDisabled={dataSource !== "supabase"} onOpenCreate={() => setIsCreateCollectionDialogOpen(true)} onOpenImport={() => setIsImportDialogOpen(true)} onSelectCollection={handleSelectCollection} />
           <div className="min-w-0 space-y-5">
             <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
-            <SongTable currentSongId={player.currentSongId} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
+            <SongTable currentSongId={player.currentSongId} durationLabels={player.songDurationLabels} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
           </div>
           {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} />}
         </div>
@@ -1164,6 +1203,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
         onTimeUpdate={player.handleTimeUpdate}
         preload="metadata"
       />
+      <SongDurationPreloader onDurationLoaded={player.handleSongDurationLoaded} songs={visibleSongs} />
     </main>
   );
 }

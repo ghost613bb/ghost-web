@@ -78,6 +78,7 @@ describe("PlaylistsPageView", () => {
     activeSongs.forEach((song) => {
       expect(screen.getAllByText(song.title).length).toBeGreaterThan(0);
       expect(screen.getAllByText(song.artist).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(song.duration ?? "").length).toBeGreaterThan(0);
     });
 
     expect(screen.queryByText("电子充电器")).not.toBeInTheDocument();
@@ -114,7 +115,7 @@ describe("PlaylistsPageView", () => {
     expect(within(playerBar).getByRole("img", { name: `${featuredSong?.title}封面` })).toHaveAttribute("src", featuredSong?.coverImageSrc);
     expect(within(playerBar).getByText(featuredSong?.artist ?? "")).toBeInTheDocument();
     expect(within(playerBar).getByText("0:00")).toBeInTheDocument();
-    expect(within(playerBar).getByText(playlistPlayerSnapshot.duration)).toBeInTheDocument();
+    expect(within(playerBar).getByText(featuredSong?.duration ?? "")).toBeInTheDocument();
     expect(within(playerBar).getByText(playlistPlayerSnapshot.statusLabel)).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "上一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "下一首" })).toBeInTheDocument();

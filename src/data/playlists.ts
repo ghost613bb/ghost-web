@@ -9,6 +9,7 @@ export type PlaylistSong = BaseContent & {
   artist: string;
   audioSrc?: string;
   coverImageSrc?: string;
+  duration?: string;
   feeling: string;
   lyrics?: PlaylistLyricLine[];
   link?: string;
@@ -49,6 +50,7 @@ export const playlistSongs: PlaylistSong[] = [
     audioSrc: "/audio/playlists/xiaoxue-doll.mp3",
     coverImageSrc: "/audio/playlists/xiaoxue-doll-cover.jpg",
     description: "来自本地导入的试听曲。",
+    duration: "2:47",
     feeling: "先把这首歌放进今日循环，测试真实 MP3 播放。",
     lyrics: [
       { time: 15.66, text: "凛冽的风捶打在肩" },
@@ -100,6 +102,7 @@ export const playlistSongs: PlaylistSong[] = [
     audioSrc: "/audio/playlists/kui-kui-zhouyi-yuxing.mp3",
     coverImageSrc: "/audio/playlists/kui-kui-zhouyi-yuxing-cover.jpg",
     description: "来自本地导入的试听曲。",
+    duration: "3:22",
     feeling: "把夜空里的一颗星留给耳机，适合慢慢循环。",
     lyrics: [
       { time: 17.493, text: "孤寂的星在夜幕里朦胧" },
@@ -214,7 +217,7 @@ export const playlistNotes: PlaylistNote[] = [
 
 export const playlistPlayerSnapshot: PlaylistPlayerSnapshot = {
   currentTime: "0:42",
-  duration: "3:43",
+  duration: "2:47",
   progressPercent: 18,
   volumePercent: 58,
   statusLabel: "正在循环 Daily Moods",
