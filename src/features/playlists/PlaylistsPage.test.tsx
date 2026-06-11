@@ -58,9 +58,10 @@ describe("PlaylistsPageView", () => {
     expect(screen.getByRole("button", { name: "批量导入歌曲" })).toBeInTheDocument();
   });
 
-  it("disables batch import for static fallback data", () => {
+  it("disables playlist management for static fallback data", () => {
     renderPlaylistsPage("static");
 
+    expect(screen.getByRole("button", { name: "New Collection" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "批量导入歌曲" })).toBeDisabled();
   });
 
@@ -118,6 +119,58 @@ describe("PlaylistsPageView", () => {
     expect(within(playerBar).getByRole("button", { name: "上一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "下一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "打开歌词" })).toBeInTheDocument();
+  });
+
+  it("opens the create collection dialog", () => {
+    renderPlaylistsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "New Collection" }));
+
+    expect(screen.getByLabelText("新增歌单")).toBeInTheDocument();
+    expect(screen.getByLabelText("管理 Token")).toBeInTheDocument();
+    expect(screen.getByLabelText("歌单名称")).toBeInTheDocument();
+    expect(screen.getByText("创建一个空歌单，之后可以继续批量导入歌曲。", { exact: false })).toBeInTheDocument();
+  });
+
+  it("creates a collection and switches to its empty state", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        collection: {
+          accentClass: "bg-[#e5f0ff]",
+          description: "夜里慢慢听。",
+          emoji: "🌙",
+          id: "collection-late-night-loop-1234abcd",
+          songIds: [],
+          title: "Late Night Loop",
+        },
+      }),
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "New Collection" }));
+    fireEvent.change(screen.getByLabelText("管理 Token"), { target: { value: "test-token" } });
+    fireEvent.change(screen.getByLabelText("歌单名称"), { target: { value: "Late Night Loop" } });
+    fireEvent.change(screen.getByLabelText("描述"), { target: { value: "夜里慢慢听。" } });
+    fireEvent.change(screen.getByLabelText("图标"), { target: { value: "🌙" } });
+    fireEvent.change(screen.getByLabelText("主题色"), { target: { value: "bg-[#e5f0ff]" } });
+    fireEvent.click(screen.getByRole("button", { name: "创建歌单" }));
+
+    expect(await screen.findByRole("heading", { level: 3, name: "Late Night Loop" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Late Night Loop" })).toBeInTheDocument();
+    expect(screen.getAllByText("夜里慢慢听。").length).toBeGreaterThan(0);
+    expect(screen.getByText("这个歌单还没有歌曲。点击左侧“批量导入歌曲”添加 MP3 和 LRC。")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/playlists/collections",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "x-playlist-import-token": "test-token",
+        }),
+        method: "POST",
+      }),
+    );
   });
 
   it("opens the batch import dialog", () => {

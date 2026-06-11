@@ -182,6 +182,15 @@ export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
   };
 }
 
+export type PlaylistCollectionInsert = {
+  accentClass: string;
+  description: string;
+  emoji: string;
+  id: string;
+  sortOrder: number;
+  title: string;
+};
+
 export type PlaylistSongInsert = {
   artist: string;
   audioSrc: string;
@@ -196,12 +205,41 @@ export type PlaylistSongInsert = {
 
 export function requireSupabasePlaylistWriteEnv() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("导入歌单需要配置 SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error("写入歌单需要配置 SUPABASE_SERVICE_ROLE_KEY");
   }
 
   if (!process.env.PLAYLIST_IMPORT_ADMIN_TOKEN) {
-    throw new Error("导入歌单需要配置 PLAYLIST_IMPORT_ADMIN_TOKEN");
+    throw new Error("写入歌单需要配置 PLAYLIST_IMPORT_ADMIN_TOKEN");
   }
+}
+
+export async function getNextSupabasePlaylistCollectionSortOrder() {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_collections").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+
+  throwSupabaseError("读取 Supabase 歌单排序失败", error);
+
+  return ((data?.[0] as { sort_order?: number } | undefined)?.sort_order ?? 0) + 1;
+}
+
+export async function insertSupabasePlaylistCollection(collection: PlaylistCollectionInsert) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("playlist_collections")
+    .insert({
+      id: collection.id,
+      title: collection.title,
+      description: collection.description,
+      emoji: collection.emoji,
+      accent_class: collection.accentClass,
+      sort_order: collection.sortOrder,
+    })
+    .select("id,title,description,emoji,accent_class,sort_order")
+    .single();
+
+  throwSupabaseError("写入 Supabase 歌单失败", error);
+
+  return toPlaylistCollection(data as PlaylistCollectionRow, []);
 }
 
 export async function ensureSupabasePlaylistCollection(collectionId: string) {
