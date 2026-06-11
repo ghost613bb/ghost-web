@@ -92,12 +92,12 @@ describe("PlaylistsPageView", () => {
     const commentPanel = screen.getByLabelText("耳机留言播放器");
 
     expect(screen.getByRole("heading", { level: 2, name: "Coding Spark" })).toBeInTheDocument();
-    expect(screen.getByText("像给自己插上电源，适合写代码前听。")).toBeInTheDocument();
-    expect(screen.getAllByText("电子充电器").length).toBeGreaterThan(0);
+    expect(screen.getByText("把夜空里的一颗星留给耳机，适合慢慢循环。")).toBeInTheDocument();
+    expect(screen.getAllByText("予星").length).toBeGreaterThan(0);
     expect(screen.queryByText("doll")).not.toBeInTheDocument();
-    expect(within(playerBar).getByRole("heading", { level: 2, name: "电子充电器" })).toBeInTheDocument();
-    expect(within(playerBar).getByText("像素汽水")).toBeInTheDocument();
-    expect(within(commentPanel).getByText("Ranima", { exact: false })).toBeInTheDocument();
+    expect(within(playerBar).getByRole("heading", { level: 2, name: "予星" })).toBeInTheDocument();
+    expect(within(playerBar).getByText("Kui Kui, 周一")).toBeInTheDocument();
+    expect(within(commentPanel).getByText("这片声波还没有回信。")).toBeInTheDocument();
     expect(within(commentPanel).queryByText("Name", { exact: false })).not.toBeInTheDocument();
   });
 
@@ -316,12 +316,12 @@ describe("PlaylistsPageView", () => {
 
     const playerBar = screen.getByLabelText("当前播放栏");
 
-    fireEvent.click(screen.getAllByRole("button", { name: "播放云朵软糖拍" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "播放予星" })[0]);
 
-    expect(within(playerBar).getByText("云朵软糖拍")).toBeInTheDocument();
-    expect(within(playerBar).getByText("棉花兔")).toBeInTheDocument();
-    expect(within(playerBar).getByText("正在播放 云朵软糖拍")).toBeInTheDocument();
-    expect(screen.getByText("像被一朵毛茸茸的云接住，适合下午发呆。")).toBeInTheDocument();
+    expect(within(playerBar).getByText("予星")).toBeInTheDocument();
+    expect(within(playerBar).getByText("Kui Kui, 周一")).toBeInTheDocument();
+    expect(within(playerBar).getByText("正在播放 予星")).toBeInTheDocument();
+    expect(screen.getByText("把夜空里的一颗星留给耳机，适合慢慢循环。")).toBeInTheDocument();
   });
 
   it("seeks progress and changes volume from the bottom player", () => {
