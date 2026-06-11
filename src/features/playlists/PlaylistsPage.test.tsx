@@ -185,6 +185,7 @@ describe("PlaylistsPageView", () => {
     const importDialog = screen.getByLabelText("批量导入歌曲");
 
     expect(importDialog).toBeInTheDocument();
+    expect(importDialog).toHaveClass("max-h-[calc(100dvh-2rem)]", "overflow-y-auto");
     expect(within(importDialog).getByLabelText("管理 Token")).toBeInTheDocument();
     expect(within(importDialog).getByText("上传 MP3 和同名 LRC，自动解析封面、歌词和短音评。", { exact: false })).toBeInTheDocument();
   });

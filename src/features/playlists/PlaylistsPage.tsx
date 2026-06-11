@@ -940,7 +940,7 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
 
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-[#4f2525]/35 px-4 backdrop-blur-sm" role="presentation">
-      <section aria-label="批量导入歌曲" className="w-full max-w-2xl rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_18px_42px_rgba(79,37,37,0.25)]">
+      <section aria-label="批量导入歌曲" className="album-page-scrollbar max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_18px_42px_rgba(79,37,37,0.25)]">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a54454]">Playlist Import</p>
@@ -982,7 +982,7 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
           {audioFiles.length > 0 ? (
             <div className="rounded-[1.1rem] border border-[#eed8c6] bg-white/60 p-3">
               <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[#a54454]">匹配预览</p>
-              <div className="space-y-2 text-sm font-semibold text-stone-700">
+              <div className="album-page-scrollbar max-h-64 space-y-2 overflow-y-auto pr-1 text-sm font-semibold text-stone-700">
                 {audioFiles.map((file) => {
                   const hasLyric = lyricBaseNames.has(getImportFileBaseName(file.name));
 
