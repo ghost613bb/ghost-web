@@ -191,6 +191,14 @@ export type PlaylistCollectionInsert = {
   title: string;
 };
 
+export type PlaylistNoteInsert = {
+  author: string;
+  avatar?: string;
+  content: string;
+  id: string;
+  songId: string;
+};
+
 export type PlaylistSongInsert = {
   artist: string;
   audioSrc: string;
@@ -253,6 +261,17 @@ export async function ensureSupabasePlaylistCollection(collectionId: string) {
   }
 }
 
+export async function ensureSupabasePlaylistSong(songId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_songs").select("id").eq("id", songId).maybeSingle();
+
+  throwSupabaseError("校验 Supabase 歌曲失败", error);
+
+  if (!data) {
+    throw new Error("目标歌曲不存在");
+  }
+}
+
 export async function getNextSupabasePlaylistSongSortOrder() {
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase.from("playlist_songs").select("sort_order").order("sort_order", { ascending: false }).limit(1);
@@ -295,6 +314,25 @@ export async function insertSupabasePlaylistSongs(songs: PlaylistSongInsert[]) {
   const { error } = await supabase.from("playlist_songs").insert(rows);
 
   throwSupabaseError("写入 Supabase 歌曲失败", error);
+}
+
+export async function insertSupabasePlaylistNote(note: PlaylistNoteInsert) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("playlist_notes")
+    .insert({
+      id: note.id,
+      song_id: note.songId,
+      author: note.author,
+      content: note.content,
+      avatar: note.avatar ?? null,
+    })
+    .select("id,song_id,author,content,avatar,created_at")
+    .single();
+
+  throwSupabaseError("写入 Supabase 歌曲评论失败", error);
+
+  return toPlaylistNote(data as PlaylistNoteRow);
 }
 
 export async function insertSupabasePlaylistCollectionSongs(collectionId: string, songIds: string[]) {

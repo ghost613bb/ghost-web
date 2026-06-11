@@ -616,8 +616,69 @@ function LyricsPanel({ currentTimeSeconds, song }: { currentTimeSeconds: number;
   );
 }
 
-function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSong; notes: PlaylistNote[] }) {
+function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: { dataSource?: PlaylistDataSource; featuredSong: PlaylistSong; notes: PlaylistNote[]; onCreatedNote: (note: PlaylistNote) => void }) {
+  const [adminToken, setAdminToken] = useState("");
+  const [author, setAuthor] = useState("Name");
+  const [avatar, setAvatar] = useState("🎧");
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isCommentDisabled = dataSource !== "supabase";
   const visibleNotes = notes.filter((note) => note.songId === featuredSong.id);
+
+  useEffect(() => {
+    setAdminToken(window.sessionStorage.getItem("playlistImportAdminToken") ?? "");
+  }, []);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    if (isCommentDisabled) {
+      setError("当前为本地 fallback，歌曲评论需要 Supabase 数据源。");
+      return;
+    }
+
+    if (!adminToken.trim()) {
+      setError("请输入管理 Token");
+      return;
+    }
+
+    if (!content.trim()) {
+      setError("请输入评论内容");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes`, {
+        body: JSON.stringify({
+          author,
+          avatar,
+          content,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "x-playlist-import-token": adminToken.trim(),
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as { error?: string; note?: PlaylistNote };
+
+      if (!response.ok || !data.note) {
+        throw new Error(data.error ?? "新增歌曲评论失败");
+      }
+
+      window.sessionStorage.setItem("playlistImportAdminToken", adminToken.trim());
+      onCreatedNote(data.note);
+      setContent("");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "新增歌曲评论失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <aside aria-label="耳机留言播放器" className="space-y-4 xl:sticky xl:top-5 xl:self-start">
@@ -631,15 +692,33 @@ function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSon
             <p className="text-xs font-bold text-stone-600">{featuredSong.title}</p>
           </div>
         </div>
-        <label className="sr-only" htmlFor="playlist-comment">
-          添加可爱评论
-        </label>
-        <textarea className="h-20 w-full resize-none rounded-[1.2rem] border-2 border-stone-700/60 bg-white/70 p-3 text-sm font-semibold text-stone-800 placeholder:text-stone-500" id="playlist-comment" placeholder="Add a cute comment..." readOnly />
-        <div className="mt-3 flex justify-end">
-          <button className="rounded-[1rem] border-2 border-stone-700/70 bg-[#ffe0a8] px-4 py-1.5 text-sm font-black shadow-[0_4px_0_rgba(112,84,84,0.12)]" type="button">
-            Comment
-          </button>
-        </div>
+        <form className="space-y-3" onSubmit={handleSubmit}>
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem]">
+            <label className="sr-only" htmlFor="playlist-comment-author">
+              评论昵称
+            </label>
+            <input className="rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-author" maxLength={40} onChange={(event) => setAuthor(event.currentTarget.value)} placeholder="Name" value={author} />
+            <label className="sr-only" htmlFor="playlist-comment-avatar">
+              评论头像
+            </label>
+            <input className="rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-center text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-avatar" maxLength={16} onChange={(event) => setAvatar(event.currentTarget.value)} value={avatar} />
+          </div>
+          <label className="sr-only" htmlFor="playlist-comment-token">
+            管理 Token
+          </label>
+          <input className="w-full rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-token" onChange={(event) => setAdminToken(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
+          <label className="sr-only" htmlFor="playlist-comment">
+            添加可爱评论
+          </label>
+          <textarea className="h-20 w-full resize-none rounded-[1.2rem] border-2 border-stone-700/60 bg-white/70 p-3 text-sm font-semibold text-stone-800 placeholder:text-stone-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={isCommentDisabled || isSubmitting} id="playlist-comment" maxLength={280} onChange={(event) => setContent(event.currentTarget.value)} placeholder={isCommentDisabled ? "当前为本地 fallback，歌曲评论需要 Supabase 数据源。" : "Add a cute comment..."} value={content} />
+          {isCommentDisabled ? <p className="text-xs font-black text-[#7a3d3f]">当前为本地 fallback，歌曲评论需要 Supabase 数据源。</p> : null}
+          {error ? <p className="rounded-[1rem] border-2 border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-xs font-black text-[#7a3d3f]">{error}</p> : null}
+          <div className="flex justify-end">
+            <button className="rounded-[1rem] border-2 border-stone-700/70 bg-[#ffe0a8] px-4 py-1.5 text-sm font-black shadow-[0_4px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isCommentDisabled || isSubmitting} type="submit">
+              {isSubmitting ? "Commenting..." : "Comment"}
+            </button>
+          </div>
+        </form>
       </section>
 
       <section className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)]">
@@ -657,14 +736,6 @@ function CommentPlayerPanel({ featuredSong, notes }: { featuredSong: PlaylistSon
                 {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
               </p>
               <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
-              <div className="mt-1 flex gap-3 text-xs font-black text-[#7a3d3f]">
-                <button className="underline underline-offset-2" type="button">
-                  Edit
-                </button>
-                <button className="underline underline-offset-2" type="button">
-                  Delete
-                </button>
-              </div>
             </article>
           ))}
         </div>
@@ -1026,6 +1097,7 @@ function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpe
 
 export function PlaylistsPageView({ collections, dataSource, featuredSongId, notes, playerSnapshot, songs }: PlaylistsPageViewProps) {
   const [displayCollections, setDisplayCollections] = useState(collections);
+  const [displayNotes, setDisplayNotes] = useState(notes);
   const initialCollection = displayCollections.find((collection) => collection.songIds.includes(featuredSongId)) ?? displayCollections[0];
   const [activeCollectionId, setActiveCollectionId] = useState(initialCollection.id);
   const [isCreateCollectionDialogOpen, setIsCreateCollectionDialogOpen] = useState(false);
@@ -1072,7 +1144,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
             <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
             <SongTable currentSongId={player.currentSongId} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
           </div>
-          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel featuredSong={player.currentSong} notes={notes} />}
+          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} />}
         </div>
         <BottomPlayerBar isLyricsOpen={isLyricsOpen} onToggleLyrics={() => setIsLyricsOpen((open) => !open)} player={player} />
       </div>
