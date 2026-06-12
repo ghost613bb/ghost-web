@@ -212,6 +212,72 @@ describe("PlaylistsPageView", () => {
     );
   });
 
+  it("edits a playlist collection from admin mode", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          collection: {
+            accentClass: "bg-[#e5f0ff]",
+            description: "夜里慢慢听。",
+            emoji: "🌙",
+            id: playlistCollections[0].id,
+            title: "Late Night Loop",
+          },
+        }),
+      };
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    const sidebar = screen.getByLabelText("歌单列表");
+    fireEvent.click(within(sidebar).getAllByRole("button", { name: "编辑" })[0]);
+    const editDialog = screen.getByLabelText("编辑歌单");
+
+    fireEvent.change(within(editDialog).getByLabelText("歌单名称"), { target: { value: "Late Night Loop" } });
+    fireEvent.change(within(editDialog).getByLabelText("描述"), { target: { value: "夜里慢慢听。" } });
+    fireEvent.change(within(editDialog).getByLabelText("图标"), { target: { value: "🌙" } });
+    fireEvent.change(within(editDialog).getByLabelText("主题色"), { target: { value: "bg-[#e5f0ff]" } });
+    fireEvent.click(within(editDialog).getByRole("button", { name: "保存歌单" }));
+
+    expect(await screen.findByRole("heading", { level: 3, name: "Late Night Loop" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/playlists/collections/${playlistCollections[0].id}`,
+      expect.objectContaining({
+        credentials: "same-origin",
+        method: "PATCH",
+      }),
+    );
+  });
+
+  it("deletes a playlist collection from admin mode", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return { ok: true, json: async () => ({ ok: true }) };
+    });
+    const confirmMock = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    const sidebar = screen.getByLabelText("歌单列表");
+    fireEvent.click(within(sidebar).getAllByRole("button", { name: "删除" })[0]);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/playlists/collections/${playlistCollections[0].id}`, expect.objectContaining({ method: "DELETE" })));
+    expect(confirmMock).toHaveBeenCalledWith(`确定删除「${playlistCollections[0].title}」吗？`);
+    expect(screen.getByRole("heading", { level: 2, name: "Sunset Walk" })).toBeInTheDocument();
+  });
+
   it("opens the batch import dialog", async () => {
     renderPlaylistsPage();
     await unlockPlaylistAdmin();

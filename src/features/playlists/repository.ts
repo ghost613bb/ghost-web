@@ -191,6 +191,14 @@ export type PlaylistCollectionInsert = {
   title: string;
 };
 
+export type PlaylistCollectionUpdate = {
+  accentClass: string;
+  description: string;
+  emoji: string;
+  id: string;
+  title: string;
+};
+
 export type PlaylistNoteInsert = {
   author: string;
   avatar?: string;
@@ -256,6 +264,40 @@ export async function insertSupabasePlaylistCollection(collection: PlaylistColle
   throwSupabaseError("写入 Supabase 歌单失败", error);
 
   return toPlaylistCollection(data as PlaylistCollectionRow, []);
+}
+
+export async function updateSupabasePlaylistCollection(collection: PlaylistCollectionUpdate) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("playlist_collections")
+    .update({
+      title: collection.title,
+      description: collection.description,
+      emoji: collection.emoji,
+      accent_class: collection.accentClass,
+    })
+    .eq("id", collection.id)
+    .select("id,title,description,emoji,accent_class,sort_order")
+    .maybeSingle();
+
+  throwSupabaseError("更新 Supabase 歌单失败", error);
+
+  if (!data) {
+    throw new Error("目标歌单不存在");
+  }
+
+  return toPlaylistCollection(data as PlaylistCollectionRow, []);
+}
+
+export async function deleteSupabasePlaylistCollection(collectionId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_collections").delete().eq("id", collectionId).select("id").maybeSingle();
+
+  throwSupabaseError("删除 Supabase 歌单失败", error);
+
+  if (!data) {
+    throw new Error("目标歌单不存在");
+  }
 }
 
 export async function ensureSupabasePlaylistCollection(collectionId: string) {

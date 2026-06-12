@@ -39,6 +39,12 @@ type PlaylistCollectionCreateResult = {
   error?: string;
 };
 
+type PlaylistCollectionManageResult = {
+  collection?: PlaylistCollection;
+  error?: string;
+  ok?: boolean;
+};
+
 type PlaylistImportResult = {
   songs?: Array<{ title: string }>;
   warnings?: Array<{ fileName?: string; message: string }>;
@@ -192,7 +198,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
   const [currentSongId, setCurrentSongId] = useState(() => getFeaturedSong(songs, featuredSongId).id);
   const [currentTimeSeconds, setCurrentTimeSeconds] = useState(0);
   const [durationSeconds, setDurationSeconds] = useState(0);
-  const [songDurationLabels, setSongDurationLabels] = useState<SongDurationLabels>(() => readCachedDurationLabels());
+  const [songDurationLabels, setSongDurationLabels] = useState<SongDurationLabels>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [playbackMode, setPlaybackMode] = useState<PlaylistMode>("order");
@@ -361,6 +367,10 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     });
   }, []);
 
+  useEffect(() => {
+    setSongDurationLabels(readCachedDurationLabels());
+  }, []);
+
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current;
 
@@ -504,7 +514,7 @@ function PlaylistAdminPanel({ adminError, adminToken, dataSource, isAdminSubmitt
   );
 }
 
-function PlaylistSidebar({ activeCollectionId, adminPanel, collections, createDisabled, importDisabled, onOpenCreate, onOpenImport, onSelectCollection }: Pick<PlaylistsPageViewProps, "collections"> & { activeCollectionId: string; adminPanel: ReactNode; createDisabled: boolean; importDisabled: boolean; onOpenCreate: () => void; onOpenImport: () => void; onSelectCollection: (collectionId: string) => void }) {
+function PlaylistSidebar({ activeCollectionId, adminPanel, collections, createDisabled, importDisabled, isAdminUnlocked, onDeleteCollection, onEditCollection, onOpenCreate, onOpenImport, onSelectCollection }: Pick<PlaylistsPageViewProps, "collections"> & { activeCollectionId: string; adminPanel: ReactNode; createDisabled: boolean; importDisabled: boolean; isAdminUnlocked: boolean; onDeleteCollection: (collection: PlaylistCollection) => void; onEditCollection: (collection: PlaylistCollection) => void; onOpenCreate: () => void; onOpenImport: () => void; onSelectCollection: (collectionId: string) => void }) {
   return (
     <aside aria-label="歌单列表" className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:self-start">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -527,27 +537,33 @@ function PlaylistSidebar({ activeCollectionId, adminPanel, collections, createDi
           const isActive = collection.id === activeCollectionId;
 
           return (
-            <button
-              aria-pressed={isActive}
-              className={`flex h-[9rem] min-w-[14rem] snap-start flex-col justify-between rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 text-left shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_0_rgba(112,84,84,0.13)] xl:w-full xl:min-w-0 ${collection.accentClass} ${isActive ? "outline outline-2 outline-offset-2 outline-[#c65f70]" : ""}`}
-              key={collection.id}
-              onClick={() => onSelectCollection(collection.id)}
-              type="button"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-base font-black text-stone-900">
-                    <span aria-hidden="true">{collection.emoji}</span>
-                    <h3>{collection.title}</h3>
+            <article className={`min-w-[14rem] snap-start rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_0_rgba(112,84,84,0.13)] xl:w-full xl:min-w-0 ${collection.accentClass} ${isActive ? "outline outline-2 outline-offset-2 outline-[#c65f70]" : ""}`} key={collection.id}>
+              <button aria-pressed={isActive} className="flex min-h-[6rem] w-full flex-col justify-between text-left" onClick={() => onSelectCollection(collection.id)} type="button">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-base font-black text-stone-900">
+                      <span aria-hidden="true">{collection.emoji}</span>
+                      <h3>{collection.title}</h3>
+                    </div>
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-stone-700">{collection.description}</p>
                   </div>
-                  <p className="mt-1 text-xs font-semibold leading-relaxed text-stone-700">{collection.description}</p>
+                  {isActive ? <X aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /> : <ChevronDown aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />}
                 </div>
-                {isActive ? <X aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /> : <ChevronDown aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />}
-              </div>
-              <p className="mt-3 inline-flex rounded-full border border-stone-700/30 bg-white/55 px-2.5 py-1 text-[0.68rem] font-black text-[#6d3b39]">
-                {collection.songIds.length} songs
-              </p>
-            </button>
+                <p className="mt-3 inline-flex w-fit rounded-full border border-stone-700/30 bg-white/55 px-2.5 py-1 text-[0.68rem] font-black text-[#6d3b39]">
+                  {collection.songIds.length} songs
+                </p>
+              </button>
+              {isAdminUnlocked ? (
+                <div className="mt-2 flex justify-end gap-1">
+                  <button className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#7a3d3f]" onClick={() => onEditCollection(collection)} type="button">
+                    编辑
+                  </button>
+                  <button className="rounded-full bg-[#ffeef1] px-2 py-0.5 text-xs font-black text-[#9b4d57]" onClick={() => onDeleteCollection(collection)} type="button">
+                    删除
+                  </button>
+                </div>
+              ) : null}
+            </article>
           );
         })}
       </div>
@@ -1094,6 +1110,112 @@ function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () =>
   );
 }
 
+function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { collection: PlaylistCollection; onClose: () => void; onUpdated: (collection: PlaylistCollection) => void }) {
+  const [accentClass, setAccentClass] = useState(collection.accentClass);
+  const [description, setDescription] = useState(collection.description);
+  const [emoji, setEmoji] = useState(collection.emoji);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [title, setTitle] = useState(collection.title);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    if (!title.trim()) {
+      setError("请输入歌单名称");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}`, {
+        body: JSON.stringify({
+          accentClass,
+          description,
+          emoji,
+          title,
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
+      });
+      const data = (await response.json()) as PlaylistCollectionManageResult;
+
+      if (!response.ok || !data.collection) {
+        throw new Error(data.error ?? "编辑歌单失败");
+      }
+
+      onUpdated({ ...data.collection, songIds: collection.songIds });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "编辑歌单失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center bg-[#4f2525]/35 px-4 backdrop-blur-sm" role="presentation">
+      <section aria-label="编辑歌单" className="w-full max-w-2xl rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_18px_42px_rgba(79,37,37,0.25)]">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a54454]">Playlist Collection</p>
+            <h2 className="text-2xl font-black text-[#4f2525]">编辑歌单</h2>
+            <p className="mt-1 text-sm font-semibold text-stone-600">修改歌单名称、描述、图标和主题色。</p>
+          </div>
+          <button aria-label="关闭编辑歌单" className="rounded-full p-1 text-[#4f2525] transition hover:bg-[#f8cfd5]" onClick={onClose} type="button">
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <label className="block text-sm font-black text-[#4f2525]">
+            歌单名称
+            <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" maxLength={60} onChange={(event) => setTitle(event.currentTarget.value)} placeholder="例如：Late Night Loop" value={title} />
+          </label>
+
+          <label className="block text-sm font-black text-[#4f2525]">
+            描述
+            <textarea className="mt-2 h-20 w-full resize-none rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" maxLength={160} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="写一句这个歌单的用途或氛围" value={description} />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
+            <label className="block text-sm font-black text-[#4f2525]">
+              图标
+              <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 text-center text-lg font-semibold text-stone-800" maxLength={16} onChange={(event) => setEmoji(event.currentTarget.value)} value={emoji} />
+            </label>
+
+            <label className="block text-sm font-black text-[#4f2525]">
+              主题色
+              <select className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setAccentClass(event.currentTarget.value)} value={accentClass}>
+                {collectionAccentOptions.map((option) => (
+                  <option key={option.className} value={option.className}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {error ? <p className="rounded-[1rem] border-2 border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-sm font-black text-[#7a3d3f]">{error}</p> : null}
+
+          <div className="flex justify-end gap-3">
+            <button className="rounded-[1rem] border-2 border-stone-700/60 bg-white px-4 py-2 text-sm font-black text-stone-900" onClick={onClose} type="button">
+              取消
+            </button>
+            <button className="rounded-[1rem] border-2 border-stone-700/70 bg-[#f8cfd5] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_4px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "保存中..." : "保存歌单"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
 function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }: { activeCollectionId: string; collections: PlaylistCollection[]; onClose: () => void }) {
   const [audioFiles, setAudioFiles] = useState<File[]>([]);
   const [lyricFiles, setLyricFiles] = useState<File[]>([]);
@@ -1313,6 +1435,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   const initialCollection = displayCollections.find((collection) => collection.songIds.includes(featuredSongId)) ?? displayCollections[0];
   const [activeCollectionId, setActiveCollectionId] = useState(initialCollection.id);
   const [isCreateCollectionDialogOpen, setIsCreateCollectionDialogOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<PlaylistCollection | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const [adminToken, setAdminToken] = useState("");
@@ -1411,6 +1534,46 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
     setIsCreateCollectionDialogOpen(false);
   };
 
+  const handleUpdatedCollection = (collection: PlaylistCollection) => {
+    setDisplayCollections((currentCollections) => currentCollections.map((currentCollection) => (currentCollection.id === collection.id ? { ...collection, songIds: currentCollection.songIds } : currentCollection)));
+    setEditingCollection(null);
+  };
+
+  const handleDeleteCollection = async (collection: PlaylistCollection) => {
+    if (displayCollections.length <= 1) {
+      setAdminError("至少保留一个歌单");
+      return;
+    }
+
+    if (!window.confirm(`确定删除「${collection.title}」吗？`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}`, {
+        credentials: "same-origin",
+        method: "DELETE",
+      });
+      const data = (await response.json()) as PlaylistCollectionManageResult;
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "删除歌单失败");
+      }
+
+      setDisplayCollections((currentCollections) => {
+        const nextCollections = currentCollections.filter((currentCollection) => currentCollection.id !== collection.id);
+
+        if (activeCollectionId === collection.id) {
+          setActiveCollectionId(nextCollections[0]?.id ?? collection.id);
+        }
+
+        return nextCollections;
+      });
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "删除歌单失败");
+    }
+  };
+
   const handleSelectCollection = (collectionId: string) => {
     const nextCollection = displayCollections.find((collection) => collection.id === collectionId);
 
@@ -1432,6 +1595,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <DataSourceBadge source={dataSource} />
       {isCreateCollectionDialogOpen ? <PlaylistCreateCollectionDialog onClose={() => setIsCreateCollectionDialogOpen(false)} onCreated={handleCreatedCollection} /> : null}
+      {editingCollection ? <PlaylistEditCollectionDialog collection={editingCollection} onClose={() => setEditingCollection(null)} onUpdated={handleUpdatedCollection} /> : null}
       {isImportDialogOpen ? <PlaylistBatchImportDialog activeCollectionId={activeCollection.id} collections={displayCollections} onClose={() => setIsImportDialogOpen(false)} /> : null}
       <PlaylistHeader />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">
@@ -1442,6 +1606,9 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
             collections={displayCollections}
             createDisabled={!isManagementUnlocked}
             importDisabled={!isManagementUnlocked}
+            isAdminUnlocked={isManagementUnlocked}
+            onDeleteCollection={(collection) => void handleDeleteCollection(collection)}
+            onEditCollection={setEditingCollection}
             onOpenCreate={() => setIsCreateCollectionDialogOpen(true)}
             onOpenImport={() => setIsImportDialogOpen(true)}
             onSelectCollection={handleSelectCollection}
