@@ -25,6 +25,7 @@ function renderPlaylistsPage(dataSource: "static" | "supabase" = "supabase") {
 describe("PlaylistsPageView", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    window.localStorage.clear();
     window.sessionStorage.clear();
     window.HTMLElement.prototype.scrollTo = vi.fn();
     vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => undefined);
@@ -291,6 +292,31 @@ describe("PlaylistsPageView", () => {
 
     expect(within(lyricsPanel).getByText("乌鸦在低空下盘旋")).toHaveAttribute("aria-current", "true");
     expect(window.HTMLElement.prototype.scrollTo).toHaveBeenCalled();
+  });
+
+  it("uses cached song durations before loading audio metadata", () => {
+    const remoteSong = {
+      ...playlistSongs[0],
+      audioSrc: "https://cdn.example.com/remote-song.mp3",
+      duration: undefined,
+      id: "remote-song",
+      title: "远方的歌",
+    };
+
+    window.localStorage.setItem("ghost-web:playlist-duration-labels:v1", JSON.stringify({ [remoteSong.audioSrc]: "5:29" }));
+    render(
+      <PlaylistsPageView
+        collections={[{ ...playlistCollections[0], songIds: [remoteSong.id] }]}
+        dataSource="supabase"
+        featuredSongId={remoteSong.id}
+        notes={[]}
+        playerSnapshot={playlistPlayerSnapshot}
+        songs={[remoteSong]}
+      />,
+    );
+
+    expect(screen.getAllByText("5:29").length).toBeGreaterThan(0);
+    expect(screen.queryByText("—")).not.toBeInTheDocument();
   });
 
   it("cycles playback modes from the bottom player", () => {

@@ -59,7 +59,7 @@ type PlaylistPlayerControls = {
   handleLoadedMetadata: () => void;
   handlePause: () => void;
   handlePlay: () => void;
-  handleSongDurationLoaded: (songId: string, durationLabel: string) => void;
+  handleSongDurationLoaded: (song: PlaylistSong, durationLabel: string) => void;
   handleTimeUpdate: () => void;
   isPlaying: boolean;
   playbackMode: PlaylistMode;
@@ -77,6 +77,7 @@ type PlaylistPlayerControls = {
   volumePercent: number;
 };
 
+const playlistDurationCacheKey = "ghost-web:playlist-duration-labels:v1";
 const playbackModes: PlaylistMode[] = ["order", "shuffle", "repeat-one"];
 const collectionAccentOptions = [
   { className: "bg-[#fde2e7]", label: "樱花粉" },
@@ -91,8 +92,12 @@ const tableHeaderClass = "px-3 py-3 text-left text-xs font-black uppercase track
 const topActionClass =
   "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
+function getDurationCacheKey(song: PlaylistSong) {
+  return song.audioSrc ?? song.id;
+}
+
 function getSongDuration(song: PlaylistSong, durationLabels: SongDurationLabels = {}) {
-  return durationLabels[song.id] ?? song.duration ?? "--:--";
+  return durationLabels[getDurationCacheKey(song)] ?? song.duration ?? "—";
 }
 
 function formatTime(seconds: number) {
@@ -105,6 +110,37 @@ function formatTime(seconds: number) {
   const remainingSeconds = totalSeconds % 60;
 
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function readCachedDurationLabels(): SongDurationLabels {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const cachedValue = window.localStorage.getItem(playlistDurationCacheKey);
+    const parsedValue = cachedValue ? (JSON.parse(cachedValue) as unknown) : null;
+
+    if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+      return {};
+    }
+
+    return Object.fromEntries(Object.entries(parsedValue).filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].length > 0));
+  } catch {
+    return {};
+  }
+}
+
+function writeCachedDurationLabels(durationLabels: SongDurationLabels) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(playlistDurationCacheKey, JSON.stringify(durationLabels));
+  } catch {
+    // localStorage 可能被浏览器禁用，失败时只影响缓存。
+  }
 }
 
 function getFeaturedSong(songs: PlaylistSong[], featuredSongId: string) {
@@ -123,18 +159,18 @@ function SongArtwork({ song }: { song: PlaylistSong }) {
   );
 }
 
-function SongDurationPreloader({ onDurationLoaded, songs }: Pick<PlaylistsPageViewProps, "songs"> & { onDurationLoaded: (songId: string, durationLabel: string) => void }) {
+function SongDurationPreloader({ durationLabels, onDurationLoaded, songs }: Pick<PlaylistsPageViewProps, "songs"> & { durationLabels: SongDurationLabels; onDurationLoaded: (song: PlaylistSong, durationLabel: string) => void }) {
   return (
     <div aria-hidden="true" className="hidden">
       {songs.map((song) =>
-        song.audioSrc ? (
+        song.audioSrc && !durationLabels[getDurationCacheKey(song)] && !song.duration ? (
           <audio
             key={song.id}
             onLoadedMetadata={(event) => {
               const duration = event.currentTarget.duration;
 
               if (Number.isFinite(duration) && duration > 0) {
-                onDurationLoaded(song.id, formatTime(duration));
+                onDurationLoaded(song, formatTime(duration));
               }
             }}
             preload="metadata"
@@ -151,7 +187,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
   const [currentSongId, setCurrentSongId] = useState(() => getFeaturedSong(songs, featuredSongId).id);
   const [currentTimeSeconds, setCurrentTimeSeconds] = useState(0);
   const [durationSeconds, setDurationSeconds] = useState(0);
-  const [songDurationLabels, setSongDurationLabels] = useState<SongDurationLabels>({});
+  const [songDurationLabels, setSongDurationLabels] = useState<SongDurationLabels>(() => readCachedDurationLabels());
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [playbackMode, setPlaybackMode] = useState<PlaylistMode>("order");
@@ -306,8 +342,18 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     setVolumePercentState(nextVolumePercent);
   }, []);
 
-  const handleSongDurationLoaded = useCallback((songId: string, durationLabel: string) => {
-    setSongDurationLabels((currentLabels) => (currentLabels[songId] === durationLabel ? currentLabels : { ...currentLabels, [songId]: durationLabel }));
+  const handleSongDurationLoaded = useCallback((song: PlaylistSong, durationLabel: string) => {
+    const cacheKey = getDurationCacheKey(song);
+
+    setSongDurationLabels((currentLabels) => {
+      if (currentLabels[cacheKey] === durationLabel) {
+        return currentLabels;
+      }
+
+      const nextLabels = { ...currentLabels, [cacheKey]: durationLabel };
+      writeCachedDurationLabels(nextLabels);
+      return nextLabels;
+    });
   }, []);
 
   const handleLoadedMetadata = useCallback(() => {
@@ -321,10 +367,10 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
 
     setDurationSeconds(nextDurationSeconds);
     if (nextDurationSeconds > 0) {
-      handleSongDurationLoaded(currentSong.id, formatTime(nextDurationSeconds));
+      handleSongDurationLoaded(currentSong, formatTime(nextDurationSeconds));
     }
     audio.volume = volumePercent / 100;
-  }, [currentSong.id, handleSongDurationLoaded, volumePercent]);
+  }, [currentSong, handleSongDurationLoaded, volumePercent]);
 
   const handleTimeUpdate = useCallback(() => {
     const audio = audioRef.current;
@@ -1218,7 +1264,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
         onTimeUpdate={player.handleTimeUpdate}
         preload="metadata"
       />
-      <SongDurationPreloader onDurationLoaded={player.handleSongDurationLoaded} songs={visibleSongs} />
+      <SongDurationPreloader durationLabels={player.songDurationLabels} onDurationLoaded={player.handleSongDurationLoaded} songs={visibleSongs} />
     </main>
   );
 }
