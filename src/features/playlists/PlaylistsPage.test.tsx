@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   featuredPlaylistSongId,
@@ -8,6 +8,29 @@ import {
   playlistSongs,
 } from "@/data/playlists";
 import { PlaylistsPageView } from "./PlaylistsPage";
+
+function mockAdminSessionFetch(authenticated = false) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === "/api/admin/session") {
+        const method = init?.method;
+        return {
+          ok: method === "POST" ? true : authenticated,
+          json: async () => ({ authenticated: method === "POST" ? true : authenticated }),
+        };
+      }
+
+      throw new Error(`Unexpected fetch: ${String(input)}`);
+    }),
+  );
+}
+
+async function unlockPlaylistAdmin(token = "test-token") {
+  fireEvent.change(screen.getByLabelText("管理 Token"), { target: { value: token } });
+  fireEvent.click(screen.getByRole("button", { name: "解锁管理" }));
+  await screen.findByText("已解锁");
+}
 
 function renderPlaylistsPage(dataSource: "static" | "supabase" = "supabase") {
   render(
@@ -36,6 +59,7 @@ describe("PlaylistsPageView", () => {
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(function (this: HTMLMediaElement) {
       this.dispatchEvent(new Event("pause"));
     });
+    mockAdminSessionFetch();
 
     Object.defineProperty(HTMLMediaElement.prototype, "duration", {
       configurable: true,
@@ -124,41 +148,48 @@ describe("PlaylistsPageView", () => {
     expect(within(playerBar).getByRole("button", { name: "打开歌词" })).toBeInTheDocument();
   });
 
-  it("opens the create collection dialog", () => {
+  it("opens the create collection dialog", async () => {
     renderPlaylistsPage();
+    await unlockPlaylistAdmin();
 
     fireEvent.click(screen.getByRole("button", { name: "New Collection" }));
 
     const createDialog = screen.getByLabelText("新增歌单");
 
     expect(createDialog).toBeInTheDocument();
-    expect(within(createDialog).getByLabelText("管理 Token")).toBeInTheDocument();
+    expect(within(createDialog).queryByLabelText("管理 Token")).not.toBeInTheDocument();
     expect(within(createDialog).getByLabelText("歌单名称")).toBeInTheDocument();
     expect(screen.getByText("创建一个空歌单，之后可以继续批量导入歌曲。", { exact: false })).toBeInTheDocument();
   });
 
   it("creates a collection and switches to its empty state", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        collection: {
-          accentClass: "bg-[#e5f0ff]",
-          description: "夜里慢慢听。",
-          emoji: "🌙",
-          id: "collection-late-night-loop-1234abcd",
-          songIds: [],
-          title: "Late Night Loop",
-        },
-      }),
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          collection: {
+            accentClass: "bg-[#e5f0ff]",
+            description: "夜里慢慢听。",
+            emoji: "🌙",
+            id: "collection-late-night-loop-1234abcd",
+            songIds: [],
+            title: "Late Night Loop",
+          },
+        }),
+      };
     });
 
     vi.stubGlobal("fetch", fetchMock);
     renderPlaylistsPage();
+    await screen.findByText("已解锁");
 
     fireEvent.click(screen.getByRole("button", { name: "New Collection" }));
     const createDialog = screen.getByLabelText("新增歌单");
 
-    fireEvent.change(within(createDialog).getByLabelText("管理 Token"), { target: { value: "test-token" } });
     fireEvent.change(within(createDialog).getByLabelText("歌单名称"), { target: { value: "Late Night Loop" } });
     fireEvent.change(within(createDialog).getByLabelText("描述"), { target: { value: "夜里慢慢听。" } });
     fireEvent.change(within(createDialog).getByLabelText("图标"), { target: { value: "🌙" } });
@@ -172,16 +203,18 @@ describe("PlaylistsPageView", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/playlists/collections",
       expect.objectContaining({
+        credentials: "same-origin",
         headers: expect.objectContaining({
-          "x-playlist-import-token": "test-token",
+          "Content-Type": "application/json",
         }),
         method: "POST",
       }),
     );
   });
 
-  it("opens the batch import dialog", () => {
+  it("opens the batch import dialog", async () => {
     renderPlaylistsPage();
+    await unlockPlaylistAdmin();
 
     fireEvent.click(screen.getByRole("button", { name: "批量导入歌曲" }));
 
@@ -189,12 +222,13 @@ describe("PlaylistsPageView", () => {
 
     expect(importDialog).toBeInTheDocument();
     expect(importDialog).toHaveClass("max-h-[calc(100dvh-2rem)]", "overflow-y-auto");
-    expect(within(importDialog).getByLabelText("管理 Token")).toBeInTheDocument();
+    expect(within(importDialog).queryByLabelText("管理 Token")).not.toBeInTheDocument();
     expect(within(importDialog).getByText("上传 MP3 和同名 LRC，自动解析封面、歌词和短音评。", { exact: false })).toBeInTheDocument();
   });
 
-  it("renders comment notes for the featured listening panel", () => {
+  it("renders comment notes for the featured listening panel", async () => {
     renderPlaylistsPage();
+    await unlockPlaylistAdmin();
 
     const commentPanel = screen.getByLabelText("耳机留言播放器");
 
@@ -219,26 +253,31 @@ describe("PlaylistsPageView", () => {
   });
 
   it("creates a comment for the current song only", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        note: {
-          author: "Tester",
-          avatar: "🎧",
-          content: "今晚循环这一首。",
-          id: "note-created-001",
-          songId: featuredPlaylistSongId,
-          time: "10:05 AM",
-        },
-      }),
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          note: {
+            author: "Tester",
+            avatar: "🎧",
+            content: "今晚循环这一首。",
+            id: "note-created-001",
+            songId: featuredPlaylistSongId,
+            time: "10:05 AM",
+          },
+        }),
+      };
     });
 
     vi.stubGlobal("fetch", fetchMock);
     renderPlaylistsPage();
+    await screen.findByText("已解锁");
 
     const commentPanel = screen.getByLabelText("耳机留言播放器");
-
-    fireEvent.change(within(commentPanel).getByLabelText("管理 Token"), { target: { value: "test-token" } });
     fireEvent.change(within(commentPanel).getByLabelText("评论昵称"), { target: { value: "Tester" } });
     fireEvent.change(within(commentPanel).getByPlaceholderText("Add a cute comment..."), { target: { value: "今晚循环这一首。" } });
     fireEvent.click(within(commentPanel).getByRole("button", { name: "Comment" }));
@@ -247,8 +286,9 @@ describe("PlaylistsPageView", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/playlists/songs/${featuredPlaylistSongId}/notes`,
       expect.objectContaining({
+        credentials: "same-origin",
         headers: expect.objectContaining({
-          "x-playlist-import-token": "test-token",
+          "Content-Type": "application/json",
         }),
         method: "POST",
       }),

@@ -5,17 +5,11 @@ import {
   insertSupabasePlaylistCollection,
   requireSupabasePlaylistWriteEnv,
 } from "@/features/playlists/repository";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
 const collectionAccentClasses = ["bg-[#fde2e7]", "bg-[#fff2c7]", "bg-[#f8cfd5]", "bg-[#e5f0ff]", "bg-[#fff4d8]", "bg-[#e6dcff]"];
-
-function isAuthorizedCollectionRequest(request: Request) {
-  const expectedToken = process.env.PLAYLIST_IMPORT_ADMIN_TOKEN;
-  const actualToken = request.headers.get("x-playlist-import-token");
-
-  return Boolean(expectedToken && actualToken && actualToken === expectedToken);
-}
 
 function slugifyCollectionTitle(value: string) {
   return value
@@ -34,8 +28,10 @@ export async function POST(request: Request) {
   try {
     requireSupabasePlaylistWriteEnv();
 
-    if (!isAuthorizedCollectionRequest(request)) {
-      return NextResponse.json({ error: "无权限新增歌单" }, { status: 401 });
+    const unauthorizedResponse = requireAdminRequest(request, "无权限新增歌单");
+
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
     }
 
     const payload = (await request.json()) as Record<string, unknown>;

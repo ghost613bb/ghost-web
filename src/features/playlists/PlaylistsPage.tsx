@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -42,6 +42,11 @@ type PlaylistCollectionCreateResult = {
 type PlaylistImportResult = {
   songs?: Array<{ title: string }>;
   warnings?: Array<{ fileName?: string; message: string }>;
+};
+
+type AdminSessionResult = {
+  authenticated: boolean;
+  error?: string;
 };
 
 type PlaylistMode = "order" | "shuffle" | "repeat-one";
@@ -467,13 +472,46 @@ function PlaylistHeader() {
   );
 }
 
-function PlaylistSidebar({ activeCollectionId, collections, createDisabled, importDisabled, onOpenCreate, onOpenImport, onSelectCollection }: Pick<PlaylistsPageViewProps, "collections"> & { activeCollectionId: string; createDisabled: boolean; importDisabled: boolean; onOpenCreate: () => void; onOpenImport: () => void; onSelectCollection: (collectionId: string) => void }) {
+function PlaylistAdminPanel({ adminError, adminToken, dataSource, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; dataSource?: PlaylistDataSource; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
+  const isStaticSource = dataSource !== "supabase";
+
+  return (
+    <form className="mb-4 rounded-[1.15rem] border-2 border-stone-700/70 bg-white/55 p-3" onSubmit={onUnlock}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-black text-[#4f2525]">Admin 管理</p>
+        <span className={`rounded-full px-2 py-0.5 text-[0.68rem] font-black ${isAdminUnlocked ? "bg-[#dff3cf] text-[#42672d]" : "bg-[#ffeef1] text-[#7a3d3f]"}`}>
+          {isAdminUnlocked ? "已解锁" : "未解锁"}
+        </span>
+      </div>
+      <p className="mb-2 text-xs font-semibold leading-5 text-stone-600">{isStaticSource ? "当前为本地 fallback，管理功能需要 Supabase 数据源。" : isAdminUnlocked ? "管理会话已保存，后续操作无需重复输入 Token。" : "输入一次管理 Token，解锁歌单和评论管理。"}</p>
+      {isAdminUnlocked ? (
+        <button className="w-full rounded-[0.9rem] border-2 border-stone-700/60 bg-white px-3 py-1.5 text-xs font-black text-stone-900 transition hover:bg-[#fff5f6]" disabled={isAdminSubmitting} onClick={onLock} type="button">
+          退出管理模式
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <label className="sr-only" htmlFor="playlist-admin-token">
+            管理 Token
+          </label>
+          <input className="w-full rounded-[0.9rem] border-2 border-stone-700/50 bg-white/80 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isStaticSource || isAdminSubmitting} id="playlist-admin-token" onChange={(event) => onAdminTokenChange(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
+          <button className="w-full rounded-[0.9rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-1.5 text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isStaticSource || isAdminSubmitting} type="submit">
+            {isAdminSubmitting ? "解锁中..." : "解锁管理"}
+          </button>
+        </div>
+      )}
+      {adminError ? <p className="mt-2 rounded-[0.85rem] border border-[#b75d66] bg-[#ffeef1] px-2 py-1.5 text-xs font-black text-[#7a3d3f]">{adminError}</p> : null}
+    </form>
+  );
+}
+
+function PlaylistSidebar({ activeCollectionId, adminPanel, collections, createDisabled, importDisabled, onOpenCreate, onOpenImport, onSelectCollection }: Pick<PlaylistsPageViewProps, "collections"> & { activeCollectionId: string; adminPanel: ReactNode; createDisabled: boolean; importDisabled: boolean; onOpenCreate: () => void; onOpenImport: () => void; onSelectCollection: (collectionId: string) => void }) {
   return (
     <aside aria-label="歌单列表" className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:self-start">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-[1.35rem] font-black uppercase tracking-tight text-[#4f2525]">My Collections</h2>
         <Sparkles aria-hidden="true" className="h-5 w-5 text-[#a54454]" />
       </div>
+      {adminPanel}
       <div className="mb-4 space-y-2">
         <button className="flex w-full items-center justify-center gap-2 rounded-[1.15rem] border-[2.5px] border-stone-700/80 bg-[#ffe6ad] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_5px_0_rgba(112,84,84,0.16)] transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" disabled={createDisabled} onClick={onOpenCreate} type="button">
           <Plus aria-hidden="true" className="h-4 w-4" />
@@ -710,31 +748,27 @@ function LyricsPanel({ currentTimeSeconds, song }: { currentTimeSeconds: number;
   );
 }
 
-function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: { dataSource?: PlaylistDataSource; featuredSong: PlaylistSong; notes: PlaylistNote[]; onCreatedNote: (note: PlaylistNote) => void }) {
-  const [adminToken, setAdminToken] = useState("");
+function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, notes, onCreatedNote, onDeletedNote, onUpdatedNote }: { dataSource?: PlaylistDataSource; featuredSong: PlaylistSong; isAdminUnlocked: boolean; notes: PlaylistNote[]; onCreatedNote: (note: PlaylistNote) => void; onDeletedNote: (noteId: string) => void; onUpdatedNote: (note: PlaylistNote) => void }) {
   const [author, setAuthor] = useState("Name");
   const [avatar, setAvatar] = useState("🎧");
   const [content, setContent] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingAuthor, setEditingAuthor] = useState("Name");
+  const [editingAvatar, setEditingAvatar] = useState("🎧");
+  const [editingContent, setEditingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isCommentDisabled = dataSource !== "supabase";
+  const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
+  const isCommentDisabled = dataSource !== "supabase" || !isAdminUnlocked;
   const visibleNotes = notes.filter((note) => note.songId === featuredSong.id);
-
-  useEffect(() => {
-    setAdminToken(window.sessionStorage.getItem("playlistImportAdminToken") ?? "");
-  }, []);
+  const disabledMessage = dataSource !== "supabase" ? "当前为本地 fallback，歌曲评论需要 Supabase 数据源。" : "请先解锁 Admin 管理模式，再提交评论。";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
     if (isCommentDisabled) {
-      setError("当前为本地 fallback，歌曲评论需要 Supabase 数据源。");
-      return;
-    }
-
-    if (!adminToken.trim()) {
-      setError("请输入管理 Token");
+      setError(disabledMessage);
       return;
     }
 
@@ -752,9 +786,9 @@ function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: 
           avatar,
           content,
         }),
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
-          "x-playlist-import-token": adminToken.trim(),
         },
         method: "POST",
       });
@@ -764,13 +798,85 @@ function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: 
         throw new Error(data.error ?? "新增歌曲评论失败");
       }
 
-      window.sessionStorage.setItem("playlistImportAdminToken", adminToken.trim());
       onCreatedNote(data.note);
       setContent("");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "新增歌曲评论失败");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const startEditingNote = (note: PlaylistNote) => {
+    setEditingNoteId(note.id);
+    setEditingAuthor(note.author);
+    setEditingAvatar(note.avatar);
+    setEditingContent(note.content);
+    setError(null);
+  };
+
+  const handleUpdateNote = async (noteId: string) => {
+    setError(null);
+
+    if (!editingContent.trim()) {
+      setError("请输入评论内容");
+      return;
+    }
+
+    setUpdatingNoteId(noteId);
+
+    try {
+      const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes/${encodeURIComponent(noteId)}`, {
+        body: JSON.stringify({
+          author: editingAuthor,
+          avatar: editingAvatar,
+          content: editingContent,
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
+      });
+      const data = (await response.json()) as { error?: string; note?: PlaylistNote };
+
+      if (!response.ok || !data.note) {
+        throw new Error(data.error ?? "编辑歌曲评论失败");
+      }
+
+      onUpdatedNote(data.note);
+      setEditingNoteId(null);
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "编辑歌曲评论失败");
+    } finally {
+      setUpdatingNoteId(null);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!window.confirm("确定删除这条评论吗？")) {
+      return;
+    }
+
+    setError(null);
+    setUpdatingNoteId(noteId);
+
+    try {
+      const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes/${encodeURIComponent(noteId)}`, {
+        credentials: "same-origin",
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "删除歌曲评论失败");
+      }
+
+      onDeletedNote(noteId);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "删除歌曲评论失败");
+    } finally {
+      setUpdatingNoteId(null);
     }
   };
 
@@ -797,15 +903,11 @@ function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: 
             </label>
             <input className="rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-center text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-avatar" maxLength={16} onChange={(event) => setAvatar(event.currentTarget.value)} value={avatar} />
           </div>
-          <label className="sr-only" htmlFor="playlist-comment-token">
-            管理 Token
-          </label>
-          <input className="w-full rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-token" onChange={(event) => setAdminToken(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
           <label className="sr-only" htmlFor="playlist-comment">
             添加可爱评论
           </label>
-          <textarea className="h-20 w-full resize-none rounded-[1.2rem] border-2 border-stone-700/60 bg-white/70 p-3 text-sm font-semibold text-stone-800 placeholder:text-stone-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={isCommentDisabled || isSubmitting} id="playlist-comment" maxLength={280} onChange={(event) => setContent(event.currentTarget.value)} placeholder={isCommentDisabled ? "当前为本地 fallback，歌曲评论需要 Supabase 数据源。" : "Add a cute comment..."} value={content} />
-          {isCommentDisabled ? <p className="text-xs font-black text-[#7a3d3f]">当前为本地 fallback，歌曲评论需要 Supabase 数据源。</p> : null}
+          <textarea className="h-20 w-full resize-none rounded-[1.2rem] border-2 border-stone-700/60 bg-white/70 p-3 text-sm font-semibold text-stone-800 placeholder:text-stone-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={isCommentDisabled || isSubmitting} id="playlist-comment" maxLength={280} onChange={(event) => setContent(event.currentTarget.value)} placeholder={isCommentDisabled ? disabledMessage : "Add a cute comment..."} value={content} />
+          {isCommentDisabled ? <p className="text-xs font-black text-[#7a3d3f]">{disabledMessage}</p> : null}
           {error ? <p className="rounded-[1rem] border-2 border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-xs font-black text-[#7a3d3f]">{error}</p> : null}
           <div className="flex justify-end">
             <button className="rounded-[1rem] border-2 border-stone-700/70 bg-[#ffe0a8] px-4 py-1.5 text-sm font-black shadow-[0_4px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isCommentDisabled || isSubmitting} type="submit">
@@ -827,17 +929,54 @@ function CommentPlayerPanel({ dataSource, featuredSong, notes, onCreatedNote }: 
           </div>
         ) : (
           <div className="space-y-3">
-            {visibleNotes.map((note) => (
-              <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
-                <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
-                  {note.avatar}
-                </span>
-                <p className="text-sm font-black text-[#4f2525]">
-                  {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
-                </p>
-                <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
-              </article>
-            ))}
+            {visibleNotes.map((note) => {
+              const isEditing = editingNoteId === note.id;
+              const isUpdating = updatingNoteId === note.id;
+
+              return (
+                <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
+                  <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
+                    {isEditing ? editingAvatar : note.avatar}
+                  </span>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_4rem]">
+                        <input aria-label="编辑评论昵称" className="rounded-[0.85rem] border border-[#efd7d3] bg-white/80 px-2 py-1 text-sm font-semibold text-stone-800" maxLength={40} onChange={(event) => setEditingAuthor(event.currentTarget.value)} value={editingAuthor} />
+                        <input aria-label="编辑评论头像" className="rounded-[0.85rem] border border-[#efd7d3] bg-white/80 px-2 py-1 text-center text-sm font-semibold text-stone-800" maxLength={16} onChange={(event) => setEditingAvatar(event.currentTarget.value)} value={editingAvatar} />
+                      </div>
+                      <textarea aria-label="编辑评论内容" className="h-20 w-full resize-none rounded-[0.95rem] border border-[#efd7d3] bg-white/80 px-2 py-1 text-sm font-semibold text-stone-800" maxLength={280} onChange={(event) => setEditingContent(event.currentTarget.value)} value={editingContent} />
+                      <div className="flex justify-end gap-2">
+                        <button className="rounded-full border border-[#efd7d3] bg-white px-2.5 py-1 text-xs font-black text-[#4f2525]" disabled={isUpdating} onClick={() => setEditingNoteId(null)} type="button">
+                          取消
+                        </button>
+                        <button className="rounded-full border border-[#c4878c] bg-[#ffe0a8] px-2.5 py-1 text-xs font-black text-[#4f2525] disabled:opacity-60" disabled={isUpdating} onClick={() => void handleUpdateNote(note.id)} type="button">
+                          {isUpdating ? "保存中..." : "保存"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-black text-[#4f2525]">
+                          {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
+                        </p>
+                        {isAdminUnlocked ? (
+                          <div className="flex shrink-0 gap-1">
+                            <button className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#7a3d3f]" disabled={isUpdating} onClick={() => startEditingNote(note)} type="button">
+                              编辑
+                            </button>
+                            <button className="rounded-full bg-[#ffeef1] px-2 py-0.5 text-xs font-black text-[#9b4d57]" disabled={isUpdating} onClick={() => void handleDeleteNote(note.id)} type="button">
+                              删除
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
+                    </>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
@@ -851,25 +990,15 @@ function getImportFileBaseName(fileName: string) {
 
 function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (collection: PlaylistCollection) => void }) {
   const [accentClass, setAccentClass] = useState(collectionAccentOptions[0].className);
-  const [adminToken, setAdminToken] = useState("");
   const [description, setDescription] = useState("");
   const [emoji, setEmoji] = useState("🎵");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
 
-  useEffect(() => {
-    setAdminToken(window.sessionStorage.getItem("playlistImportAdminToken") ?? "");
-  }, []);
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-
-    if (!adminToken.trim()) {
-      setError("请输入管理 Token");
-      return;
-    }
 
     if (!title.trim()) {
       setError("请输入歌单名称");
@@ -886,9 +1015,9 @@ function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () =>
           emoji,
           title,
         }),
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
-          "x-playlist-import-token": adminToken.trim(),
         },
         method: "POST",
       });
@@ -898,7 +1027,6 @@ function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () =>
         throw new Error(data.error ?? "新增歌单失败");
       }
 
-      window.sessionStorage.setItem("playlistImportAdminToken", adminToken.trim());
       onCreated(data.collection);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "新增歌单失败");
@@ -922,11 +1050,6 @@ function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () =>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-black text-[#4f2525]">
-            管理 Token
-            <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setAdminToken(event.currentTarget.value)} placeholder="输入导入管理 Token" type="password" value={adminToken} />
-          </label>
-
           <label className="block text-sm font-black text-[#4f2525]">
             歌单名称
             <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" maxLength={60} onChange={(event) => setTitle(event.currentTarget.value)} placeholder="例如：Late Night Loop" value={title} />
@@ -972,7 +1095,6 @@ function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () =>
 }
 
 function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }: { activeCollectionId: string; collections: PlaylistCollection[]; onClose: () => void }) {
-  const [adminToken, setAdminToken] = useState("");
   const [audioFiles, setAudioFiles] = useState<File[]>([]);
   const [lyricFiles, setLyricFiles] = useState<File[]>([]);
   const [collectionId, setCollectionId] = useState(activeCollectionId);
@@ -981,19 +1103,10 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
   const [result, setResult] = useState<PlaylistImportResult | null>(null);
   const lyricBaseNames = new Set(lyricFiles.map((file) => getImportFileBaseName(file.name)));
 
-  useEffect(() => {
-    setAdminToken(window.sessionStorage.getItem("playlistImportAdminToken") ?? "");
-  }, []);
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setResult(null);
-
-    if (!adminToken.trim()) {
-      setError("请输入管理 Token");
-      return;
-    }
 
     if (audioFiles.length === 0) {
       setError("请先选择 MP3 文件");
@@ -1011,9 +1124,7 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
     try {
       const response = await fetch("/api/playlists/import", {
         body: formData,
-        headers: {
-          "x-playlist-import-token": adminToken.trim(),
-        },
+        credentials: "same-origin",
         method: "POST",
       });
       const data = (await response.json()) as PlaylistImportResult & { error?: string };
@@ -1022,7 +1133,6 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
         throw new Error(data.error ?? "导入失败");
       }
 
-      window.sessionStorage.setItem("playlistImportAdminToken", adminToken.trim());
       setResult(data);
       window.setTimeout(() => window.location.reload(), 900);
     } catch (submitError) {
@@ -1047,11 +1157,6 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-black text-[#4f2525]">
-            管理 Token
-            <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setAdminToken(event.currentTarget.value)} placeholder="输入导入管理 Token" type="password" value={adminToken} />
-          </label>
-
           <label className="block rounded-[1.2rem] border-2 border-dashed border-stone-700/60 bg-[#fff4d8] p-3 text-sm font-black text-[#4f2525]">
             MP3 文件
             <input accept=".mp3,audio/mpeg" className="mt-2 block w-full text-sm font-semibold text-stone-700 file:mr-3 file:rounded-full file:border-2 file:border-stone-700/70 file:bg-[#f8cfd5] file:px-3 file:py-1 file:font-black" multiple onChange={(event) => setAudioFiles(Array.from(event.currentTarget.files ?? []))} type="file" />
@@ -1210,10 +1315,95 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   const [isCreateCollectionDialogOpen, setIsCreateCollectionDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
   const activeCollection = displayCollections.find((collection) => collection.id === activeCollectionId) ?? initialCollection;
   const visibleSongs = songs.filter((song) => activeCollection.songIds.includes(song.id));
   const activeFeaturedSong = visibleSongs.find((song) => song.id === featuredSongId) ?? visibleSongs[0] ?? getFeaturedSong(songs, featuredSongId);
   const player = usePlaylistPlayer(visibleSongs.length > 0 ? visibleSongs : songs, activeFeaturedSong.id, playerSnapshot);
+  const isManagementUnlocked = dataSource === "supabase" && isAdminUnlocked;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", { credentials: "same-origin" });
+        const data = (await response.json()) as AdminSessionResult;
+
+        if (isMounted) {
+          setIsAdminUnlocked(Boolean(response.ok && data.authenticated));
+        }
+      } catch {
+        if (isMounted) {
+          setIsAdminUnlocked(false);
+        }
+      }
+    };
+
+    void loadAdminSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAdminError(null);
+
+    if (dataSource !== "supabase") {
+      setAdminError("当前为本地 fallback，管理功能需要 Supabase 数据源。");
+      return;
+    }
+
+    if (!adminToken.trim()) {
+      setAdminError("请输入管理 Token");
+      return;
+    }
+
+    setIsAdminSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/session", {
+        body: JSON.stringify({ token: adminToken }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as AdminSessionResult;
+
+      if (!response.ok || !data.authenticated) {
+        throw new Error(data.error ?? "管理解锁失败");
+      }
+
+      setIsAdminUnlocked(true);
+      setAdminToken("");
+    } catch (error) {
+      setIsAdminUnlocked(false);
+      setAdminError(error instanceof Error ? error.message : "管理解锁失败");
+    } finally {
+      setIsAdminSubmitting(false);
+    }
+  };
+
+  const handleAdminLock = async () => {
+    setAdminError(null);
+    setIsAdminSubmitting(true);
+
+    try {
+      await fetch("/api/admin/session", { credentials: "same-origin", method: "DELETE" });
+      setIsAdminUnlocked(false);
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "退出管理模式失败");
+    } finally {
+      setIsAdminSubmitting(false);
+    }
+  };
 
   const handleCreatedCollection = (collection: PlaylistCollection) => {
     setDisplayCollections((currentCollections) => [...currentCollections, collection]);
@@ -1246,12 +1436,21 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
       <PlaylistHeader />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">
-          <PlaylistSidebar activeCollectionId={activeCollection.id} collections={displayCollections} createDisabled={dataSource !== "supabase"} importDisabled={dataSource !== "supabase"} onOpenCreate={() => setIsCreateCollectionDialogOpen(true)} onOpenImport={() => setIsImportDialogOpen(true)} onSelectCollection={handleSelectCollection} />
+          <PlaylistSidebar
+            activeCollectionId={activeCollection.id}
+            adminPanel={<PlaylistAdminPanel adminError={adminError} adminToken={adminToken} dataSource={dataSource} isAdminSubmitting={isAdminSubmitting} isAdminUnlocked={isAdminUnlocked} onAdminTokenChange={setAdminToken} onLock={() => void handleAdminLock()} onUnlock={handleAdminUnlock} />}
+            collections={displayCollections}
+            createDisabled={!isManagementUnlocked}
+            importDisabled={!isManagementUnlocked}
+            onOpenCreate={() => setIsCreateCollectionDialogOpen(true)}
+            onOpenImport={() => setIsImportDialogOpen(true)}
+            onSelectCollection={handleSelectCollection}
+          />
           <div className="min-w-0 space-y-5">
             <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
             <SongTable currentSongId={player.currentSongId} durationLabels={player.songDurationLabels} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
           </div>
-          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} />}
+          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} isAdminUnlocked={isManagementUnlocked} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} onDeletedNote={(noteId) => setDisplayNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId))} onUpdatedNote={(updatedNote) => setDisplayNotes((currentNotes) => currentNotes.map((note) => (note.id === updatedNote.id ? updatedNote : note)))} />}
         </div>
         <BottomPlayerBar isLyricsOpen={isLyricsOpen} onToggleLyrics={() => setIsLyricsOpen((open) => !open)} player={player} />
       </div>

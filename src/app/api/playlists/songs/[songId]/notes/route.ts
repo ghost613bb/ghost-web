@@ -5,19 +5,13 @@ import {
   insertSupabasePlaylistNote,
   requireSupabasePlaylistWriteEnv,
 } from "@/features/playlists/repository";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
 type RouteContext = {
   params: Promise<{ songId: string }> | { songId: string };
 };
-
-function isAuthorizedNoteRequest(request: Request) {
-  const expectedToken = process.env.PLAYLIST_IMPORT_ADMIN_TOKEN;
-  const actualToken = request.headers.get("x-playlist-import-token");
-
-  return Boolean(expectedToken && actualToken && actualToken === expectedToken);
-}
 
 function parseString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -32,8 +26,10 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     requireSupabasePlaylistWriteEnv();
 
-    if (!isAuthorizedNoteRequest(request)) {
-      return NextResponse.json({ error: "无权限新增歌曲评论" }, { status: 401 });
+    const unauthorizedResponse = requireAdminRequest(request, "无权限新增歌曲评论");
+
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
     }
 
     const songId = await getSongId(context);

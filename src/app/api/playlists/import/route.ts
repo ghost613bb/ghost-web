@@ -11,6 +11,7 @@ import {
 } from "@/features/playlists/repository";
 import { generatePlaylistShortReview } from "@/features/playlists/review";
 import { parseLrcToLyricLines } from "@/features/playlists/lyrics";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -91,20 +92,15 @@ function collectFiles(formData: FormData, key: string) {
   return formData.getAll(key).filter(isUploadedFile);
 }
 
-function isAuthorizedImportRequest(request: Request) {
-  const expectedToken = process.env.PLAYLIST_IMPORT_ADMIN_TOKEN;
-  const actualToken = request.headers.get("x-playlist-import-token");
-
-  return Boolean(expectedToken && actualToken && actualToken === expectedToken);
-}
-
 // 处理歌单导入请求：校验上传内容、上传资源、生成短评，最后写入歌单数据。
 export async function POST(request: Request) {
   try {
     requireSupabasePlaylistWriteEnv();
 
-    if (!isAuthorizedImportRequest(request)) {
-      return NextResponse.json({ error: "无权限导入歌单" }, { status: 401 });
+    const unauthorizedResponse = requireAdminRequest(request, "无权限导入歌单");
+
+    if (unauthorizedResponse) {
+      return unauthorizedResponse;
     }
 
     // 从 multipart/form-data 中取出音频、歌词和目标歌单 ID。

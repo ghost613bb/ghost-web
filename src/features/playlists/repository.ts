@@ -199,6 +199,14 @@ export type PlaylistNoteInsert = {
   songId: string;
 };
 
+export type PlaylistNoteUpdate = {
+  author: string;
+  avatar?: string;
+  content: string;
+  noteId: string;
+  songId: string;
+};
+
 export type PlaylistSongInsert = {
   artist: string;
   audioSrc: string;
@@ -333,6 +341,40 @@ export async function insertSupabasePlaylistNote(note: PlaylistNoteInsert) {
   throwSupabaseError("写入 Supabase 歌曲评论失败", error);
 
   return toPlaylistNote(data as PlaylistNoteRow);
+}
+
+export async function updateSupabasePlaylistNote(note: PlaylistNoteUpdate) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("playlist_notes")
+    .update({
+      author: note.author,
+      avatar: note.avatar ?? null,
+      content: note.content,
+    })
+    .eq("id", note.noteId)
+    .eq("song_id", note.songId)
+    .select("id,song_id,author,content,avatar,created_at")
+    .maybeSingle();
+
+  throwSupabaseError("更新 Supabase 歌曲评论失败", error);
+
+  if (!data) {
+    throw new Error("目标评论不存在");
+  }
+
+  return toPlaylistNote(data as PlaylistNoteRow);
+}
+
+export async function deleteSupabasePlaylistNote({ noteId, songId }: { noteId: string; songId: string }) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_notes").delete().eq("id", noteId).eq("song_id", songId).select("id").maybeSingle();
+
+  throwSupabaseError("删除 Supabase 歌曲评论失败", error);
+
+  if (!data) {
+    throw new Error("目标评论不存在");
+  }
 }
 
 export async function insertSupabasePlaylistCollectionSongs(collectionId: string, songIds: string[]) {
