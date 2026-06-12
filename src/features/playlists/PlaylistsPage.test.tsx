@@ -117,6 +117,7 @@ describe("PlaylistsPageView", () => {
     expect(within(playerBar).getByText("0:00")).toBeInTheDocument();
     expect(within(playerBar).getByText(featuredSong?.duration ?? "")).toBeInTheDocument();
     expect(within(playerBar).getByText(playlistPlayerSnapshot.statusLabel)).toBeInTheDocument();
+    expect(within(playerBar).getByRole("button", { name: "切换到随机播放" })).toHaveAttribute("title", "顺序播放");
     expect(within(playerBar).getByRole("button", { name: "上一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "下一首" })).toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "打开歌词" })).toBeInTheDocument();
@@ -290,6 +291,23 @@ describe("PlaylistsPageView", () => {
 
     expect(within(lyricsPanel).getByText("乌鸦在低空下盘旋")).toHaveAttribute("aria-current", "true");
     expect(window.HTMLElement.prototype.scrollTo).toHaveBeenCalled();
+  });
+
+  it("cycles playback modes from the bottom player", () => {
+    renderPlaylistsPage();
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+    const modeButton = within(playerBar).getByRole("button", { name: "切换到随机播放" });
+
+    expect(modeButton).toHaveAttribute("title", "顺序播放");
+
+    fireEvent.click(modeButton);
+
+    expect(within(playerBar).getByRole("button", { name: "切换到单曲循环" })).toHaveAttribute("title", "随机播放");
+
+    fireEvent.click(within(playerBar).getByRole("button", { name: "切换到单曲循环" }));
+
+    expect(within(playerBar).getByRole("button", { name: "切换到顺序播放" })).toHaveAttribute("title", "单曲循环");
   });
 
   it("plays and pauses the current song from the bottom player", () => {

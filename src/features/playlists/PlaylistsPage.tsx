@@ -12,6 +12,8 @@ import {
   Pause,
   Play,
   Plus,
+  Repeat,
+  Repeat1,
   Share2,
   Shuffle,
   SkipBack,
@@ -42,6 +44,8 @@ type PlaylistImportResult = {
   warnings?: Array<{ fileName?: string; message: string }>;
 };
 
+type PlaylistMode = "order" | "shuffle" | "repeat-one";
+
 type SongDurationLabels = Record<string, string>;
 
 type PlaylistPlayerControls = {
@@ -58,6 +62,7 @@ type PlaylistPlayerControls = {
   handleSongDurationLoaded: (songId: string, durationLabel: string) => void;
   handleTimeUpdate: () => void;
   isPlaying: boolean;
+  playbackMode: PlaylistMode;
   playNext: () => void;
   playPrevious: () => void;
   playSong: (songId: string) => void;
@@ -66,13 +71,13 @@ type PlaylistPlayerControls = {
   seekToPercent: (percent: number) => void;
   songDurationLabels: SongDurationLabels;
   setVolumePercent: (percent: number) => void;
-  shuffleEnabled: boolean;
   statusLabel: string;
   togglePlay: () => void;
-  toggleShuffle: () => void;
+  togglePlaybackMode: () => void;
   volumePercent: number;
 };
 
+const playbackModes: PlaylistMode[] = ["order", "shuffle", "repeat-one"];
 const collectionAccentOptions = [
   { className: "bg-[#fde2e7]", label: "樱花粉" },
   { className: "bg-[#fff2c7]", label: "日落黄" },
@@ -149,7 +154,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
   const [songDurationLabels, setSongDurationLabels] = useState<SongDurationLabels>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
-  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<PlaylistMode>("order");
   const [volumePercent, setVolumePercentState] = useState(playerSnapshot.volumePercent);
 
   const currentSongIndex = useMemo(() => {
@@ -213,7 +218,11 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
 
   const getSiblingSong = useCallback(
     (direction: 1 | -1) => {
-      if (shuffleEnabled && direction === 1 && songs.length > 1) {
+      if (playbackMode === "repeat-one") {
+        return currentSong;
+      }
+
+      if (playbackMode === "shuffle" && direction === 1 && songs.length > 1) {
         const candidates = songs.filter((song) => song.id !== currentSong.id);
         return candidates[Math.floor(Math.random() * candidates.length)] ?? currentSong;
       }
@@ -222,7 +231,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
 
       return songs[nextIndex] ?? currentSong;
     },
-    [currentSong, currentSongIndex, shuffleEnabled, songs],
+    [currentSong, currentSongIndex, playbackMode, songs],
   );
 
   const playSong = useCallback(
@@ -359,6 +368,7 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     handleSongDurationLoaded,
     handleTimeUpdate,
     isPlaying,
+    playbackMode,
     playNext,
     playPrevious,
     playSong,
@@ -367,10 +377,9 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
     seekToPercent,
     setVolumePercent,
     songDurationLabels,
-    shuffleEnabled,
     statusLabel,
     togglePlay,
-    toggleShuffle: () => setShuffleEnabled((enabled) => !enabled),
+    togglePlaybackMode: () => setPlaybackMode((mode) => playbackModes[(playbackModes.indexOf(mode) + 1) % playbackModes.length]),
     volumePercent,
   };
 }
@@ -1083,6 +1092,12 @@ function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpe
   const handleVolumeChange = (event: ChangeEvent<HTMLInputElement>) => {
     player.setVolumePercent(Number(event.currentTarget.value));
   };
+  const playbackModeConfig = {
+    order: { icon: Repeat, label: "顺序播放", nextLabel: "切换到随机播放" },
+    shuffle: { icon: Shuffle, label: "随机播放", nextLabel: "切换到单曲循环" },
+    "repeat-one": { icon: Repeat1, label: "单曲循环", nextLabel: "切换到顺序播放" },
+  }[player.playbackMode];
+  const PlaybackModeIcon = playbackModeConfig.icon;
 
   return (
     <section aria-label="当前播放栏" className="sticky bottom-3 z-20 mt-5 rounded-[1.5rem] border-[2.5px] border-stone-700/80 bg-[#ffe6ad]/95 p-3 shadow-[0_16px_32px_rgba(112,84,84,0.2)] backdrop-blur">
@@ -1097,8 +1112,8 @@ function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpe
 
         <div className="min-w-0">
           <div className="mb-2 flex items-center justify-center gap-4 text-[#4f2525]">
-            <button aria-label={player.shuffleEnabled ? "关闭随机播放" : "开启随机播放"} className={`rounded-full p-1 transition hover:bg-white/50 ${player.shuffleEnabled ? "bg-white/60 text-[#a54454]" : ""}`} onClick={player.toggleShuffle} type="button">
-              <Shuffle aria-hidden="true" className="h-4 w-4" />
+            <button aria-label={playbackModeConfig.nextLabel} className="rounded-full bg-white/60 p-1 text-[#a54454] transition hover:bg-white/80" onClick={player.togglePlaybackMode} title={playbackModeConfig.label} type="button">
+              <PlaybackModeIcon aria-hidden="true" className="h-4 w-4" />
             </button>
             <button aria-label="上一首" className="rounded-full p-1 transition hover:bg-white/50" onClick={player.playPrevious} type="button">
               <SkipBack aria-hidden="true" className="h-4 w-4 fill-[#4f2525]" />
