@@ -23,7 +23,7 @@ function buildRequest(payload?: unknown, token = "test-token") {
 }
 
 function buildContext(collectionId = "daily-moods") {
-  return { params: { collectionId } };
+  return { params: Promise.resolve({ collectionId }) };
 }
 
 describe("/api/playlists/collections/[collectionId]", () => {
@@ -80,6 +80,14 @@ describe("/api/playlists/collections/[collectionId]", () => {
 
     expect(response.status).toBe(400);
     expect(data).toEqual({ error: "请输入歌单名称" });
+  });
+
+  it("rejects invalid accent classes", async () => {
+    const response = await PATCH(buildRequest({ accentClass: "bg-red-500", title: "新歌单" }), buildContext());
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({ error: "请选择有效的歌单主题色" });
   });
 
   it("deletes a playlist collection", async () => {

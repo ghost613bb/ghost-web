@@ -4,25 +4,16 @@ import {
   getNextSupabasePlaylistCollectionSortOrder,
   insertSupabasePlaylistCollection,
   requireSupabasePlaylistWriteEnv,
+  uploadSupabasePlaylistAsset,
 } from "@/features/playlists/repository";
+import {
+  parsePlaylistCollectionFields,
+  slugifyCollectionTitle,
+  validatePlaylistCollectionCoverFile,
+} from "@/features/playlists/collection-validation";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
-
-const collectionAccentClasses = ["bg-[#fde2e7]", "bg-[#fff2c7]", "bg-[#f8cfd5]", "bg-[#e5f0ff]", "bg-[#fff4d8]", "bg-[#e6dcff]"];
-
-function slugifyCollectionTitle(value: string) {
-  return value
-    .normalize("NFKD")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase()
-    .slice(0, 36) || "collection";
-}
-
-function parseString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
 
 export async function POST(request: Request) {
   try {
@@ -34,36 +25,26 @@ export async function POST(request: Request) {
       return unauthorizedResponse;
     }
 
-    const payload = (await request.json()) as Record<string, unknown>;
-    const title = parseString(payload.title);
-    const description = parseString(payload.description);
-    const emoji = parseString(payload.emoji) || "🎵";
-    const accentClass = parseString(payload.accentClass) || collectionAccentClasses[0];
-
-    if (!title) {
-      return NextResponse.json({ error: "请输入歌单名称" }, { status: 400 });
-    }
-
-    if (title.length > 60) {
-      return NextResponse.json({ error: "歌单名称不能超过 60 个字符" }, { status: 400 });
-    }
-
-    if (description.length > 160) {
-      return NextResponse.json({ error: "歌单描述不能超过 160 个字符" }, { status: 400 });
-    }
-
-    if (emoji.length > 16) {
-      return NextResponse.json({ error: "歌单图标不能超过 16 个字符" }, { status: 400 });
-    }
-
-    if (!collectionAccentClasses.includes(accentClass)) {
-      return NextResponse.json({ error: "请选择有效的歌单主题色" }, { status: 400 });
-    }
-
+    const isMultipart = request.headers.get("content-type")?.includes("multipart/form-data") ?? false;
+    const formData = isMultipart ? await request.formData() : null;
+    const payload = formData ? Object.fromEntries(formData.entries()) : ((await request.json()) as Record<string, unknown>);
+    const { accentClass, description, emoji, title } = parsePlaylistCollectionFields(payload);
+    const coverFile = formData ? validatePlaylistCollectionCoverFile(formData.get("coverFile")) : null;
     const sortOrder = await getNextSupabasePlaylistCollectionSortOrder();
     const id = `collection-${slugifyCollectionTitle(title)}-${randomUUID().slice(0, 8)}`;
+    let coverImageSrc: string | undefined;
+
+    if (coverFile) {
+      coverImageSrc = await uploadSupabasePlaylistAsset({
+        buffer: Buffer.from(await coverFile.file.arrayBuffer()),
+        contentType: coverFile.file.type,
+        path: `collection-covers/${id}.${coverFile.extension}`,
+      });
+    }
+
     const collection = await insertSupabasePlaylistCollection({
       accentClass,
+      coverImageSrc,
       description,
       emoji,
       id,

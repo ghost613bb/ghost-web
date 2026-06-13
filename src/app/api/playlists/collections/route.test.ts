@@ -5,6 +5,7 @@ vi.mock("@/features/playlists/repository", () => ({
   getNextSupabasePlaylistCollectionSortOrder: vi.fn(async () => 5),
   insertSupabasePlaylistCollection: vi.fn(async (collection) => ({
     accentClass: collection.accentClass,
+    coverImageSrc: collection.coverImageSrc,
     description: collection.description,
     emoji: collection.emoji,
     id: collection.id,
@@ -12,6 +13,7 @@ vi.mock("@/features/playlists/repository", () => ({
     title: collection.title,
   })),
   requireSupabasePlaylistWriteEnv: vi.fn(() => undefined),
+  uploadSupabasePlaylistAsset: vi.fn(async ({ path }: { path: string }) => `https://cdn.example.com/${path}`),
 }));
 
 function buildRequest(payload: unknown, token = "test-token") {
@@ -19,6 +21,14 @@ function buildRequest(payload: unknown, token = "test-token") {
     headers: new Headers({ "x-playlist-import-token": token }),
     json: async () => payload,
   } as Request;
+}
+
+function buildFormRequest(formData: FormData, token = "test-token") {
+  return new Request("http://localhost/api/playlists/collections", {
+    body: formData,
+    headers: new Headers({ "x-playlist-import-token": token }),
+    method: "POST",
+  });
 }
 
 describe("/api/playlists/collections", () => {
@@ -94,5 +104,54 @@ describe("/api/playlists/collections", () => {
         title: "Late Night Loop",
       }),
     );
+  });
+
+  it("creates a playlist collection with cover upload", async () => {
+    const repository = await import("@/features/playlists/repository");
+    const formData = new FormData();
+    formData.set("title", "Late Night Loop");
+    formData.set("description", "晚上听的歌。");
+    formData.set("emoji", "🌙");
+    formData.set("accentClass", "bg-[#e5f0ff]");
+    formData.set("coverFile", new File(["png"], "cover.png", { type: "image/png" }));
+
+    const response = await POST(buildFormRequest(formData));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.collection).toMatchObject({
+      accentClass: "bg-[#e5f0ff]",
+      coverImageSrc: expect.stringMatching(/^https:\/\/cdn\.example\.com\/collection-covers\/collection-late-night-loop-/),
+      description: "晚上听的歌。",
+      emoji: "🌙",
+      songIds: [],
+      title: "Late Night Loop",
+    });
+    expect(repository.uploadSupabasePlaylistAsset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/png",
+        path: expect.stringMatching(/^collection-covers\/collection-late-night-loop-.*\.png$/),
+      }),
+    );
+    expect(repository.insertSupabasePlaylistCollection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coverImageSrc: expect.stringMatching(/^https:\/\/cdn\.example\.com\/collection-covers\/collection-late-night-loop-/),
+      }),
+    );
+  });
+
+  it("rejects unsupported cover image types on create", async () => {
+    const formData = new FormData();
+    formData.set("title", "Late Night Loop");
+    formData.set("description", "晚上听的歌。");
+    formData.set("emoji", "🌙");
+    formData.set("accentClass", "bg-[#e5f0ff]");
+    formData.set("coverFile", new File(["gif"], "cover.gif", { type: "image/gif" }));
+
+    const response = await POST(buildFormRequest(formData));
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({ error: "歌单封面仅支持 JPG、PNG 或 WebP" });
   });
 });

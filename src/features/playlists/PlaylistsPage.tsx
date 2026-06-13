@@ -25,6 +25,8 @@ import {
   X,
 } from "lucide-react";
 import type { PlaylistCollection, PlaylistNote, PlaylistPlayerSnapshot, PlaylistSong } from "@/data/playlists";
+import { playlistCollectionAccentOptions } from "./collection-validation";
+import { PlaylistDropdown, type PlaylistDropdownOption } from "./PlaylistDropdown";
 import type { PlaylistDataSource } from "./service";
 
 type PlaylistsPageViewProps = {
@@ -103,14 +105,11 @@ type PlaylistPlayerControls = {
 
 const playlistDurationCacheKey = "ghost-web:playlist-duration-labels:v1";
 const playbackModes: PlaylistMode[] = ["order", "shuffle", "repeat-one"];
-const collectionAccentOptions = [
-  { className: "bg-[#fde2e7]", label: "樱花粉" },
-  { className: "bg-[#fff2c7]", label: "日落黄" },
-  { className: "bg-[#f8cfd5]", label: "甜莓粉" },
-  { className: "bg-[#e5f0ff]", label: "晴空蓝" },
-  { className: "bg-[#fff4d8]", label: "奶油米" },
-  { className: "bg-[#e6dcff]", label: "月光紫" },
-];
+const collectionAccentDropdownOptions: PlaylistDropdownOption[] = playlistCollectionAccentOptions.map((option) => ({
+  label: option.label,
+  swatchClassName: option.className,
+  value: option.className,
+}));
 const lyricSyncOffsetSeconds = 0.35;
 const tableHeaderClass = "px-3 py-3 text-left text-xs font-black uppercase tracking-[0.12em] text-[#5a332f]";
 const topActionClass =
@@ -683,17 +682,7 @@ function SongTable({ bulkError, canManageSongs, currentSongId, durationLabels, i
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-black text-[#7a3d3f]">已选 {selectedCount} 首</p>
             <div className="flex flex-wrap items-center gap-2">
-              <label className="text-xs font-black uppercase tracking-[0.12em] text-[#8d4b55]" htmlFor="playlist-bulk-target">
-                移动到
-              </label>
-              <select className="rounded-full border-2 border-stone-700/60 bg-[#fffaf3] px-3 py-1.5 text-sm font-black text-[#4f2525] outline-none transition focus:border-[#a54454] disabled:cursor-not-allowed disabled:opacity-50" disabled={isBulkSubmitting || movableCollections.length === 0} id="playlist-bulk-target" onChange={(event) => onTargetCollectionChange(event.target.value)} value={targetCollectionId}>
-                {movableCollections.length === 0 ? <option value="">暂无其他歌单</option> : null}
-                {movableCollections.map((collection) => (
-                  <option key={collection.id} value={collection.id}>
-                    {collection.title}
-                  </option>
-                ))}
-              </select>
+              <PlaylistDropdown disabled={isBulkSubmitting || movableCollections.length === 0} label="移动到" onChange={onTargetCollectionChange} options={movableCollections.map((collection) => ({ label: collection.title, value: collection.id }))} placeholder="暂无其他歌单" value={targetCollectionId} variant="compact" />
               <button className="rounded-full border-2 border-stone-700/70 bg-[#ffe6ad] px-4 py-1.5 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0" disabled={selectedCount === 0 || movableCollections.length === 0 || isBulkSubmitting} onClick={onMoveSelected} type="button">
                 移动
               </button>
@@ -1104,120 +1093,25 @@ function getImportFileBaseName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "").trim().toLowerCase();
 }
 
-function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (collection: PlaylistCollection) => void }) {
-  const [accentClass, setAccentClass] = useState(collectionAccentOptions[0].className);
-  const [description, setDescription] = useState("");
-  const [emoji, setEmoji] = useState("🎵");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [title, setTitle] = useState("");
+type PlaylistCollectionDialogProps =
+  | { mode: "create"; onClose: () => void; onSaved: (collection: PlaylistCollection) => void }
+  | { collection: PlaylistCollection; mode: "edit"; onClose: () => void; onSaved: (collection: PlaylistCollection) => void };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-
-    if (!title.trim()) {
-      setError("请输入歌单名称");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/playlists/collections", {
-        body: JSON.stringify({
-          accentClass,
-          description,
-          emoji,
-          title,
-        }),
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as PlaylistCollectionCreateResult;
-
-      if (!response.ok || !data.collection) {
-        throw new Error(data.error ?? "新增歌单失败");
-      }
-
-      onCreated(data.collection);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "新增歌单失败");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-[#4f2525]/35 px-4 backdrop-blur-sm" role="presentation">
-      <section aria-label="新增歌单" className="w-full max-w-2xl rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_18px_42px_rgba(79,37,37,0.25)]">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a54454]">Playlist Collection</p>
-            <h2 className="text-2xl font-black text-[#4f2525]">新增歌单</h2>
-            <p className="mt-1 text-sm font-semibold text-stone-600">创建一个空歌单，之后可以继续批量导入歌曲。</p>
-          </div>
-          <button aria-label="关闭新增歌单" className="rounded-full p-1 text-[#4f2525] transition hover:bg-[#f8cfd5]" onClick={onClose} type="button">
-            <X aria-hidden="true" className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-black text-[#4f2525]">
-            歌单名称
-            <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" maxLength={60} onChange={(event) => setTitle(event.currentTarget.value)} placeholder="例如：Late Night Loop" value={title} />
-          </label>
-
-          <label className="block text-sm font-black text-[#4f2525]">
-            描述
-            <textarea className="mt-2 h-20 w-full resize-none rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" maxLength={160} onChange={(event) => setDescription(event.currentTarget.value)} placeholder="写一句这个歌单的用途或氛围" value={description} />
-          </label>
-
-          <div className="grid gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
-            <label className="block text-sm font-black text-[#4f2525]">
-              图标
-              <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 text-center text-lg font-semibold text-stone-800" maxLength={16} onChange={(event) => setEmoji(event.currentTarget.value)} value={emoji} />
-            </label>
-
-            <label className="block text-sm font-black text-[#4f2525]">
-              主题色
-              <select className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setAccentClass(event.currentTarget.value)} value={accentClass}>
-                {collectionAccentOptions.map((option) => (
-                  <option key={option.className} value={option.className}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {error ? <p className="rounded-[1rem] border-2 border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-sm font-black text-[#7a3d3f]">{error}</p> : null}
-
-          <div className="flex justify-end gap-3">
-            <button className="rounded-[1rem] border-2 border-stone-700/60 bg-white px-4 py-2 text-sm font-black text-stone-900" onClick={onClose} type="button">
-              取消
-            </button>
-            <button className="rounded-[1rem] border-2 border-stone-700/70 bg-[#f8cfd5] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_4px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isSubmitting} type="submit">
-              {isSubmitting ? "创建中..." : "创建歌单"}
-            </button>
-          </div>
-        </form>
-      </section>
-    </div>
-  );
-}
-
-function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { collection: PlaylistCollection; onClose: () => void; onUpdated: (collection: PlaylistCollection) => void }) {
-  const [accentClass, setAccentClass] = useState(collection.accentClass);
+function PlaylistCollectionDialog(props: PlaylistCollectionDialogProps) {
+  const isEditMode = props.mode === "edit";
+  const currentCollection = props.mode === "edit" ? props.collection : undefined;
+  const [accentClass, setAccentClass] = useState(currentCollection?.accentClass ?? playlistCollectionAccentOptions[0].className);
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [description, setDescription] = useState(collection.description);
-  const [emoji, setEmoji] = useState(collection.emoji);
+  const [description, setDescription] = useState(currentCollection?.description ?? "");
+  const [emoji, setEmoji] = useState(currentCollection?.emoji ?? "🎵");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [title, setTitle] = useState(collection.title);
+  const [title, setTitle] = useState(currentCollection?.title ?? "");
+  const editCollectionId = currentCollection?.id ?? "";
+  const dialogLabel = isEditMode ? "编辑歌单" : "新增歌单";
+  const dialogDescription = isEditMode ? "修改歌单名称、描述、图标、主题色和封面。" : "创建一个空歌单，可选上传封面，之后可以继续批量导入歌曲。";
+  const submitLabel = isEditMode ? "保存歌单" : "创建歌单";
+  const submittingLabel = isEditMode ? "保存中..." : "创建中...";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1240,13 +1134,13 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
         formData.set("description", description);
         formData.set("emoji", emoji);
         formData.set("title", title);
-        response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}/cover`, {
+        response = await fetch(isEditMode ? `/api/playlists/collections/${encodeURIComponent(editCollectionId)}/cover` : "/api/playlists/collections", {
           body: formData,
           credentials: "same-origin",
           method: "POST",
         });
       } else {
-        response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}`, {
+        response = await fetch(isEditMode ? `/api/playlists/collections/${encodeURIComponent(editCollectionId)}` : "/api/playlists/collections", {
           body: JSON.stringify({
             accentClass,
             description,
@@ -1257,19 +1151,19 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
           headers: {
             "Content-Type": "application/json",
           },
-          method: "PATCH",
+          method: isEditMode ? "PATCH" : "POST",
         });
       }
 
-      const data = (await response.json()) as PlaylistCollectionManageResult;
+      const data = (await response.json()) as PlaylistCollectionCreateResult & PlaylistCollectionManageResult;
 
       if (!response.ok || !data.collection) {
-        throw new Error(data.error ?? "编辑歌单失败");
+        throw new Error(data.error ?? `${isEditMode ? "编辑" : "新增"}歌单失败`);
       }
 
-      onUpdated({ ...data.collection, songIds: collection.songIds });
+      props.onSaved(isEditMode ? { ...data.collection, songIds: currentCollection?.songIds ?? [] } : data.collection);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "编辑歌单失败");
+      setError(submitError instanceof Error ? submitError.message : `${isEditMode ? "编辑" : "新增"}歌单失败`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1277,14 +1171,14 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
 
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-[#4f2525]/35 px-4 backdrop-blur-sm" role="presentation">
-      <section aria-label="编辑歌单" className="w-full max-w-2xl rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_18px_42px_rgba(79,37,37,0.25)]">
+      <section aria-label={dialogLabel} className="w-full max-w-2xl rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_18px_42px_rgba(79,37,37,0.25)]">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a54454]">Playlist Collection</p>
-            <h2 className="text-2xl font-black text-[#4f2525]">编辑歌单</h2>
-            <p className="mt-1 text-sm font-semibold text-stone-600">修改歌单名称、描述、图标、主题色和封面。</p>
+            <h2 className="text-2xl font-black text-[#4f2525]">{dialogLabel}</h2>
+            <p className="mt-1 text-sm font-semibold text-stone-600">{dialogDescription}</p>
           </div>
-          <button aria-label="关闭编辑歌单" className="rounded-full p-1 text-[#4f2525] transition hover:bg-[#f8cfd5]" onClick={onClose} type="button">
+          <button aria-label={`关闭${dialogLabel}`} className="rounded-full p-1 text-[#4f2525] transition hover:bg-[#f8cfd5]" onClick={props.onClose} type="button">
             <X aria-hidden="true" className="h-5 w-5" />
           </button>
         </div>
@@ -1306,16 +1200,7 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
               <input className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 text-center text-lg font-semibold text-stone-800" maxLength={16} onChange={(event) => setEmoji(event.currentTarget.value)} value={emoji} />
             </label>
 
-            <label className="block text-sm font-black text-[#4f2525]">
-              主题色
-              <select className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setAccentClass(event.currentTarget.value)} value={accentClass}>
-                {collectionAccentOptions.map((option) => (
-                  <option key={option.className} value={option.className}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PlaylistDropdown label="主题色" onChange={setAccentClass} options={collectionAccentDropdownOptions} value={accentClass} />
           </div>
 
           <label className="block text-sm font-black text-[#4f2525]">
@@ -1324,15 +1209,15 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
             <span className="mt-1 block text-xs font-semibold text-stone-500">可选，支持 JPG / PNG / WebP，最大 5MB。</span>
           </label>
 
-          {collection.coverImageSrc ? <img alt={`${collection.title}当前歌单封面`} className="h-28 w-full rounded-[1rem] border border-[#ead7ce] object-cover" src={collection.coverImageSrc} /> : null}
+          {currentCollection?.coverImageSrc ? <img alt={`${currentCollection.title}当前歌单封面`} className="h-28 w-full rounded-[1rem] border border-[#ead7ce] object-cover" src={currentCollection.coverImageSrc} /> : null}
           {error ? <p className="rounded-[1rem] border-2 border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-sm font-black text-[#7a3d3f]">{error}</p> : null}
 
           <div className="flex justify-end gap-3">
-            <button className="rounded-[1rem] border-2 border-stone-700/60 bg-white px-4 py-2 text-sm font-black text-stone-900" onClick={onClose} type="button">
+            <button className="rounded-[1rem] border-2 border-stone-700/60 bg-white px-4 py-2 text-sm font-black text-stone-900" onClick={props.onClose} type="button">
               取消
             </button>
             <button className="rounded-[1rem] border-2 border-stone-700/70 bg-[#f8cfd5] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_4px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isSubmitting} type="submit">
-              {isSubmitting ? "保存中..." : "保存歌单"}
+              {isSubmitting ? submittingLabel : submitLabel}
             </button>
           </div>
         </form>
@@ -1414,16 +1299,7 @@ function PlaylistBatchImportDialog({ activeCollectionId, collections, onClose }:
             <input accept=".lrc" className="mt-2 block w-full text-sm font-semibold text-stone-700 file:mr-3 file:rounded-full file:border-2 file:border-stone-700/70 file:bg-[#ffe6ad] file:px-3 file:py-1 file:font-black" multiple onChange={(event) => setLyricFiles(Array.from(event.currentTarget.files ?? []))} type="file" />
           </label>
 
-          <label className="block text-sm font-black text-[#4f2525]">
-            导入到歌单
-            <select className="mt-2 w-full rounded-[1rem] border-2 border-stone-700/60 bg-white/80 px-3 py-2 font-semibold text-stone-800" onChange={(event) => setCollectionId(event.currentTarget.value)} value={collectionId}>
-              {collections.map((collection) => (
-                <option key={collection.id} value={collection.id}>
-                  {collection.title}
-                </option>
-              ))}
-            </select>
-          </label>
+          <PlaylistDropdown label="导入到歌单" onChange={setCollectionId} options={collections.map((collection) => ({ label: collection.title, value: collection.id }))} value={collectionId} />
 
           {audioFiles.length > 0 ? (
             <div className="rounded-[1.1rem] border border-[#eed8c6] bg-white/60 p-3">
@@ -1915,8 +1791,8 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <DataSourceBadge source={dataSource} />
-      {isCreateCollectionDialogOpen ? <PlaylistCreateCollectionDialog onClose={() => setIsCreateCollectionDialogOpen(false)} onCreated={handleCreatedCollection} /> : null}
-      {editingCollection ? <PlaylistEditCollectionDialog collection={editingCollection} onClose={() => setEditingCollection(null)} onUpdated={handleUpdatedCollection} /> : null}
+      {isCreateCollectionDialogOpen ? <PlaylistCollectionDialog mode="create" onClose={() => setIsCreateCollectionDialogOpen(false)} onSaved={handleCreatedCollection} /> : null}
+      {editingCollection ? <PlaylistCollectionDialog collection={editingCollection} mode="edit" onClose={() => setEditingCollection(null)} onSaved={handleUpdatedCollection} /> : null}
       {isImportDialogOpen ? <PlaylistBatchImportDialog activeCollectionId={activeCollection.id} collections={displayCollections} onClose={() => setIsImportDialogOpen(false)} /> : null}
       <PlaylistHeader />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">

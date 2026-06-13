@@ -165,7 +165,8 @@ describe("PlaylistsPageView", () => {
     expect(createDialog).toBeInTheDocument();
     expect(within(createDialog).queryByLabelText("管理 Token")).not.toBeInTheDocument();
     expect(within(createDialog).getByLabelText("歌单名称")).toBeInTheDocument();
-    expect(screen.getByText("创建一个空歌单，之后可以继续批量导入歌曲。", { exact: false })).toBeInTheDocument();
+    expect(within(createDialog).getByLabelText("歌单封面")).toBeInTheDocument();
+    expect(screen.getByText("创建一个空歌单，可选上传封面，之后可以继续批量导入歌曲。", { exact: false })).toBeInTheDocument();
   });
 
   it("creates a collection and switches to its empty state", async () => {
@@ -199,7 +200,8 @@ describe("PlaylistsPageView", () => {
     fireEvent.change(within(createDialog).getByLabelText("歌单名称"), { target: { value: "Late Night Loop" } });
     fireEvent.change(within(createDialog).getByLabelText("描述"), { target: { value: "夜里慢慢听。" } });
     fireEvent.change(within(createDialog).getByLabelText("图标"), { target: { value: "🌙" } });
-    fireEvent.change(within(createDialog).getByLabelText("主题色"), { target: { value: "bg-[#e5f0ff]" } });
+    fireEvent.click(within(createDialog).getByRole("combobox", { name: "主题色" }));
+    fireEvent.click(screen.getByRole("option", { name: "晴空蓝" }));
     fireEvent.click(within(createDialog).getByRole("button", { name: "创建歌单" }));
 
     expect(await screen.findByRole("heading", { level: 3, name: "Late Night Loop" })).toBeInTheDocument();
@@ -216,6 +218,58 @@ describe("PlaylistsPageView", () => {
         method: "POST",
       }),
     );
+  });
+
+  it("creates a collection with cover upload", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          collection: {
+            accentClass: "bg-[#e5f0ff]",
+            coverImageSrc: "/covers/late-night-loop.png",
+            description: "夜里慢慢听。",
+            emoji: "🌙",
+            id: "collection-late-night-loop-1234abcd",
+            songIds: [],
+            title: "Late Night Loop",
+          },
+        }),
+      };
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    fireEvent.click(screen.getByRole("button", { name: "New Collection" }));
+    const createDialog = screen.getByLabelText("新增歌单");
+    const coverFile = new File(["png"], "cover.png", { type: "image/png" });
+    const coverInput = within(createDialog).getByLabelText("歌单封面") as HTMLInputElement;
+
+    fireEvent.change(within(createDialog).getByLabelText("歌单名称"), { target: { value: "Late Night Loop" } });
+    fireEvent.change(within(createDialog).getByLabelText("描述"), { target: { value: "夜里慢慢听。" } });
+    fireEvent.change(within(createDialog).getByLabelText("图标"), { target: { value: "🌙" } });
+    fireEvent.click(within(createDialog).getByRole("combobox", { name: "主题色" }));
+    fireEvent.click(screen.getByRole("option", { name: "晴空蓝" }));
+    fireEvent.change(coverInput, { target: { files: [coverFile] } });
+    fireEvent.click(within(createDialog).getByRole("button", { name: "创建歌单" }));
+
+    const collectionRequest = fetchMock.mock.calls.find(([input]) => String(input) === "/api/playlists/collections") as [RequestInfo | URL, RequestInit] | undefined;
+
+    await screen.findByRole("img", { name: "Late Night Loop歌单封面" });
+    expect(collectionRequest?.[1]).toEqual(
+      expect.objectContaining({
+        body: expect.any(FormData),
+        credentials: "same-origin",
+        method: "POST",
+      }),
+    );
+    expect(collectionRequest?.[1].headers).toBeUndefined();
   });
 
   it("uploads a playlist cover from admin mode", async () => {
@@ -293,17 +347,18 @@ describe("PlaylistsPageView", () => {
     fireEvent.change(within(editDialog).getByLabelText("歌单名称"), { target: { value: "Late Night Loop" } });
     fireEvent.change(within(editDialog).getByLabelText("描述"), { target: { value: "夜里慢慢听。" } });
     fireEvent.change(within(editDialog).getByLabelText("图标"), { target: { value: "🌙" } });
-    fireEvent.change(within(editDialog).getByLabelText("主题色"), { target: { value: "bg-[#e5f0ff]" } });
+    fireEvent.click(within(editDialog).getByRole("combobox", { name: "主题色" }));
+    fireEvent.click(screen.getByRole("option", { name: "晴空蓝" }));
     fireEvent.click(within(editDialog).getByRole("button", { name: "保存歌单" }));
 
-    expect(await screen.findByRole("heading", { level: 3, name: "Late Night Loop" })).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       `/api/playlists/collections/${playlistCollections[0].id}`,
       expect.objectContaining({
         credentials: "same-origin",
         method: "PATCH",
       }),
-    );
+    ));
+    await waitFor(() => expect(screen.queryByLabelText("编辑歌单")).not.toBeInTheDocument());
   });
 
   it("deletes a playlist collection from admin mode", async () => {
@@ -340,6 +395,10 @@ describe("PlaylistsPageView", () => {
     expect(importDialog).toHaveClass("max-h-[calc(100dvh-2rem)]", "overflow-y-auto");
     expect(within(importDialog).queryByLabelText("管理 Token")).not.toBeInTheDocument();
     expect(within(importDialog).getByText("上传 MP3 和同名 LRC，自动解析封面、歌词和短音评。", { exact: false })).toBeInTheDocument();
+
+    fireEvent.click(within(importDialog).getByRole("combobox", { name: "导入到歌单" }));
+    fireEvent.click(screen.getByRole("option", { name: "Coding Spark" }));
+    expect(within(importDialog).getByRole("combobox", { name: "导入到歌单" })).toHaveTextContent("Coding Spark");
   });
 
   it("keeps song batch management locked for static fallback data", () => {
@@ -419,7 +478,8 @@ describe("PlaylistsPageView", () => {
 
     fireEvent.click(within(songSection).getByRole("button", { name: "批量管理歌曲" }));
     fireEvent.click(within(songSection).getAllByLabelText("选择doll")[0]);
-    fireEvent.change(within(songSection).getByLabelText("移动到"), { target: { value: "coding-spark" } });
+    fireEvent.click(within(songSection).getByRole("combobox", { name: "移动到" }));
+    fireEvent.click(screen.getByRole("option", { name: "Coding Spark" }));
     fireEvent.click(within(songSection).getByRole("button", { name: "移动" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/playlists/collections/${playlistCollections[0].id}/songs`, expect.objectContaining({ method: "PATCH" })));

@@ -60,6 +60,30 @@ describe("playlist repository mappers", () => {
     });
   });
 
+  it("maps collection rows when cover column is absent", () => {
+    expect(
+      toPlaylistCollection(
+        {
+          id: "collection-legacy",
+          title: "Legacy Collection",
+          description: "from old schema",
+          emoji: "🎧",
+          accent_class: "bg-white",
+          sort_order: 1,
+        },
+        ["song-001"],
+      ),
+    ).toEqual({
+      id: "collection-legacy",
+      title: "Legacy Collection",
+      description: "from old schema",
+      emoji: "🎧",
+      songIds: ["song-001"],
+      accentClass: "bg-white",
+      coverImageSrc: undefined,
+    });
+  });
+
   it("maps note rows and formats note time", () => {
     const note = toPlaylistNote({
       id: "note-001",

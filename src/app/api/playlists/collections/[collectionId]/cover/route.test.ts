@@ -16,7 +16,7 @@ vi.mock("@/features/playlists/repository", () => ({
 }));
 
 function buildContext(collectionId = "daily-moods") {
-  return { params: { collectionId } };
+  return { params: Promise.resolve({ collectionId }) };
 }
 
 function buildRequest(formData: FormData, token = "test-token") {
