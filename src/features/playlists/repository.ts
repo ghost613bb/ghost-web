@@ -425,6 +425,84 @@ export async function deleteSupabasePlaylistNote({ noteId, songId }: { noteId: s
   }
 }
 
+function uniqueSongIds(songIds: string[]) {
+  return Array.from(new Set(songIds.map((songId) => songId.trim()).filter(Boolean)));
+}
+
+export async function getSupabasePlaylistCollectionSongIds(collectionId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_collection_songs").select("song_id,sort_order").eq("collection_id", collectionId).order("sort_order", { ascending: true });
+
+  throwSupabaseError("读取 Supabase 歌单歌曲关系失败", error);
+
+  return ((data ?? []) as PlaylistCollectionSongRow[]).map((relation) => relation.song_id);
+}
+
+export async function removeSupabasePlaylistCollectionSongs(collectionId: string, songIds: string[]) {
+  const uniqueIds = uniqueSongIds(songIds);
+
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.from("playlist_collection_songs").delete().eq("collection_id", collectionId).in("song_id", uniqueIds).select("song_id");
+
+  throwSupabaseError("删除 Supabase 歌单歌曲关系失败", error);
+
+  return ((data ?? []) as Array<{ song_id: string }>).map((relation) => relation.song_id);
+}
+
+export async function appendSupabasePlaylistCollectionSongsDeduped(collectionId: string, songIds: string[]) {
+  const uniqueIds = uniqueSongIds(songIds);
+  const supabase = createSupabaseServerClient();
+  const { data, error: readError } = await supabase.from("playlist_collection_songs").select("song_id,sort_order").eq("collection_id", collectionId).order("sort_order", { ascending: true });
+
+  throwSupabaseError("读取 Supabase 歌单歌曲关系失败", readError);
+
+  const existingRelations = (data ?? []) as PlaylistCollectionSongRow[];
+  const existingSongIds = new Set(existingRelations.map((relation) => relation.song_id));
+  const insertedSongIds = uniqueIds.filter((songId) => !existingSongIds.has(songId));
+  const skippedSongIds = uniqueIds.filter((songId) => existingSongIds.has(songId));
+  const maxSortOrder = existingRelations.reduce((max, relation) => Math.max(max, relation.sort_order ?? 0), 0);
+
+  if (insertedSongIds.length > 0) {
+    const { error } = await supabase.from("playlist_collection_songs").insert(
+      insertedSongIds.map((songId, index) => ({
+        collection_id: collectionId,
+        song_id: songId,
+        sort_order: maxSortOrder + index + 1,
+      })),
+    );
+
+    throwSupabaseError("写入 Supabase 歌单歌曲关系失败", error);
+  }
+
+  return {
+    insertedSongIds,
+    skippedSongIds,
+    songIds: await getSupabasePlaylistCollectionSongIds(collectionId),
+  };
+}
+
+export async function moveSupabasePlaylistCollectionSongs({ sourceCollectionId, targetCollectionId, songIds }: { sourceCollectionId: string; targetCollectionId: string; songIds: string[] }) {
+  const uniqueIds = uniqueSongIds(songIds);
+  const sourceSongIdsBeforeMove = await getSupabasePlaylistCollectionSongIds(sourceCollectionId);
+  const sourceSongIdSet = new Set(sourceSongIdsBeforeMove);
+  const movedSongIds = uniqueIds.filter((songId) => sourceSongIdSet.has(songId));
+  const targetResult = await appendSupabasePlaylistCollectionSongsDeduped(targetCollectionId, movedSongIds);
+
+  await removeSupabasePlaylistCollectionSongs(sourceCollectionId, movedSongIds);
+
+  return {
+    insertedSongIds: targetResult.insertedSongIds,
+    movedSongIds,
+    skippedSongIds: targetResult.skippedSongIds,
+    sourceSongIds: await getSupabasePlaylistCollectionSongIds(sourceCollectionId),
+    targetSongIds: await getSupabasePlaylistCollectionSongIds(targetCollectionId),
+  };
+}
+
 export async function insertSupabasePlaylistCollectionSongs(collectionId: string, songIds: string[]) {
   if (songIds.length === 0) {
     return;

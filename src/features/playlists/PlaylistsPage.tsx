@@ -7,6 +7,7 @@ import {
   Disc3,
   Grid2X2,
   Heart,
+  ListChecks,
   ListMusic,
   MessageCircle,
   Pause,
@@ -19,6 +20,7 @@ import {
   SkipBack,
   SkipForward,
   Sparkles,
+  Trash2,
   Volume2,
   X,
 } from "lucide-react";
@@ -43,6 +45,17 @@ type PlaylistCollectionManageResult = {
   collection?: PlaylistCollection;
   error?: string;
   ok?: boolean;
+};
+
+type PlaylistSongManageResult = {
+  error?: string;
+  movedSongIds?: string[];
+  ok?: boolean;
+  removedSongIds?: string[];
+  sourceCollectionId?: string;
+  sourceSongIds?: string[];
+  targetCollectionId?: string;
+  targetSongIds?: string[];
 };
 
 type PlaylistImportResult = {
@@ -610,7 +623,32 @@ function HeroPanel({ collection, featuredSong, isPlaying, onPlayAll, songs }: { 
   );
 }
 
-function SongTable({ currentSongId, durationLabels, isPlaying, onPlaySong, onTogglePlay, songs }: Pick<PlaylistsPageViewProps, "songs"> & { currentSongId: string; durationLabels: SongDurationLabels; isPlaying: boolean; onPlaySong: (songId: string) => void; onTogglePlay: () => void }) {
+type SongTableProps = Pick<PlaylistsPageViewProps, "songs"> & {
+  bulkError: string | null;
+  canManageSongs: boolean;
+  currentSongId: string;
+  durationLabels: SongDurationLabels;
+  isBulkSubmitting: boolean;
+  isManageMode: boolean;
+  isPlaying: boolean;
+  movableCollections: PlaylistCollection[];
+  onMoveSelected: () => void;
+  onPlaySong: (songId: string) => void;
+  onRemoveSelected: () => void;
+  onTargetCollectionChange: (collectionId: string) => void;
+  onToggleAllSongs: () => void;
+  onToggleManageMode: () => void;
+  onTogglePlay: () => void;
+  onToggleSongSelection: (songId: string) => void;
+  selectedSongIds: string[];
+  targetCollectionId: string;
+};
+
+function SongTable({ bulkError, canManageSongs, currentSongId, durationLabels, isBulkSubmitting, isManageMode, isPlaying, movableCollections, onMoveSelected, onPlaySong, onRemoveSelected, onTargetCollectionChange, onToggleAllSongs, onToggleManageMode, onTogglePlay, onToggleSongSelection, selectedSongIds, targetCollectionId, songs }: SongTableProps) {
+  const selectedSongIdSet = new Set(selectedSongIds);
+  const selectedCount = selectedSongIds.length;
+  const areAllSongsSelected = songs.length > 0 && songs.every((song) => selectedSongIdSet.has(song.id));
+
   const handleSongButtonClick = (songId: string) => {
     if (songId === currentSongId) {
       onTogglePlay();
@@ -627,11 +665,46 @@ function SongTable({ currentSongId, durationLabels, isPlaying, onPlaySong, onTog
           <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a54454]">Now spinning</p>
           <h2 className="text-2xl font-black text-[#4f2525]">今日循环</h2>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full border border-[#edc2c6] bg-[#ffeef1] px-3 py-1 text-xs font-black text-[#7a3d3f]">
-          <ListMusic aria-hidden="true" className="h-4 w-4" />
-          {songs.length} 首
-        </span>
+        <div className="flex items-center gap-2">
+          {canManageSongs ? (
+            <button aria-label={isManageMode ? "退出批量管理歌曲" : "批量管理歌曲"} aria-pressed={isManageMode} className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#edc2c6] text-[#7a3d3f] transition hover:-translate-y-0.5 ${isManageMode ? "bg-[#f8cfd5] shadow-[0_4px_0_rgba(112,84,84,0.12)]" : "bg-white/75 hover:bg-[#ffeef1]"}`} onClick={onToggleManageMode} type="button">
+              <ListChecks aria-hidden="true" className="h-4 w-4" />
+            </button>
+          ) : null}
+          <span className="inline-flex items-center gap-1 rounded-full border border-[#edc2c6] bg-[#ffeef1] px-3 py-1 text-xs font-black text-[#7a3d3f]">
+            <ListMusic aria-hidden="true" className="h-4 w-4" />
+            {songs.length} 首
+          </span>
+        </div>
       </div>
+
+      {isManageMode ? (
+        <div className="mb-3 rounded-[1.1rem] border border-[#edc2c6] bg-white/70 p-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-black text-[#7a3d3f]">已选 {selectedCount} 首</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-xs font-black uppercase tracking-[0.12em] text-[#8d4b55]" htmlFor="playlist-bulk-target">
+                移动到
+              </label>
+              <select className="rounded-full border-2 border-stone-700/60 bg-[#fffaf3] px-3 py-1.5 text-sm font-black text-[#4f2525] outline-none transition focus:border-[#a54454] disabled:cursor-not-allowed disabled:opacity-50" disabled={isBulkSubmitting || movableCollections.length === 0} id="playlist-bulk-target" onChange={(event) => onTargetCollectionChange(event.target.value)} value={targetCollectionId}>
+                {movableCollections.length === 0 ? <option value="">暂无其他歌单</option> : null}
+                {movableCollections.map((collection) => (
+                  <option key={collection.id} value={collection.id}>
+                    {collection.title}
+                  </option>
+                ))}
+              </select>
+              <button className="rounded-full border-2 border-stone-700/70 bg-[#ffe6ad] px-4 py-1.5 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0" disabled={selectedCount === 0 || movableCollections.length === 0 || isBulkSubmitting} onClick={onMoveSelected} type="button">
+                移动
+              </button>
+              <button aria-label="从当前歌单移除选中歌曲" className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#a54454] bg-[#ffeef1] text-[#9b4d57] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0" disabled={selectedCount === 0 || isBulkSubmitting} onClick={onRemoveSelected} type="button">
+                <Trash2 aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          {bulkError ? <p className="mt-2 rounded-[0.9rem] border border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-sm font-bold text-[#8d3f49]">{bulkError}</p> : null}
+        </div>
+      ) : null}
 
       {songs.length === 0 ? (
         <div className="rounded-[1.2rem] border border-[#eed8c6] bg-white/65 p-6 text-center text-sm font-black text-[#7a3d3f]">
@@ -643,6 +716,11 @@ function SongTable({ currentSongId, durationLabels, isPlaying, onPlaySong, onTog
         <table className="w-full border-collapse text-sm">
           <thead className="bg-[#f8edd1]/90">
             <tr>
+              {isManageMode ? (
+                <th className={`${tableHeaderClass} w-12`}>
+                  <input aria-label={areAllSongsSelected ? "清空当前歌单全部歌曲" : "选择当前歌单全部歌曲"} checked={areAllSongsSelected} className="h-4 w-4 accent-[#a54454]" disabled={isBulkSubmitting} onChange={onToggleAllSongs} type="checkbox" />
+                </th>
+              ) : null}
               <th className={`${tableHeaderClass} w-14`}>#</th>
               <th className={tableHeaderClass}>Song Title</th>
               <th className={tableHeaderClass}>Artist</th>
@@ -653,10 +731,16 @@ function SongTable({ currentSongId, durationLabels, isPlaying, onPlaySong, onTog
           <tbody>
             {songs.map((song, index) => {
               const isCurrent = song.id === currentSongId;
+              const isSelected = selectedSongIdSet.has(song.id);
               const songButtonLabel = `${isCurrent && isPlaying ? "暂停" : "播放"}${song.title}`;
 
               return (
                 <tr className={isCurrent ? "bg-[#f9d7db]" : "transition hover:bg-[#fff1f3]"} key={song.id}>
+                  {isManageMode ? (
+                    <td className="px-3 py-3 align-top">
+                      <input aria-label={`选择${song.title}`} checked={isSelected} className="h-4 w-4 accent-[#a54454]" disabled={isBulkSubmitting} onChange={() => onToggleSongSelection(song.id)} type="checkbox" />
+                    </td>
+                  ) : null}
                   <td className="px-3 py-3 align-top text-sm font-black text-[#5a332f]">
                     <button aria-label={songButtonLabel} className="inline-flex items-center gap-1 rounded-full p-1 transition hover:bg-white/60" onClick={() => handleSongButtonClick(song.id)} type="button">
                       {isCurrent && isPlaying ? <Pause aria-hidden="true" className="h-4 w-4 fill-[#4f2525] text-[#4f2525]" /> : <Play aria-hidden="true" className="h-4 w-4 fill-[#4f2525] text-[#4f2525]" />}
@@ -679,15 +763,19 @@ function SongTable({ currentSongId, durationLabels, isPlaying, onPlaySong, onTog
       <div className={`${songs.length === 0 ? "hidden" : "space-y-3 md:hidden"}`}>
         {songs.map((song, index) => {
           const isCurrent = song.id === currentSongId;
+          const isSelected = selectedSongIdSet.has(song.id);
           const songButtonLabel = `${isCurrent && isPlaying ? "暂停" : "播放"}${song.title}`;
 
           return (
             <article className={`rounded-[1.2rem] border-2 border-stone-700/50 p-3 ${isCurrent ? "bg-[#f9d7db]" : "bg-white/70"}`} key={song.id}>
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black text-[#8d4b55]">{String(index + 1).padStart(2, "0")}</p>
-                  <h3 className="text-lg font-black text-stone-900">{song.title}</h3>
-                  <p className="text-sm font-semibold text-stone-700">{song.artist}</p>
+                <div className="flex items-start gap-2">
+                  {isManageMode ? <input aria-label={`选择${song.title}`} checked={isSelected} className="mt-1 h-4 w-4 accent-[#a54454]" disabled={isBulkSubmitting} onChange={() => onToggleSongSelection(song.id)} type="checkbox" /> : null}
+                  <div>
+                    <p className="text-xs font-black text-[#8d4b55]">{String(index + 1).padStart(2, "0")}</p>
+                    <h3 className="text-lg font-black text-stone-900">{song.title}</h3>
+                    <p className="text-sm font-semibold text-stone-700">{song.artist}</p>
+                  </div>
                 </div>
                 <button aria-label={songButtonLabel} className="inline-flex items-center gap-1 rounded-full bg-[#fff3c7] px-2.5 py-1 text-xs font-black text-[#6d3b39]" onClick={() => handleSongButtonClick(song.id)} type="button">
                   {isCurrent && isPlaying ? <Pause aria-hidden="true" className="h-3.5 w-3.5 fill-[#4f2525] text-[#4f2525]" /> : <Play aria-hidden="true" className="h-3.5 w-3.5 fill-[#4f2525] text-[#4f2525]" />}
@@ -1479,11 +1567,17 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [isSongManageMode, setIsSongManageMode] = useState(false);
+  const [selectedSongIds, setSelectedSongIds] = useState<string[]>([]);
+  const [bulkTargetCollectionId, setBulkTargetCollectionId] = useState(() => displayCollections.find((collection) => collection.id !== initialCollection.id)?.id ?? "");
+  const [bulkSongError, setBulkSongError] = useState<string | null>(null);
+  const [isBulkSongSubmitting, setIsBulkSongSubmitting] = useState(false);
   const activeCollection = displayCollections.find((collection) => collection.id === activeCollectionId) ?? initialCollection;
   const visibleSongs = songs.filter((song) => activeCollection.songIds.includes(song.id));
   const activeFeaturedSong = visibleSongs.find((song) => song.id === featuredSongId) ?? visibleSongs[0] ?? getFeaturedSong(songs, featuredSongId);
   const player = usePlaylistPlayer(visibleSongs.length > 0 ? visibleSongs : songs, activeFeaturedSong.id, playerSnapshot);
   const isManagementUnlocked = dataSource === "supabase" && isAdminUnlocked;
+  const movableCollections = useMemo(() => displayCollections.filter((collection) => collection.id !== activeCollection.id), [activeCollection.id, displayCollections]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1509,6 +1603,29 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    setIsSongManageMode(false);
+    setSelectedSongIds([]);
+    setBulkSongError(null);
+  }, [activeCollectionId]);
+
+  useEffect(() => {
+    if (!isManagementUnlocked) {
+      setIsSongManageMode(false);
+      setSelectedSongIds([]);
+      setBulkSongError(null);
+    }
+  }, [isManagementUnlocked]);
+
+  useEffect(() => {
+    const nextTargetCollectionId = movableCollections[0]?.id ?? "";
+    const isTargetAvailable = movableCollections.some((collection) => collection.id === bulkTargetCollectionId);
+
+    if (!isTargetAvailable) {
+      setBulkTargetCollectionId(nextTargetCollectionId);
+    }
+  }, [bulkTargetCollectionId, movableCollections]);
 
   const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1628,6 +1745,173 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
     }
   };
 
+  const getOrderedSelectedSongIds = () => visibleSongs.filter((song) => selectedSongIds.includes(song.id)).map((song) => song.id);
+
+  const syncPlayerAfterRemovingSongs = (sourceSongIds: string[], removedSongIds: string[]) => {
+    if (!removedSongIds.includes(player.currentSongId)) {
+      return;
+    }
+
+    const nextSongId = sourceSongIds[0] ?? songs[0]?.id;
+
+    if (nextSongId) {
+      player.selectSong(nextSongId);
+    }
+  };
+
+  const handleToggleSongManageMode = () => {
+    if (!isManagementUnlocked) {
+      setAdminError(dataSource !== "supabase" ? "当前为本地 fallback，管理功能需要 Supabase 数据源。" : "请先解锁 Admin 管理模式。");
+      return;
+    }
+
+    setBulkSongError(null);
+    setIsSongManageMode((isCurrentManageMode) => {
+      if (isCurrentManageMode) {
+        setSelectedSongIds([]);
+      }
+
+      return !isCurrentManageMode;
+    });
+  };
+
+  const handleToggleSongSelection = (songId: string) => {
+    setBulkSongError(null);
+    setSelectedSongIds((currentSongIds) => (currentSongIds.includes(songId) ? currentSongIds.filter((currentSongId) => currentSongId !== songId) : [...currentSongIds, songId]));
+  };
+
+  const handleToggleAllSongs = () => {
+    setBulkSongError(null);
+    setSelectedSongIds((currentSongIds) => {
+      const visibleSongIds = visibleSongs.map((song) => song.id);
+      const currentSongIdSet = new Set(currentSongIds);
+      const areAllVisibleSongsSelected = visibleSongIds.length > 0 && visibleSongIds.every((songId) => currentSongIdSet.has(songId));
+
+      return areAllVisibleSongsSelected ? [] : visibleSongIds;
+    });
+  };
+
+  const handleRemoveSelectedSongs = async () => {
+    setBulkSongError(null);
+
+    if (!isManagementUnlocked) {
+      setBulkSongError("请先解锁 Admin 管理模式。");
+      return;
+    }
+
+    const orderedSelectedSongIds = getOrderedSelectedSongIds();
+
+    if (orderedSelectedSongIds.length === 0) {
+      setBulkSongError("请选择要移除的歌曲");
+      return;
+    }
+
+    if (!window.confirm(`确定从「${activeCollection.title}」移除选中的 ${orderedSelectedSongIds.length} 首歌吗？不会删除歌曲本体。`)) {
+      return;
+    }
+
+    setIsBulkSongSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(activeCollection.id)}/songs`, {
+        body: JSON.stringify({
+          action: "remove",
+          songIds: orderedSelectedSongIds,
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
+      });
+      const data = (await response.json()) as PlaylistSongManageResult;
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "批量移除歌曲失败");
+      }
+
+      const sourceSongIds = data.sourceSongIds ?? activeCollection.songIds.filter((songId) => !orderedSelectedSongIds.includes(songId));
+      const removedSongIds = data.removedSongIds ?? orderedSelectedSongIds;
+
+      setDisplayCollections((currentCollections) => currentCollections.map((collection) => (collection.id === activeCollection.id ? { ...collection, songIds: sourceSongIds } : collection)));
+      setSelectedSongIds([]);
+      syncPlayerAfterRemovingSongs(sourceSongIds, removedSongIds);
+    } catch (error) {
+      setBulkSongError(error instanceof Error ? error.message : "批量移除歌曲失败");
+    } finally {
+      setIsBulkSongSubmitting(false);
+    }
+  };
+
+  const handleMoveSelectedSongs = async () => {
+    setBulkSongError(null);
+
+    if (!isManagementUnlocked) {
+      setBulkSongError("请先解锁 Admin 管理模式。");
+      return;
+    }
+
+    const orderedSelectedSongIds = getOrderedSelectedSongIds();
+
+    if (orderedSelectedSongIds.length === 0) {
+      setBulkSongError("请选择要移动的歌曲");
+      return;
+    }
+
+    if (!bulkTargetCollectionId) {
+      setBulkSongError("请选择目标歌单");
+      return;
+    }
+
+    setIsBulkSongSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(activeCollection.id)}/songs`, {
+        body: JSON.stringify({
+          action: "move",
+          songIds: orderedSelectedSongIds,
+          targetCollectionId: bulkTargetCollectionId,
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
+      });
+      const data = (await response.json()) as PlaylistSongManageResult;
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "批量移动歌曲失败");
+      }
+
+      const sourceCollectionId = data.sourceCollectionId ?? activeCollection.id;
+      const targetCollectionId = data.targetCollectionId ?? bulkTargetCollectionId;
+      const sourceSongIds = data.sourceSongIds ?? activeCollection.songIds.filter((songId) => !orderedSelectedSongIds.includes(songId));
+      const targetSongIds = data.targetSongIds;
+      const movedSongIds = data.movedSongIds ?? orderedSelectedSongIds;
+
+      setDisplayCollections((currentCollections) =>
+        currentCollections.map((collection) => {
+          if (collection.id === sourceCollectionId) {
+            return { ...collection, songIds: sourceSongIds };
+          }
+
+          if (collection.id === targetCollectionId && targetSongIds) {
+            return { ...collection, songIds: targetSongIds };
+          }
+
+          return collection;
+        }),
+      );
+      setSelectedSongIds([]);
+      syncPlayerAfterRemovingSongs(sourceSongIds, movedSongIds);
+    } catch (error) {
+      setBulkSongError(error instanceof Error ? error.message : "批量移动歌曲失败");
+    } finally {
+      setIsBulkSongSubmitting(false);
+    }
+  };
+
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <DataSourceBadge source={dataSource} />
@@ -1652,7 +1936,27 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
           />
           <div className="min-w-0 space-y-5">
             <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
-            <SongTable currentSongId={player.currentSongId} durationLabels={player.songDurationLabels} isPlaying={player.isPlaying} onPlaySong={player.playSong} onTogglePlay={player.togglePlay} songs={visibleSongs} />
+            <SongTable
+              bulkError={bulkSongError}
+              canManageSongs={isManagementUnlocked}
+              currentSongId={player.currentSongId}
+              durationLabels={player.songDurationLabels}
+              isBulkSubmitting={isBulkSongSubmitting}
+              isManageMode={isSongManageMode}
+              isPlaying={player.isPlaying}
+              movableCollections={movableCollections}
+              onMoveSelected={() => void handleMoveSelectedSongs()}
+              onPlaySong={player.playSong}
+              onRemoveSelected={() => void handleRemoveSelectedSongs()}
+              onTargetCollectionChange={setBulkTargetCollectionId}
+              onToggleAllSongs={handleToggleAllSongs}
+              onToggleManageMode={handleToggleSongManageMode}
+              onTogglePlay={player.togglePlay}
+              onToggleSongSelection={handleToggleSongSelection}
+              selectedSongIds={selectedSongIds}
+              songs={visibleSongs}
+              targetCollectionId={bulkTargetCollectionId}
+            />
           </div>
           {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} isAdminUnlocked={isManagementUnlocked} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} onDeletedNote={(noteId) => setDisplayNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId))} onUpdatedNote={(updatedNote) => setDisplayNotes((currentNotes) => currentNotes.map((note) => (note.id === updatedNote.id ? updatedNote : note)))} />}
         </div>

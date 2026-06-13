@@ -342,6 +342,97 @@ describe("PlaylistsPageView", () => {
     expect(within(importDialog).getByText("上传 MP3 和同名 LRC，自动解析封面、歌词和短音评。", { exact: false })).toBeInTheDocument();
   });
 
+  it("keeps song batch management locked for static fallback data", () => {
+    renderPlaylistsPage("static");
+
+    expect(screen.queryByRole("button", { name: "批量管理歌曲" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("选择doll")).not.toBeInTheDocument();
+  });
+
+  it("removes selected songs from the current collection", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void init;
+
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          action: "remove",
+          ok: true,
+          removedSongIds: ["song-001"],
+          sourceSongIds: ["song-007"],
+        }),
+      };
+    });
+    const confirmMock = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    const songSection = screen.getByLabelText("今日循环歌曲");
+
+    fireEvent.click(within(songSection).getByRole("button", { name: "批量管理歌曲" }));
+    fireEvent.click(within(songSection).getAllByLabelText("选择doll")[0]);
+    fireEvent.click(within(songSection).getByRole("button", { name: "从当前歌单移除选中歌曲" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/playlists/collections/${playlistCollections[0].id}/songs`, expect.objectContaining({ method: "PATCH" })));
+    const songsRequest = fetchMock.mock.calls.find(([input]) => String(input) === `/api/playlists/collections/${playlistCollections[0].id}/songs`);
+
+    expect(confirmMock).toHaveBeenCalledWith(`确定从「${playlistCollections[0].title}」移除选中的 1 首歌吗？不会删除歌曲本体。`);
+    expect(JSON.parse(String((songsRequest?.[1] as RequestInit).body))).toEqual({ action: "remove", songIds: ["song-001"] });
+    expect(within(songSection).getByText("1 首")).toBeInTheDocument();
+    expect(within(songSection).queryByText("doll")).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText("当前播放栏")).getByRole("heading", { level: 2, name: "予星" })).toBeInTheDocument();
+  });
+
+  it("moves selected songs into another collection", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void init;
+
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          action: "move",
+          movedSongIds: ["song-001"],
+          ok: true,
+          sourceCollectionId: playlistCollections[0].id,
+          sourceSongIds: ["song-007"],
+          targetCollectionId: "coding-spark",
+          targetSongIds: ["song-007", "song-001"],
+        }),
+      };
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    const songSection = screen.getByLabelText("今日循环歌曲");
+
+    fireEvent.click(within(songSection).getByRole("button", { name: "批量管理歌曲" }));
+    fireEvent.click(within(songSection).getAllByLabelText("选择doll")[0]);
+    fireEvent.change(within(songSection).getByLabelText("移动到"), { target: { value: "coding-spark" } });
+    fireEvent.click(within(songSection).getByRole("button", { name: "移动" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/playlists/collections/${playlistCollections[0].id}/songs`, expect.objectContaining({ method: "PATCH" })));
+    const songsRequest = fetchMock.mock.calls.find(([input]) => String(input) === `/api/playlists/collections/${playlistCollections[0].id}/songs`);
+
+    expect(JSON.parse(String((songsRequest?.[1] as RequestInit).body))).toEqual({ action: "move", songIds: ["song-001"], targetCollectionId: "coding-spark" });
+    expect(within(songSection).queryByText("doll")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Coding Spark/ }));
+
+    expect(within(screen.getByLabelText("今日循环歌曲")).getAllByText("doll").length).toBeGreaterThan(0);
+  });
+
   it("renders comment notes for the featured listening panel", async () => {
     renderPlaylistsPage();
     await unlockPlaylistAdmin();
