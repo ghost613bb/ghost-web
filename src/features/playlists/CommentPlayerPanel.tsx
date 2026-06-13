@@ -12,17 +12,11 @@ type CommentPlayerPanelProps = {
   notes: PlaylistNote[];
   onCreatedNote: (note: PlaylistNote) => void;
   onDeletedNote: (noteId: string) => void;
-  onUpdatedNote: (note: PlaylistNote) => void;
 };
 
-export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, notes, onCreatedNote, onDeletedNote, onUpdatedNote }: CommentPlayerPanelProps) {
+export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, notes, onCreatedNote, onDeletedNote }: CommentPlayerPanelProps) {
   const [author, setAuthor] = useState("Name");
-  const [avatar, setAvatar] = useState("🎧");
   const [content, setContent] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingAuthor, setEditingAuthor] = useState("Name");
-  const [editingAvatar, setEditingAvatar] = useState("🎧");
-  const [editingContent, setEditingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
@@ -50,7 +44,7 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
       const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes`, {
         body: JSON.stringify({
           author,
-          avatar,
+          avatar: "🎧",
           content,
         }),
         credentials: "same-origin",
@@ -71,52 +65,6 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
       setError(submitError instanceof Error ? submitError.message : "新增歌曲评论失败");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const startEditingNote = (note: PlaylistNote) => {
-    setEditingNoteId(note.id);
-    setEditingAuthor(note.author);
-    setEditingAvatar(note.avatar);
-    setEditingContent(note.content);
-    setError(null);
-  };
-
-  const handleUpdateNote = async (noteId: string) => {
-    setError(null);
-
-    if (!editingContent.trim()) {
-      setError("请输入评论内容");
-      return;
-    }
-
-    setUpdatingNoteId(noteId);
-
-    try {
-      const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes/${encodeURIComponent(noteId)}`, {
-        body: JSON.stringify({
-          author: editingAuthor,
-          avatar: editingAvatar,
-          content: editingContent,
-        }),
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "PATCH",
-      });
-      const data = (await response.json()) as { error?: string; note?: PlaylistNote };
-
-      if (!response.ok || !data.note) {
-        throw new Error(data.error ?? "编辑歌曲评论失败");
-      }
-
-      onUpdatedNote(data.note);
-      setEditingNoteId(null);
-    } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "编辑歌曲评论失败");
-    } finally {
-      setUpdatingNoteId(null);
     }
   };
 
@@ -165,10 +113,9 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
               评论昵称
             </label>
             <input className="rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-author" maxLength={40} onChange={(event) => setAuthor(event.currentTarget.value)} placeholder="Name" value={author} />
-            <label className="sr-only" htmlFor="playlist-comment-avatar">
-              评论头像
-            </label>
-            <input className="rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-center text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-avatar" maxLength={16} onChange={(event) => setAvatar(event.currentTarget.value)} value={avatar} />
+            <div aria-hidden="true" className="grid place-items-center rounded-[1rem] border-2 border-stone-700/50 bg-white/70 text-xl">
+              🎧
+            </div>
           </div>
           <label className="sr-only" htmlFor="playlist-comment">
             添加可爱评论
@@ -197,50 +144,26 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
         ) : (
           <div className="space-y-3">
             {visibleNotes.map((note) => {
-              const isEditing = editingNoteId === note.id;
               const isUpdating = updatingNoteId === note.id;
 
               return (
                 <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
                   <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
-                    {isEditing ? editingAvatar : note.avatar}
+                    🎧
                   </span>
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_4rem]">
-                        <input aria-label="编辑评论昵称" className="rounded-[0.85rem] border border-[#efd7d3] bg-white/80 px-2 py-1 text-sm font-semibold text-stone-800" maxLength={40} onChange={(event) => setEditingAuthor(event.currentTarget.value)} value={editingAuthor} />
-                        <input aria-label="编辑评论头像" className="rounded-[0.85rem] border border-[#efd7d3] bg-white/80 px-2 py-1 text-center text-sm font-semibold text-stone-800" maxLength={16} onChange={(event) => setEditingAvatar(event.currentTarget.value)} value={editingAvatar} />
-                      </div>
-                      <textarea aria-label="编辑评论内容" className="h-20 w-full resize-none rounded-[0.95rem] border border-[#efd7d3] bg-white/80 px-2 py-1 text-sm font-semibold text-stone-800" maxLength={280} onChange={(event) => setEditingContent(event.currentTarget.value)} value={editingContent} />
-                      <div className="flex justify-end gap-2">
-                        <button className="rounded-full border border-[#efd7d3] bg-white px-2.5 py-1 text-xs font-black text-[#4f2525]" disabled={isUpdating} onClick={() => setEditingNoteId(null)} type="button">
-                          取消
-                        </button>
-                        <button className="rounded-full border border-[#c4878c] bg-[#ffe0a8] px-2.5 py-1 text-xs font-black text-[#4f2525] disabled:opacity-60" disabled={isUpdating} onClick={() => void handleUpdateNote(note.id)} type="button">
-                          {isUpdating ? "保存中..." : "保存"}
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-black text-[#4f2525]">
+                      {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
+                    </p>
+                    {isAdminUnlocked ? (
+                      <div className="flex shrink-0 gap-1">
+                        <button className="rounded-full bg-[#ffeef1] px-2 py-0.5 text-xs font-black text-[#9b4d57]" disabled={isUpdating} onClick={() => void handleDeleteNote(note.id)} type="button">
+                          删除
                         </button>
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-black text-[#4f2525]">
-                          {note.author} <span className="text-xs font-bold text-stone-500">{note.time}</span>
-                        </p>
-                        {isAdminUnlocked ? (
-                          <div className="flex shrink-0 gap-1">
-                            <button className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#7a3d3f]" disabled={isUpdating} onClick={() => startEditingNote(note)} type="button">
-                              编辑
-                            </button>
-                            <button className="rounded-full bg-[#ffeef1] px-2 py-0.5 text-xs font-black text-[#9b4d57]" disabled={isUpdating} onClick={() => void handleDeleteNote(note.id)} type="button">
-                              删除
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
-                    </>
-                  )}
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{note.content}</p>
                 </article>
               );
             })}

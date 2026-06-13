@@ -82,7 +82,7 @@ describe("/api/playlists/songs/[songId]/notes", () => {
     expect(response.status).toBe(200);
     expect(data.note).toMatchObject({
       author: "Ranima",
-      avatar: "🐰",
+      avatar: "🎧",
       content: "适合今晚循环。",
       songId: "song-007",
     });
@@ -90,7 +90,7 @@ describe("/api/playlists/songs/[songId]/notes", () => {
     expect(repository.insertSupabasePlaylistNote).toHaveBeenCalledWith(
       expect.objectContaining({
         author: "Ranima",
-        avatar: "🐰",
+        avatar: "🎧",
         content: "适合今晚循环。",
         songId: "song-007",
       }),

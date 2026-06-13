@@ -35,7 +35,7 @@ export async function POST(request: Request, context: RouteContext) {
     const songId = await getSongId(context);
     const payload = (await request.json()) as Record<string, unknown>;
     const author = parseString(payload.author) || "Name";
-    const avatar = parseString(payload.avatar) || "🎧";
+    const avatar = "🎧";
     const content = parseString(payload.content);
 
     if (!songId) {

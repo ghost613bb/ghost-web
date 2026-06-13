@@ -965,7 +965,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
               targetCollectionId={bulkTargetCollectionId}
             />
           </div>
-          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} isAdminUnlocked={isManagementUnlocked} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} onDeletedNote={(noteId) => setDisplayNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId))} onUpdatedNote={(updatedNote) => setDisplayNotes((currentNotes) => currentNotes.map((note) => (note.id === updatedNote.id ? updatedNote : note)))} />}
+          {isLyricsOpen ? <LyricsPanel currentTimeSeconds={player.currentTimeSeconds} song={player.currentSong} /> : <CommentPlayerPanel dataSource={dataSource} featuredSong={player.currentSong} isAdminUnlocked={isManagementUnlocked} notes={displayNotes} onCreatedNote={(note) => setDisplayNotes((currentNotes) => [...currentNotes, note])} onDeletedNote={(noteId) => setDisplayNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId))} />}
         </div>
         <BottomPlayerBar isLyricsOpen={isLyricsOpen} onToggleLyrics={() => setIsLyricsOpen((open) => !open)} player={player} />
       </div>
