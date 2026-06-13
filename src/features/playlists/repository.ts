@@ -22,6 +22,7 @@ type PlaylistCollectionRow = {
   description: string | null;
   emoji: string | null;
   accent_class: string | null;
+  cover_image_src: string | null;
   sort_order: number | null;
 };
 
@@ -128,6 +129,7 @@ export function toPlaylistCollection(row: PlaylistCollectionRow, songIds: string
     emoji: row.emoji ?? "🎵",
     songIds,
     accentClass: row.accent_class ?? "bg-[#fde2e7]",
+    coverImageSrc: row.cover_image_src ?? undefined,
   };
 }
 
@@ -157,7 +159,7 @@ export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
       .select("id,title,artist,feeling,audio_src,cover_image_src,lyric_lines,short_review,visibility,status,sort_order,created_at")
       .eq("status", "published")
       .order("sort_order", { ascending: true }),
-    supabase.from("playlist_collections").select("id,title,description,emoji,accent_class,sort_order").order("sort_order", { ascending: true }),
+    supabase.from("playlist_collections").select("id,title,description,emoji,accent_class,cover_image_src,sort_order").order("sort_order", { ascending: true }),
     supabase.from("playlist_collection_songs").select("collection_id,song_id,sort_order").order("sort_order", { ascending: true }),
     supabase.from("playlist_notes").select("id,song_id,author,content,avatar,created_at").order("created_at", { ascending: true }),
   ]);
@@ -184,6 +186,7 @@ export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
 
 export type PlaylistCollectionInsert = {
   accentClass: string;
+  coverImageSrc?: string;
   description: string;
   emoji: string;
   id: string;
@@ -193,6 +196,7 @@ export type PlaylistCollectionInsert = {
 
 export type PlaylistCollectionUpdate = {
   accentClass: string;
+  coverImageSrc?: string | null;
   description: string;
   emoji: string;
   id: string;
@@ -256,9 +260,10 @@ export async function insertSupabasePlaylistCollection(collection: PlaylistColle
       description: collection.description,
       emoji: collection.emoji,
       accent_class: collection.accentClass,
+      cover_image_src: collection.coverImageSrc ?? null,
       sort_order: collection.sortOrder,
     })
-    .select("id,title,description,emoji,accent_class,sort_order")
+    .select("id,title,description,emoji,accent_class,cover_image_src,sort_order")
     .single();
 
   throwSupabaseError("写入 Supabase 歌单失败", error);
@@ -275,9 +280,10 @@ export async function updateSupabasePlaylistCollection(collection: PlaylistColle
       description: collection.description,
       emoji: collection.emoji,
       accent_class: collection.accentClass,
+      ...(collection.coverImageSrc === undefined ? {} : { cover_image_src: collection.coverImageSrc }),
     })
     .eq("id", collection.id)
-    .select("id,title,description,emoji,accent_class,sort_order")
+    .select("id,title,description,emoji,accent_class,cover_image_src,sort_order")
     .maybeSingle();
 
   throwSupabaseError("更新 Supabase 歌单失败", error);

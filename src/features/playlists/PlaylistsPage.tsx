@@ -445,7 +445,19 @@ function usePlaylistPlayer(songs: PlaylistSong[], featuredSongId: string, player
   };
 }
 
-function PlaylistCover() {
+function PlaylistCover({ collection }: { collection: PlaylistCollection }) {
+  if (collection.coverImageSrc) {
+    return (
+      <div className="relative h-full min-h-[13.5rem] overflow-hidden rounded-[1.35rem] border-[2.5px] border-stone-700/80 bg-[#ffd8dc] shadow-[0_14px_28px_rgba(112,84,84,0.12)]">
+        <img alt={`${collection.title}歌单封面`} className="h-full w-full object-cover" src={collection.coverImageSrc} />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#4f2525]/65 via-[#4f2525]/20 to-transparent px-4 pb-4 pt-12 text-[#fffaf3]">
+          <p className="text-[0.72rem] font-black uppercase tracking-[0.16em]">Playlist</p>
+          <p className="mt-1 text-lg font-black tracking-tight">{collection.title}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full min-h-[13.5rem] overflow-hidden rounded-[1.35rem] border-[2.5px] border-stone-700/80 bg-[#ffd8dc] shadow-[inset_0_-34px_0_rgba(255,233,189,0.72)]">
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-24 rounded-t-[50%] bg-[#ffe8ad]" />
@@ -576,7 +588,7 @@ function HeroPanel({ collection, featuredSong, isPlaying, onPlayAll, songs }: { 
 
   return (
     <section className="grid gap-4 rounded-[1.8rem] border-[2.5px] border-stone-700/80 bg-[#fffaf3] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.08)] md:grid-cols-[13rem_minmax(0,1fr)] md:p-5" aria-label="歌单概览">
-      <PlaylistCover />
+      <PlaylistCover collection={collection} />
       <div className="flex min-w-0 flex-col justify-center">
         <p className="mb-2 inline-flex w-fit rounded-full border border-[#e4b7b9] bg-[#fff0c4] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#7a3d3f]">
           Playlist detail · {hasSongs ? songs.length * 2 + 2 : 0} minutes
@@ -1112,6 +1124,7 @@ function PlaylistCreateCollectionDialog({ onClose, onCreated }: { onClose: () =>
 
 function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { collection: PlaylistCollection; onClose: () => void; onUpdated: (collection: PlaylistCollection) => void }) {
   const [accentClass, setAccentClass] = useState(collection.accentClass);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [description, setDescription] = useState(collection.description);
   const [emoji, setEmoji] = useState(collection.emoji);
   const [error, setError] = useState<string | null>(null);
@@ -1130,19 +1143,36 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}`, {
-        body: JSON.stringify({
-          accentClass,
-          description,
-          emoji,
-          title,
-        }),
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "PATCH",
-      });
+      let response: Response;
+
+      if (coverFile) {
+        const formData = new FormData();
+        formData.set("accentClass", accentClass);
+        formData.set("coverFile", coverFile);
+        formData.set("description", description);
+        formData.set("emoji", emoji);
+        formData.set("title", title);
+        response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}/cover`, {
+          body: formData,
+          credentials: "same-origin",
+          method: "POST",
+        });
+      } else {
+        response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}`, {
+          body: JSON.stringify({
+            accentClass,
+            description,
+            emoji,
+            title,
+          }),
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "PATCH",
+        });
+      }
+
       const data = (await response.json()) as PlaylistCollectionManageResult;
 
       if (!response.ok || !data.collection) {
@@ -1164,7 +1194,7 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a54454]">Playlist Collection</p>
             <h2 className="text-2xl font-black text-[#4f2525]">编辑歌单</h2>
-            <p className="mt-1 text-sm font-semibold text-stone-600">修改歌单名称、描述、图标和主题色。</p>
+            <p className="mt-1 text-sm font-semibold text-stone-600">修改歌单名称、描述、图标、主题色和封面。</p>
           </div>
           <button aria-label="关闭编辑歌单" className="rounded-full p-1 text-[#4f2525] transition hover:bg-[#f8cfd5]" onClick={onClose} type="button">
             <X aria-hidden="true" className="h-5 w-5" />
@@ -1200,6 +1230,13 @@ function PlaylistEditCollectionDialog({ collection, onClose, onUpdated }: { coll
             </label>
           </div>
 
+          <label className="block text-sm font-black text-[#4f2525]">
+            歌单封面
+            <input accept="image/jpeg,image/png,image/webp" aria-label="歌单封面" className="mt-2 block w-full text-sm font-semibold text-stone-700 file:mr-3 file:rounded-full file:border-2 file:border-stone-700/70 file:bg-[#ffe6ad] file:px-3 file:py-1 file:font-black" onChange={(event) => setCoverFile(event.currentTarget.files?.[0] ?? null)} type="file" />
+            <span className="mt-1 block text-xs font-semibold text-stone-500">可选，支持 JPG / PNG / WebP，最大 5MB。</span>
+          </label>
+
+          {collection.coverImageSrc ? <img alt={`${collection.title}当前歌单封面`} className="h-28 w-full rounded-[1rem] border border-[#ead7ce] object-cover" src={collection.coverImageSrc} /> : null}
           {error ? <p className="rounded-[1rem] border-2 border-[#b75d66] bg-[#ffeef1] px-3 py-2 text-sm font-black text-[#7a3d3f]">{error}</p> : null}
 
           <div className="flex justify-end gap-3">

@@ -44,6 +44,7 @@ describe("playlist repository mappers", () => {
           description: "from Supabase",
           emoji: "🎧",
           accent_class: "bg-white",
+          cover_image_src: "https://example.com/collection-cover.jpg",
           sort_order: 1,
         },
         ["song-001", "song-002"],
@@ -55,6 +56,7 @@ describe("playlist repository mappers", () => {
       emoji: "🎧",
       songIds: ["song-001", "song-002"],
       accentClass: "bg-white",
+      coverImageSrc: "https://example.com/collection-cover.jpg",
     });
   });
 

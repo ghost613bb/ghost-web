@@ -127,6 +127,12 @@ describe("PlaylistsPageView", () => {
     expect(within(commentPanel).queryByText("Name", { exact: false })).not.toBeInTheDocument();
   });
 
+  it("renders the active collection cover in hero panel", () => {
+    renderPlaylistsPage();
+
+    expect(screen.getByRole("img", { name: `${playlistCollections[0].title}歌单封面` })).toHaveAttribute("src", playlistCollections[0].coverImageSrc);
+  });
+
   it("highlights the featured song in the table and bottom player", () => {
     renderPlaylistsPage();
 
@@ -207,6 +213,50 @@ describe("PlaylistsPageView", () => {
         headers: expect.objectContaining({
           "Content-Type": "application/json",
         }),
+        method: "POST",
+      }),
+    );
+  });
+
+  it("uploads a playlist cover from admin mode", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          collection: {
+            accentClass: playlistCollections[0].accentClass,
+            coverImageSrc: "/covers/late-night-loop.png",
+            description: playlistCollections[0].description,
+            emoji: playlistCollections[0].emoji,
+            id: playlistCollections[0].id,
+            title: playlistCollections[0].title,
+          },
+        }),
+      };
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    const sidebar = screen.getByLabelText("歌单列表");
+    fireEvent.click(within(sidebar).getAllByRole("button", { name: "编辑" })[0]);
+    const editDialog = screen.getByLabelText("编辑歌单");
+    const coverFile = new File(["png"], "cover.png", { type: "image/png" });
+    const coverInput = within(editDialog).getByLabelText("歌单封面") as HTMLInputElement;
+
+    fireEvent.change(coverInput, { target: { files: [coverFile] } });
+    fireEvent.click(within(editDialog).getByRole("button", { name: "保存歌单" }));
+
+    await screen.findByRole("img", { name: `${playlistCollections[0].title}歌单封面` });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/playlists/collections/${playlistCollections[0].id}/cover`,
+      expect.objectContaining({
+        credentials: "same-origin",
         method: "POST",
       }),
     );

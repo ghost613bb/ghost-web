@@ -23,6 +23,7 @@ export type PlaylistCollection = {
   emoji: string;
   songIds: string[];
   accentClass: string;
+  coverImageSrc?: string;
 };
 
 export type PlaylistNote = {
@@ -175,6 +176,7 @@ export const playlistCollections: PlaylistCollection[] = [
     title: "Daily Moods",
     description: "今天的心情放进一个奶油色收藏夹。",
     emoji: "🌸",
+    coverImageSrc: "/audio/playlists/xiaoxue-doll-cover.jpg",
     songIds: ["song-001", "song-007"],
     accentClass: "bg-[#fde2e7]",
   },
@@ -183,6 +185,7 @@ export const playlistCollections: PlaylistCollection[] = [
     title: "Sunset Walk",
     description: "适合傍晚散步、把思绪吹松。",
     emoji: "🌅",
+    coverImageSrc: "/audio/playlists/kui-kui-zhouyi-yuxing-cover.jpg",
     songIds: ["song-007"],
     accentClass: "bg-[#fff2c7]",
   },
@@ -191,6 +194,7 @@ export const playlistCollections: PlaylistCollection[] = [
     title: "Sweet Rock",
     description: "甜一点的鼓点，给灵感加糖。",
     emoji: "🎀",
+    coverImageSrc: "/audio/playlists/xiaoxue-doll-cover.jpg",
     songIds: ["song-001"],
     accentClass: "bg-[#f8cfd5]",
   },
@@ -199,6 +203,7 @@ export const playlistCollections: PlaylistCollection[] = [
     title: "Coding Spark",
     description: "写代码前的充电仪式。",
     emoji: "⚡️",
+    coverImageSrc: "/audio/playlists/kui-kui-zhouyi-yuxing-cover.jpg",
     songIds: ["song-007"],
     accentClass: "bg-[#e5f0ff]",
   },
