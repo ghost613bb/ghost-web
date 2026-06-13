@@ -108,13 +108,13 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
           </div>
         </div>
         <form className="space-y-3" onSubmit={handleSubmit}>
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem]">
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.25rem]">
             <label className="sr-only" htmlFor="playlist-comment-author">
               评论昵称
             </label>
             <input className="rounded-[1rem] border-2 border-stone-700/50 bg-white/70 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isCommentDisabled || isSubmitting} id="playlist-comment-author" maxLength={40} onChange={(event) => setAuthor(event.currentTarget.value)} placeholder="Name" value={author} />
-            <div aria-hidden="true" className="grid place-items-center rounded-[1rem] border-2 border-stone-700/50 bg-white/70 text-xl">
-              🎧
+            <div aria-hidden="true" className="grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 border-stone-700/50 bg-white/70">
+              <img alt="" className="h-full w-full object-cover" src="/images/comment-headphones.jpeg" />
             </div>
           </div>
           <label className="sr-only" htmlFor="playlist-comment">
@@ -147,9 +147,9 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
               const isUpdating = updatingNoteId === note.id;
 
               return (
-                <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-11" key={note.id}>
-                  <span aria-hidden="true" className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border-2 border-[#c4878c] bg-[#fde2e7] text-sm">
-                    🎧
+                <article className="relative rounded-[1rem] border border-[#efd7d3] bg-[#fff7f0] p-3 pl-14" key={note.id}>
+                  <span aria-hidden="true" className="absolute left-3 top-3 grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-[#fde2e7] shadow-[0_3px_0_rgba(196,135,140,0.12)]">
+                    <img alt="" className="h-full w-full object-cover" src="/images/comment-headphones.jpeg" />
                   </span>
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-black text-[#4f2525]">
