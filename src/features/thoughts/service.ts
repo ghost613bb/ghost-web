@@ -19,7 +19,7 @@ export async function getThoughtBySlug(slug: string): Promise<Thought | null> {
 
 export async function createThought(thought: Thought): Promise<Thought> {
   await upsertStoredThought(thought);
-  return thought;
+  return (await getStoredThoughtById(thought.id)) ?? thought;
 }
 
 export async function deleteThought(id: string): Promise<boolean> {
@@ -36,6 +36,7 @@ export async function deleteThought(id: string): Promise<boolean> {
 
   await upsertStoredThought({
     ...(storedThought ?? fallbackThought),
+    deletedAt: new Date().toISOString(),
     status: "draft",
   });
   return true;

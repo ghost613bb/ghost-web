@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Thought } from "@/data/thoughts";
+import { thoughtBodyToPlainText } from "./text";
 
 type ThoughtsPageViewProps = {
   initialThoughts: Thought[];
@@ -29,24 +30,11 @@ function thoughtTags(thought: Thought) {
   return thought.tags ?? [];
 }
 
-function thoughtBodyToPlainText(body: string) {
-  return body
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function toThoughtListItem(thought: Thought): ThoughtListItem {
   const tags = thoughtTags(thought);
 
   return {
-    bodyText: thoughtBodyToPlainText(thought.body),
+    bodyText: thought.bodyText ?? thoughtBodyToPlainText(thought.body),
     primaryTag: tags[0] ?? "日常",
     tags,
     tagsText: tags.join(" "),

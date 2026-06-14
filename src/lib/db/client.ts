@@ -41,11 +41,18 @@ sqlite.exec(`
     title text NOT NULL,
     slug text NOT NULL,
     body text NOT NULL,
-    tags text NOT NULL,
-    visibility text NOT NULL,
-    status text NOT NULL,
-    created_at text,
+    body_text text NOT NULL DEFAULT '',
+    excerpt text,
+    tags text NOT NULL DEFAULT '[]',
+    cover_image_url text,
+    visibility text NOT NULL DEFAULT 'public',
+    status text NOT NULL DEFAULT 'draft',
+    pinned integer NOT NULL DEFAULT 0,
     sort_order integer,
+    published_at text,
+    created_at text NOT NULL,
+    updated_at text NOT NULL,
+    deleted_at text,
     paper_background_image_url text,
     paper_background_opacity integer
   );
@@ -79,7 +86,20 @@ sqlite.exec(`
   );
 `);
 
+ensureColumn("thoughts", "body_text", "text NOT NULL DEFAULT ''");
+ensureColumn("thoughts", "excerpt", "text");
+ensureColumn("thoughts", "cover_image_url", "text");
+ensureColumn("thoughts", "pinned", "integer NOT NULL DEFAULT 0");
+ensureColumn("thoughts", "published_at", "text");
+ensureColumn("thoughts", "updated_at", "text NOT NULL DEFAULT ''");
+ensureColumn("thoughts", "deleted_at", "text");
 ensureColumn("thoughts", "paper_background_image_url", "text");
 ensureColumn("thoughts", "paper_background_opacity", "integer");
+
+sqlite.exec(`
+  UPDATE thoughts SET body_text = body WHERE body_text = '';
+  UPDATE thoughts SET created_at = COALESCE(created_at, '');
+  UPDATE thoughts SET updated_at = created_at WHERE updated_at = '';
+`);
 
 export const db = drizzle(sqlite);
