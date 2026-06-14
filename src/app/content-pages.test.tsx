@@ -111,7 +111,8 @@ describe("content module pages", () => {
     await resetStoredThoughts();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await resetDisplayModes();
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -423,37 +424,34 @@ describe("content module pages", () => {
     expect(screen.getByText("这是个人相册模块的基础演示内容。")).toBeInTheDocument();
   });
 
-  it("renders the thoughts display page with album-style header and fallback cards", async () => {
+  it("renders the thoughts display page with hand-drawn diary layout and fallback cards", async () => {
     render(await ThoughtsPage());
 
-    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
-    expect(screen.getByRole("heading", { level: 1, name: "碎碎念" })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#fff8e6]");
+    expect(screen.getByRole("heading", { level: 1, name: "我的碎碎念 (My Daily Thoughts)" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]");
-    expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "px-4", "py-2");
+    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveTextContent("Home");
+    expect(screen.getByText("Diaries")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
+    expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
+    expect(screen.getByText("Profile")).toBeInTheDocument();
+    expect(screen.getByText("Calendar")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveAttribute("href", "/thoughts/new");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveTextContent("+");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).not.toHaveTextContent("新建碎碎念");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "h-15", "w-15", "rounded-full");
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
-    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-4", "xl:columns-5");
+    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("grid", "grid-cols-1", "gap-5", "xl:grid-cols-3");
     expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
     expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
-    expect(screen.queryByText("碎碎念小札")).not.toBeInTheDocument();
-    expect(screen.queryByText("💌")).not.toBeInTheDocument();
-    expect(screen.queryByText("📎")).not.toBeInTheDocument();
-    expect(screen.queryByText("🌼")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("article")[0]).toHaveClass("mb-4", "break-inside-avoid");
-    const firstThoughtTag = screen.getAllByRole("article")[0].querySelector("span") as HTMLElement;
+    expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-[#fffaf0]");
+    const firstThoughtTag = screen.getAllByRole("article")[0].querySelector("span.mt-3") as HTMLElement;
     expect(firstThoughtTag).toHaveTextContent("网站");
-    expect(firstThoughtTag).toHaveClass("rounded-full", "bg-[#f7c9d0]", "px-2.5", "py-1");
-    expect(firstThoughtTag.parentElement).toHaveClass("flex", "items-center", "justify-between");
+    expect(firstThoughtTag).toHaveClass("rounded-full", "bg-[#ffccd5]", "px-3", "py-1");
     const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
     expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
-    expect(thoughtImage.parentElement).toHaveClass("mb-3", "aspect-[4/5]", "overflow-hidden", "rounded-[1rem]");
-    expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
-    expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-white", "shadow-[0_12px_24px_rgba(112,84,84,0.12)]");
+    expect(thoughtImage.parentElement).toHaveClass("mb-3", "aspect-[4/3]", "overflow-hidden", "rounded-[1rem]");
+    expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-3");
   });
 
   it("filters fallback thoughts by tag", async () => {

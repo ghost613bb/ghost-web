@@ -25,10 +25,6 @@ function primaryTag(thought: Thought) {
   return thoughtTags(thought)[0] ?? "日常";
 }
 
-function thoughtImageRatioClass(index: number) {
-  return ["aspect-[4/5]", "aspect-square", "aspect-[5/4]", "aspect-[3/4]"][index % 4];
-}
-
 function thoughtBodyToPlainText(body: string) {
   return body
     .replace(/<[^>]+>/g, " ")
@@ -84,6 +80,26 @@ function renderHighlightedText(value: string, query: string) {
   return fragments;
 }
 
+function CalendarPanel() {
+  const markedDays = new Set([5, 10, 11, 12, 14, 15, 17, 18]);
+
+  return (
+    <div>
+      <h2 className="text-[1.45rem] font-black text-[#5a352d]">Calendar</h2>
+      <div className="mt-4 grid grid-cols-7 gap-y-2 text-center text-sm font-black text-[#5a352d]">
+        {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+          <span key={`${day}-${index}`}>{day}</span>
+        ))}
+        {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+          <span className={`mx-auto grid h-7 w-7 place-items-center rounded-full ${markedDays.has(day) ? "bg-[#ffbac7] text-[#6a3d35]" : ""}`} key={day}>
+            {day}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
   const [activeTag, setActiveTag] = useState("全部");
   const [query, setQuery] = useState("");
@@ -93,99 +109,126 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
   const filteredThoughts = useMemo(() => {
     return initialThoughts.filter((thought) => (activeTag === "全部" || thoughtTags(thought).includes(activeTag)) && matchesQuery(thought, normalizedQuery));
   }, [activeTag, initialThoughts, normalizedQuery]);
-  const topActionClass =
-    "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
   return (
-    <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
-      <header className="border-b-2 border-stone-700/60 bg-[#f6b8c2]">
-        <div className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-4 py-4.5 sm:px-6">
-          <Link className={topActionClass} href="/">
-            返回首页小镇
-          </Link>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-black tracking-tight sm:text-[1.75rem]">
-            碎碎念
-          </h1>
-          <div aria-hidden="true" className="w-[6.5rem] sm:w-[7.75rem]" />
+    <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#fff8e6] text-[#4a2e28] [background-image:radial-gradient(circle_at_12%_18%,rgba(255,199,211,0.28)_0_80px,transparent_81px),radial-gradient(circle_at_88%_72%,rgba(190,233,221,0.36)_0_120px,transparent_121px),linear-gradient(90deg,rgba(121,76,55,0.04)_1px,transparent_1px),linear-gradient(rgba(121,76,55,0.035)_1px,transparent_1px)] [background-size:auto,auto,42px_42px,42px_42px]">
+      <header className="relative overflow-hidden border-b-[2px] border-[#5b3a30] bg-[#ffe8a8] shadow-[0_8px_0_rgba(91,58,48,0.06)]">
+        <div aria-hidden="true" className="absolute inset-0 opacity-45 [background-image:radial-gradient(circle,rgba(255,255,255,0.55)_0_2px,transparent_3px)] [background-size:34px_24px]" />
+        <div className="relative mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pb-11 pt-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid h-13 w-13 place-items-center rounded-full border-[2px] border-[#5b3a30] bg-[#fff8ed] text-2xl shadow-[3px_3px_0_rgba(91,58,48,0.12)]">👧🏻</span>
+            <h1 className="text-2xl font-black tracking-tight text-[#6a3c34] drop-shadow-[2px_2px_0_#fff7df] sm:text-[2rem]">
+              我的碎碎念 (My Daily Thoughts)
+            </h1>
+          </div>
+          <nav aria-label="碎碎念导航" className="flex flex-wrap items-center gap-3 text-base font-black text-[#4a2e28]">
+            <Link aria-label="返回首页小镇" className="rounded-full px-4 py-1.5 transition hover:-translate-y-0.5 hover:bg-[#fff4cf]" href="/">
+              Home
+            </Link>
+            <span className="rounded-full border-[2px] border-[#5b3a30] bg-[#ffb9c8] px-5 py-1.5 shadow-[3px_3px_0_rgba(91,58,48,0.12)]">Diaries</span>
+            <a className="rounded-full px-4 py-1.5 transition hover:-translate-y-0.5 hover:bg-[#fff4cf]" href="#profile">
+              About
+            </a>
+            <a className="rounded-full px-4 py-1.5 transition hover:-translate-y-0.5 hover:bg-[#fff4cf]" href="#thought-tags">
+              Tags
+            </a>
+          </nav>
         </div>
+        <svg aria-hidden="true" className="absolute inset-x-0 bottom-[-1px] h-10 w-full text-[#5b3a30]" preserveAspectRatio="none" viewBox="0 0 1440 40">
+          <path d="M0 13 Q24 35 48 13 T96 13 T144 13 T192 13 T240 13 T288 13 T336 13 T384 13 T432 13 T480 13 T528 13 T576 13 T624 13 T672 13 T720 13 T768 13 T816 13 T864 13 T912 13 T960 13 T1008 13 T1056 13 T1104 13 T1152 13 T1200 13 T1248 13 T1296 13 T1344 13 T1392 13 T1440 13 L1440 40 L0 40 Z" fill="#fff8e6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+        </svg>
       </header>
 
-      <div className="mx-auto max-w-[1320px] px-4 pb-10 pt-6 sm:px-6">
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <button
-                aria-pressed={activeTag === tag}
-                className={`rounded-full border px-4 py-2 text-sm font-black shadow-sm transition hover:-translate-y-0.5 ${
-                  activeTag === tag ? "border-[#e8cfd1] bg-[#f6dfe2] text-stone-800" : "border-[#e6d3d0] bg-white/60 text-stone-700 hover:bg-[#fff7f4]"
-                }`}
-                key={tag}
-                onClick={() => setActiveTag(tag)}
-                type="button"
-              >
-                {renderHighlightedText(tag, trimmedQuery)}
-              </button>
-            ))}
+      <div className="mx-auto grid max-w-[1280px] gap-7 px-4 pb-12 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0">
+          <div className="mb-6 flex flex-col gap-3 rounded-[1.4rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/86 p-3 shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-black text-[#7a5147]">把今天的小事贴成一页奶油手账</p>
+            <label className="relative block w-full sm:w-[19rem]">
+              <span className="sr-only">搜索碎碎念</span>
+              <input
+                aria-label="搜索碎碎念"
+                className="w-full rounded-full border-[2px] border-[#5b3a30] bg-white/85 px-5 py-2.5 pr-11 text-sm font-bold text-[#4a2e28] outline-none transition placeholder:text-[#9b7a70] focus:border-[#d97891] focus:ring-2 focus:ring-[#ffd2dc]"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search diary..."
+                type="search"
+                value={query}
+              />
+              <Search aria-hidden="true" className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a5147]" />
+            </label>
           </div>
 
-          <label className="relative block w-full lg:w-[19rem]">
-            <span className="sr-only">搜索碎碎念</span>
-            <input
-              aria-label="搜索碎碎念"
-              className="w-full rounded-full border border-[#e3c8ca] bg-white/70 px-5 py-2.5 pr-11 text-sm font-semibold text-stone-800 outline-none transition placeholder:text-stone-400 focus:border-[#c98f99] focus:ring-2 focus:ring-[#f3cfd5]"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索"
-              type="search"
-              value={query}
-            />
-            <Search aria-hidden="true" className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-          </label>
+          {filteredThoughts.length > 0 ? (
+            <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filteredThoughts.map((thought) => {
+                const thoughtBody = thoughtBodyToPlainText(thought.body);
+
+                return (
+                  <article className="overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[8px_8px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-1 hover:shadow-[10px_12px_0_rgba(91,58,48,0.16)]" key={thought.id}>
+                    <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]" href={`/thoughts/${thought.slug}`}>
+                      <div className="mb-3 aspect-[4/3] overflow-hidden rounded-[1rem] border-[2px] border-[#5b3a30] bg-[#fff8e6]">
+                        <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
+                      </div>
+                      <div className="px-1 pb-1">
+                        <h2 className="text-[1.05rem] font-black tracking-tight text-[#3f2823]">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
+                        <p className="mt-1 text-xs font-bold text-[#7a5147]">{formatThoughtDate(thought.createdAt)}</p>
+                        <p className="mt-2 line-clamp-3 text-sm font-semibold leading-6 text-[#5e463f]">{renderHighlightedText(thoughtBody, trimmedQuery)}</p>
+                        <span className="mt-3 inline-flex rounded-full border border-[#5b3a30]/30 bg-[#ffccd5] px-3 py-1 text-xs font-black text-[#6f343b] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">
+                          {renderHighlightedText(primaryTag(thought), trimmedQuery)}
+                        </span>
+                      </div>
+                    </Link>
+                  </article>
+                );
+              })}
+            </section>
+          ) : (
+            <section className="rounded-[1.5rem] border-[2px] border-dashed border-[#5b3a30] bg-[#fffdf2]/86 px-6 py-12 text-center shadow-[6px_6px_0_rgba(91,58,48,0.1)]">
+              <p className="text-lg font-black text-[#4a2e28]">没有找到相关碎碎念</p>
+              <p className="mt-2 text-sm font-semibold text-[#7a5147]">换个关键词，或者先回到全部分类看看。</p>
+            </section>
+          )}
         </div>
 
-        <Link
-          aria-label="新建碎碎念"
-          className="fixed bottom-6 right-6 z-30 inline-flex h-15 w-15 items-center justify-center rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] text-3xl font-black leading-none text-[#6f343b] shadow-[0_14px_28px_rgba(112,84,84,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f7c9d0]"
-          href="/thoughts/new"
-        >
-          +
-        </Link>
+        <aside className="lg:sticky lg:top-6 lg:self-start" id="profile">
+          <section className="relative overflow-hidden rounded-[1.65rem] border-[2px] border-[#5b3a30] bg-[#fffaf0]/90 px-6 py-6 shadow-[8px_8px_0_rgba(91,58,48,0.12)]">
+            <div className="text-center">
+              <h2 className="text-[1.45rem] font-black text-[#5a352d]">Profile</h2>
+              <div className="mx-auto mt-4 grid h-28 w-28 place-items-center rounded-full border-[2px] border-[#5b3a30] bg-[#ffe8a8] text-6xl shadow-[4px_4px_0_rgba(91,58,48,0.12)]">👧🏻</div>
+              <p className="mt-4 text-sm font-bold leading-6 text-[#765247]">记录灵感、日常和突然冒出来的小念头。</p>
+            </div>
 
-        {filteredThoughts.length > 0 ? (
-          <section className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-5">
-            {filteredThoughts.map((thought, index) => {
-              const thoughtBody = thoughtBodyToPlainText(thought.body);
+            <div className="mt-9" id="thought-tags">
+              <h2 className="text-[1.45rem] font-black text-[#5a352d]">Tags</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <button
+                    aria-pressed={activeTag === tag}
+                    className={`rounded-full border-[2px] border-[#5b3a30] px-3 py-1.5 text-xs font-black shadow-[2px_2px_0_rgba(91,58,48,0.12)] transition hover:-translate-y-0.5 ${activeTag === tag ? "bg-[#ffb9c8] text-[#5a352d]" : "bg-[#dff4ff] text-[#5a352d] hover:bg-[#fff4cf]"
+                      }`}
+                    key={tag}
+                    onClick={() => setActiveTag(tag)}
+                    type="button"
+                  >
+                    {renderHighlightedText(tag, trimmedQuery)}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              return (
-              <article
-                className="mb-4 break-inside-avoid overflow-hidden rounded-[1.45rem] border-[2px] border-[#e8d4d1] bg-white p-2.5 shadow-[0_12px_24px_rgba(112,84,84,0.12)] transition hover:-translate-y-1 hover:shadow-[0_16px_30px_rgba(112,84,84,0.16)]"
-                key={thought.id}
-              >
-                <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#e39aa8]" href={`/thoughts/${thought.slug}`}>
-                  <div className={`mb-3 flex ${thoughtImageRatioClass(index)} items-center justify-center overflow-hidden rounded-[1rem] bg-[radial-gradient(circle_at_25%_20%,#fff8f4_0,#fff8f4_26%,transparent_27%),linear-gradient(135deg,#f8dfe1,#f7efe5)] text-4xl`}>
-                    <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
-                  </div>
-                  <div className="px-1 pb-1">
-                    <h2 className="text-[1.15rem] font-black tracking-tight text-stone-900">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{renderHighlightedText(thoughtBody, trimmedQuery)}</p>
-                    <div className="mt-3 flex items-center justify-between gap-2 text-sm font-bold text-stone-600">
-                      <p>{formatThoughtDate(thought.createdAt)}</p>
-                      <span className="rounded-full bg-[#f7c9d0] px-2.5 py-1 text-xs font-black text-[#6f343b] shadow-[0_4px_10px_rgba(112,84,84,0.12)]">
-                        {renderHighlightedText(primaryTag(thought), trimmedQuery)}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </article>
-              );
-            })}
+            <div className="mt-10">
+              <CalendarPanel />
+            </div>
           </section>
-        ) : (
-          <section className="rounded-[1.5rem] border-[2px] border-dashed border-[#e1c5c3] bg-white/60 px-6 py-12 text-center shadow-[0_12px_24px_rgba(112,84,84,0.08)]">
-            <p className="text-lg font-black text-stone-800">没有找到相关碎碎念</p>
-            <p className="mt-2 text-sm font-semibold text-stone-600">换个关键词，或者先回到全部分类看看。</p>
-          </section>
-        )}
+        </aside>
       </div>
+
+      <Link
+        aria-label="新建碎碎念"
+        className="fixed bottom-6 right-6 z-30 inline-flex h-15 w-15 items-center justify-center rounded-full border-[3px] border-[#5b3a30] bg-[#ffb9c8] text-3xl font-black leading-none text-[#5b3a30] shadow-[8px_8px_0_rgba(91,58,48,0.18)] transition hover:-translate-y-1 hover:rotate-6 hover:bg-[#ffd6de]"
+        href="/thoughts/new"
+      >
+        +
+      </Link>
     </main>
   );
 }
