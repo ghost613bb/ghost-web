@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   featuredPlaylistSongId,
@@ -67,12 +67,16 @@ describe("PlaylistsPageView", () => {
     });
   });
 
-  it("renders the warm playlist workspace", () => {
-    renderPlaylistsPage();
+  it("renders the warm playlist workspace", async () => {
+    await act(async () => {
+      renderPlaylistsPage();
+    });
 
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
     expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("歌单")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByLabelText("歌单列表")).toBeInTheDocument();
     expect(screen.getByLabelText("今日循环歌曲")).toBeInTheDocument();
     expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();

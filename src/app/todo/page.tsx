@@ -6,5 +6,6 @@ export default async function TodoPage() {
     title: "人生todolist",
     demoTitle: "人生todolist-演示模式",
     demoDescription: "这是人生todolist模块的基础演示内容。",
+    activeTab: "todo",
   });
 }

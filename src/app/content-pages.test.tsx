@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album } from "@/features/album/types";
 import AboutPage from "./about/page";
@@ -117,19 +117,25 @@ describe("content module pages", () => {
     vi.useRealTimers();
   });
 
-  it("renders the about page heading", async () => {
+  it("renders the about page with the shared diary tabs header", async () => {
     render(await AboutPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "心情日记" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("心情日记")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
+    expect(screen.getByText("碎碎念")).toBeInTheDocument();
   });
 
-  it("renders the about demo page in demo mode", async () => {
+  it("renders the about demo page in demo mode with the shared diary tabs header", async () => {
     await updateDisplayMode("about", "demo");
 
     render(await AboutPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "心情日记-演示模式" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "心情日记" })).toBeInTheDocument();
+    expect(screen.getByText("心情日记-演示模式")).toBeInTheDocument();
     expect(screen.getByText("这是心情日记模块的基础演示内容。")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
   });
 
   it("renders the album page heading", async () => {
@@ -155,10 +161,10 @@ describe("content module pages", () => {
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
     expect(screen.getByText("荷注：小妞呀，图片，新收进来的封面占位练习。")).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("min-h-[288px]", "sm:min-h-[304px]", "p-3");
-    expect(backHomeLink).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
+    expect(backHomeLink).toHaveTextContent("Home");
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("个人相册")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(createAlbumButton).toHaveClass("rounded-[1rem]", "border-2", "bg-[#f8cfd5]", "px-3.5", "py-1", "text-sm", "font-black");
-    expect(backHomeLink.closest("header")).toContainElement(createAlbumButton);
-    expect(backHomeLink.parentElement).toHaveClass("py-4.5");
     const firstAlbumCard = screen.getAllByRole("article")[0];
     const firstAlbumDetailLink = firstAlbumCard.querySelector("a[href='/album/album-001']") as HTMLElement;
     const firstAlbumCover = firstAlbumDetailLink.firstElementChild as HTMLElement;
@@ -431,7 +437,8 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Pocket Diary" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveTextContent("Home");
-    expect(screen.getByText("Diaries")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(screen.getByText("碎碎念")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
     expect(screen.getByText("数据源：本地 fallback")).toBeInTheDocument();
@@ -547,18 +554,22 @@ describe("content module pages", () => {
     expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
   });
 
-  it("renders the playlists page heading", async () => {
-    render(await PlaylistsPage());
+  it("renders the playlists page with the shared diary tabs header", async () => {
+    await act(async () => {
+      render(await PlaylistsPage());
+    });
 
     expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("歌单")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
+    expect(screen.getByText("今日循环中")).toBeInTheDocument();
     expect(screen.getByLabelText("歌单列表")).toBeInTheDocument();
     expect(screen.getByLabelText("今日循环歌曲")).toBeInTheDocument();
     expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();
     expect(screen.getByLabelText("当前播放栏")).toBeInTheDocument();
     expect(screen.getAllByText("doll").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("云朵软糖拍").length).toBeGreaterThan(0);
   });
 
   it("renders the playlists demo page in demo mode", async () => {
@@ -566,16 +577,19 @@ describe("content module pages", () => {
 
     render(await PlaylistsPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "歌单-演示模式" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
+    expect(screen.getByText("歌单-演示模式")).toBeInTheDocument();
     expect(screen.getByText("这是歌单模块的基础演示内容。")).toBeInTheDocument();
     expect(screen.queryByLabelText("歌单列表")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("当前播放栏")).not.toBeInTheDocument();
   });
 
-  it("renders the coffee page heading", async () => {
+  it("renders the coffee page with the shared diary tabs header", async () => {
     render(await CoffeePage());
 
     expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("咖啡推荐")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
   });
 
   it("renders the coffee demo page in demo mode", async () => {
@@ -583,14 +597,17 @@ describe("content module pages", () => {
 
     render(await CoffeePage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐-演示模式" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐" })).toBeInTheDocument();
+    expect(screen.getByText("咖啡推荐-演示模式")).toBeInTheDocument();
     expect(screen.getByText("这是咖啡推荐模块的基础演示内容。")).toBeInTheDocument();
   });
 
-  it("renders the todo page heading", async () => {
+  it("renders the todo page with the shared diary tabs header", async () => {
     render(await TodoPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("人生todolist")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
   });
 
   it("renders the todo demo page in demo mode", async () => {
@@ -598,14 +615,17 @@ describe("content module pages", () => {
 
     render(await TodoPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "人生todolist-演示模式" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
+    expect(screen.getByText("人生todolist-演示模式")).toBeInTheDocument();
     expect(screen.getByText("这是人生todolist模块的基础演示内容。")).toBeInTheDocument();
   });
 
-  it("renders the message page heading", async () => {
+  it("renders the message page with the shared diary tabs header", async () => {
     render(await MessagePage());
 
     expect(screen.getByRole("heading", { level: 1, name: "学习笔记" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("学习笔记")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
   });
 
   it("renders the message demo page in demo mode", async () => {
@@ -613,7 +633,8 @@ describe("content module pages", () => {
 
     render(await MessagePage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "学习笔记-演示模式" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "学习笔记" })).toBeInTheDocument();
+    expect(screen.getByText("学习笔记-演示模式")).toBeInTheDocument();
     expect(screen.getByText("这是学习笔记模块的基础演示内容。")).toBeInTheDocument();
   });
 });

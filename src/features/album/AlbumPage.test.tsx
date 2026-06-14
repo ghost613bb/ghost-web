@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album } from "./types";
 import { AlbumPageView } from "./AlbumPage";
@@ -17,6 +17,17 @@ describe("AlbumPageView", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("renders the shared diary tabs header and album action bar", () => {
+    render(<AlbumPageView initialAlbums={[album]} />);
+
+    const navigation = screen.getByRole("navigation", { name: "内容页导航" });
+
+    expect(navigation).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
+    expect(within(navigation).getByText("个人相册")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
+    expect(screen.getByRole("button", { name: "新建相册" })).toBeInTheDocument();
   });
 
   it("edits an album from the more menu, uploads a new cover, and updates the card", async () => {

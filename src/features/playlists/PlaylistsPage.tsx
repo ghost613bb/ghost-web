@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from "react";
-import Link from "next/link";
 import {
   ChevronDown,
   Disc3,
@@ -25,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import type { PlaylistCollection, PlaylistNote, PlaylistPlayerSnapshot, PlaylistSong } from "@/data/playlists";
+import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { CommentPlayerPanel } from "./CommentPlayerPanel";
 import { PlaylistBatchImportDialog } from "./PlaylistBatchImportDialog";
 import { PlaylistCollectionDialog } from "./PlaylistCollectionDialog";
@@ -66,8 +66,6 @@ type AdminSessionResult = {
 
 const lyricSyncOffsetSeconds = 0.35;
 const tableHeaderClass = "px-3 py-3 text-left text-xs font-black uppercase tracking-[0.12em] text-[#5a332f]";
-const topActionClass =
-  "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
 
 function SongArtwork({ song }: { song: PlaylistSong }) {
   return (
@@ -109,24 +107,6 @@ function PlaylistCover({ collection }: { collection: PlaylistCollection }) {
         <div className="relative z-10 pb-4 text-xl font-black text-[#6d3b39]">⌣</div>
       </div>
     </div>
-  );
-}
-
-function PlaylistHeader() {
-  return (
-    <header className="border-b-2 border-stone-700/60 bg-[#f6b8c2]">
-      <div className="relative mx-auto flex max-w-[1480px] items-center justify-between gap-3 px-4 py-4.5 sm:px-6">
-        <Link className={topActionClass} href="/">
-          返回首页小镇
-        </Link>
-        <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-black tracking-tight sm:text-[1.75rem]">
-          歌单
-        </h1>
-        <span className="hidden rounded-[1rem] border-2 border-stone-700/80 bg-[#fff4c9] px-4 py-1.5 text-sm font-black text-stone-900 sm:inline-flex">
-          今日循环中
-        </span>
-      </div>
-    </header>
   );
 }
 
@@ -984,8 +964,8 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
       {isRemoveSongsDialogOpen ? (
         <PlaylistConfirmDialog body={`确定从「${activeCollection.title}」移除选中的 ${getOrderedSelectedSongIds().length} 首歌吗？不会删除歌曲本体。`} confirmLabel="确认移出" error={removeSongsError} isSubmitting={isBulkSongSubmitting} onCancel={() => setIsRemoveSongsDialogOpen(false)} onConfirm={() => void confirmRemoveSelectedSongs()} title="移出当前歌单" />
       ) : null}
-      <PlaylistHeader />
-      <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">
+      <ContentTabsHeader activeTab="playlists" />
+      <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-6 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">
           <PlaylistSidebar
             activeCollectionId={activeCollection.id}

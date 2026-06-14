@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { AlbumFormDialog, type AlbumFormPayload } from "./AlbumFormDialog";
 import type { Album } from "./types";
 
@@ -130,21 +131,18 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
-      <header className="border-b-2 border-stone-700/60 bg-[#f6b8c2]">
-        <div className="relative mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-4 py-4.5 sm:px-6">
-          <Link className={topActionClass} href="/">
-            返回首页小镇
-          </Link>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-black tracking-tight sm:text-[1.75rem]">
-            个人相册
-          </h1>
+      <ContentTabsHeader activeTab="album" />
+
+      <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-6 sm:px-6">
+        <div className="mb-5 flex flex-col gap-3 rounded-[1.4rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/86 p-3 shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-[#7a5147]">把想留下来的画面继续贴进这本小镇相册</p>
+            <h1 className="mt-1 text-[1.9rem] font-black tracking-tight text-[#4a2e28] sm:text-[2.2rem]">个人相册</h1>
+          </div>
           <button className={topActionClass} onClick={() => setIsCreateDialogOpen(true)} type="button">
             新建相册
           </button>
         </div>
-      </header>
-
-      <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-3 sm:px-6">
         <section className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {albums.map((album, index) => (
             <article

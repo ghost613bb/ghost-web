@@ -6,5 +6,6 @@ export default async function MessagePage() {
     title: "学习笔记",
     demoTitle: "学习笔记-演示模式",
     demoDescription: "这是学习笔记模块的基础演示内容。",
+    activeTab: "message",
   });
 }

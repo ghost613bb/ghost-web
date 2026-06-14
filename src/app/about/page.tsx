@@ -6,5 +6,6 @@ export default async function AboutPage() {
     title: "心情日记",
     demoTitle: "心情日记-演示模式",
     demoDescription: "这是心情日记模块的基础演示内容。",
+    activeTab: "about",
   });
 }
