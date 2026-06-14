@@ -106,6 +106,7 @@ describe("PlaylistsPageView", () => {
       expect(screen.getAllByText(song.duration ?? "").length).toBeGreaterThan(0);
     });
 
+    expect(screen.getByText("Playlist detail · 6 minutes")).toBeInTheDocument();
     expect(screen.queryByText("电子充电器")).not.toBeInTheDocument();
   });
 
@@ -660,6 +661,7 @@ describe("PlaylistsPageView", () => {
     );
 
     expect(screen.getAllByText("5:29").length).toBeGreaterThan(0);
+    expect(screen.getByText("Playlist detail · 5 minutes")).toBeInTheDocument();
     expect(screen.queryByText("—")).not.toBeInTheDocument();
   });
 

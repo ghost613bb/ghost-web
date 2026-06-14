@@ -219,7 +219,33 @@ function PlaylistSidebar({ activeCollectionId, adminPanel, collections, createDi
   );
 }
 
-function HeroPanel({ collection, featuredSong, isPlaying, onPlayAll, songs }: { collection: PlaylistCollection; featuredSong: PlaylistSong; isPlaying: boolean; onPlayAll: () => void; songs: PlaylistSong[] }) {
+function parseDurationLabelSeconds(durationLabel: string) {
+  const parts = durationLabel.split(":").map((part) => Number(part));
+
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !Number.isFinite(part) || part < 0)) {
+    return null;
+  }
+
+  return parts.reduce((totalSeconds, part) => totalSeconds * 60 + part, 0);
+}
+
+function getPlaylistTotalDurationLabel(songs: PlaylistSong[], durationLabels: SongDurationLabels) {
+  if (songs.length === 0) {
+    return "0 minutes";
+  }
+
+  const durationSeconds = songs.map((song) => parseDurationLabelSeconds(getSongDuration(song, durationLabels)));
+
+  if (durationSeconds.some((seconds) => seconds === null)) {
+    return "— minutes";
+  }
+
+  const totalMinutes = Math.max(1, Math.round(durationSeconds.reduce((totalSeconds, seconds) => totalSeconds + (seconds ?? 0), 0) / 60));
+
+  return `${totalMinutes} ${totalMinutes === 1 ? "minute" : "minutes"}`;
+}
+
+function HeroPanel({ collection, durationLabels, featuredSong, isPlaying, onPlayAll, songs }: { collection: PlaylistCollection; durationLabels: SongDurationLabels; featuredSong: PlaylistSong; isPlaying: boolean; onPlayAll: () => void; songs: PlaylistSong[] }) {
   const hasSongs = songs.length > 0;
 
   return (
@@ -227,7 +253,7 @@ function HeroPanel({ collection, featuredSong, isPlaying, onPlayAll, songs }: { 
       <PlaylistCover collection={collection} />
       <div className="flex min-w-0 flex-col justify-center">
         <p className="mb-2 inline-flex w-fit rounded-full border border-[#e4b7b9] bg-[#fff0c4] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#7a3d3f]">
-          Playlist detail · {hasSongs ? songs.length * 2 + 2 : 0} minutes
+          Playlist detail · {getPlaylistTotalDurationLabel(songs, durationLabels)}
         </p>
         <h2 className="text-[2.45rem] font-black leading-none tracking-tight text-[#4f2525] sm:text-[3.35rem]">{collection.title}</h2>
         <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-stone-700 sm:text-base">{hasSongs ? featuredSong.feeling : collection.description || "这个歌单还没有歌曲，可以用批量导入歌曲添加。"}</p>
@@ -975,7 +1001,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
             onSelectCollection={handleSelectCollection}
           />
           <div className="min-w-0 space-y-5">
-            <HeroPanel collection={activeCollection} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
+            <HeroPanel collection={activeCollection} durationLabels={player.songDurationLabels} featuredSong={player.currentSong} isPlaying={player.isPlaying} onPlayAll={player.togglePlay} songs={visibleSongs} />
             <SongTable
               bulkError={bulkSongError}
               canManageSongs={isManagementUnlocked}
