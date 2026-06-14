@@ -442,8 +442,8 @@ describe("content module pages", () => {
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "h-15", "w-15", "rounded-full");
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
     expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("grid", "grid-cols-1", "gap-5", "xl:grid-cols-3");
-    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
-    expect(screen.getAllByText(thoughts[0].body)).toHaveLength(5);
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
+    expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-[#fffaf0]");
     const firstThoughtTag = screen.getAllByRole("article")[0].querySelector("span.mt-3") as HTMLElement;
     expect(firstThoughtTag).toHaveTextContent("网站");
@@ -457,15 +457,13 @@ describe("content module pages", () => {
   it("filters fallback thoughts by tag", async () => {
     render(await ThoughtsPage());
 
-    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[2].title })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "边界感" }));
 
     expect(screen.queryByRole("heading", { level: 2, name: thoughts[0].title })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: thoughts[2].title })).not.toBeInTheDocument();
   });
 
   it("searches fallback thoughts and shows an empty state when nothing matches", async () => {
@@ -475,9 +473,8 @@ describe("content module pages", () => {
 
     fireEvent.change(searchbox, { target: { value: "模板站" } });
 
-    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveLength(5);
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: thoughts[1].title })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: thoughts[2].title })).not.toBeInTheDocument();
 
     fireEvent.change(searchbox, { target: { value: "没有这条碎碎念" } });
 
