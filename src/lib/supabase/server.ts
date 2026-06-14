@@ -9,6 +9,29 @@ export function hasSupabaseServerEnv() {
   return Boolean(supabaseUrl && (supabaseServiceRoleKey || supabasePublishableKey));
 }
 
+export function hasSupabaseServiceRoleEnv() {
+  return Boolean(supabaseUrl && supabaseServiceRoleKey);
+}
+
+export function createSupabaseServiceRoleClient() {
+  if (!supabaseUrl) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+  }
+
+  if (!supabaseServiceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+  }
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+    },
+    realtime: {
+      transport: WebSocket as unknown as typeof globalThis.WebSocket,
+    },
+  });
+}
+
 export function createSupabaseServerClient() {
   if (!supabaseUrl) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");

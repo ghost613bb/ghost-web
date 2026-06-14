@@ -1,10 +1,31 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { thoughts } from "@/data/thoughts";
+
+const supabaseEnvState = vi.hoisted(() => ({
+  enabled: false,
+}));
+
+const supabaseRepositoryState = vi.hoisted(() => ({
+  deleteSupabaseThought: vi.fn(),
+  getSupabaseThoughtById: vi.fn(),
+  getSupabaseThoughtIds: vi.fn(),
+  listVisibleSupabaseThoughts: vi.fn(),
+  upsertSupabaseThought: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  hasSupabaseServiceRoleEnv: () => supabaseEnvState.enabled,
+}));
+
+vi.mock("./supabaseRepository", () => supabaseRepositoryState);
+
 import { resetStoredThoughts, upsertStoredThought } from "./repository";
 import { createThought, deleteThought, getLatestThought, getThoughtBySlug, listThoughts } from "./service";
 
 describe("thoughts service", () => {
   beforeEach(async () => {
+    supabaseEnvState.enabled = false;
+    Object.values(supabaseRepositoryState).forEach((mock) => mock.mockReset());
     await resetStoredThoughts();
   });
 
@@ -170,5 +191,58 @@ describe("thoughts service", () => {
 
   it("returns false when deleting a missing thought", async () => {
     await expect(deleteThought("missing-thought")).resolves.toBe(false);
+  });
+
+  it("uses Supabase storage when server env is configured", async () => {
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.getSupabaseThoughtIds.mockResolvedValue(new Set(["thought-supabase"]));
+    supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([
+      {
+        id: "thought-supabase",
+        title: "Supabase 里的碎碎念",
+        slug: "thought-supabase",
+        body: "这条内容来自 Supabase。",
+        bodyText: "这条内容来自 Supabase。",
+        tags: ["Supabase"],
+        visibility: "public",
+        status: "published",
+        createdAt: "2026-06-14",
+        publishedAt: "2026-06-14",
+        pinned: false,
+        sortOrder: 1,
+      },
+    ]);
+
+    const result = await listThoughts();
+
+    expect(result[0]).toEqual(expect.objectContaining({ id: "thought-supabase" }));
+    expect(supabaseRepositoryState.getSupabaseThoughtIds).toHaveBeenCalled();
+    expect(supabaseRepositoryState.listVisibleSupabaseThoughts).toHaveBeenCalled();
+  });
+
+  it("creates and reads back thoughts through Supabase storage", async () => {
+    const thought = {
+      id: "thought-supabase-create",
+      title: "写入 Supabase",
+      slug: "thought-supabase-create",
+      body: "写入后从 Supabase 读回。",
+      tags: ["Supabase"],
+      visibility: "public" as const,
+      status: "published" as const,
+      createdAt: "2026-06-14",
+      sortOrder: 1,
+    };
+
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.getSupabaseThoughtById.mockResolvedValue({
+      ...thought,
+      bodyText: thought.body,
+      pinned: false,
+      publishedAt: thought.createdAt,
+    });
+
+    await expect(createThought(thought)).resolves.toEqual(expect.objectContaining({ bodyText: thought.body, id: thought.id }));
+    expect(supabaseRepositoryState.upsertSupabaseThought).toHaveBeenCalledWith(thought);
+    expect(supabaseRepositoryState.getSupabaseThoughtById).toHaveBeenCalledWith(thought.id);
   });
 });
