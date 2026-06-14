@@ -137,7 +137,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
       <DataSourceBadge source={dataSource} />
       <ContentTabsHeader activeTab="thoughts" />
 
-      <div className="mx-auto grid max-w-[1280px] gap-7 px-4 pb-12 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mx-auto grid max-w-[1280px] gap-7 px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0">
           <div className="mb-6 flex flex-col gap-3 rounded-[1.4rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/86 p-3 shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-black text-[#7a5147]">把今天的小事贴成一页奶油手账</p>
