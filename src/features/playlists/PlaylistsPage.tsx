@@ -462,8 +462,8 @@ function LyricsPanel({ currentTimeSeconds, song }: { currentTimeSeconds: number;
             词
           </span>
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tight text-[#4f2525]">Lyrics Room</h2>
-            <p className="text-xs font-bold text-stone-600">{song.title}</p>
+            <h2 className="text-xl font-black uppercase tracking-tight text-[#4f2525]">{song.title}</h2>
+            <p className="text-xs font-bold text-stone-600">{song.artist}</p>
           </div>
         </div>
 

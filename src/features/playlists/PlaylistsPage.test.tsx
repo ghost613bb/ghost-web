@@ -616,7 +616,8 @@ describe("PlaylistsPageView", () => {
 
     expect(screen.queryByLabelText("耳机留言播放器")).not.toBeInTheDocument();
     expect(within(playerBar).getByRole("button", { name: "关闭歌词" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(lyricsPanel).getByText("Lyrics Room")).toBeInTheDocument();
+    expect(within(lyricsPanel).getByRole("heading", { level: 2, name: featuredSong?.title })).toBeInTheDocument();
+    expect(within(lyricsPanel).getByText(featuredSong?.artist ?? "")).toBeInTheDocument();
     expect(within(lyricsPanel).getByRole("img", { name: `${featuredSong?.title}歌词光盘封面` })).toHaveAttribute("src", featuredSong?.coverImageSrc);
     expect(within(lyricsPanel).getByText("凛冽的风捶打在肩")).toBeInTheDocument();
     expect(within(lyricsPanel).getByText("凛冽的风捶打在肩")).not.toHaveAttribute("aria-current");
