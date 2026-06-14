@@ -1,6 +1,8 @@
 import { ThoughtsPageView } from "@/features/thoughts/ThoughtsPage";
-import { listThoughts } from "@/features/thoughts/service";
+import { getThoughtPageData } from "@/features/thoughts/service";
 
 export default async function ThoughtsPage() {
-  return <ThoughtsPageView initialThoughts={await listThoughts()} />;
+  const data = await getThoughtPageData();
+
+  return <ThoughtsPageView dataSource={data.dataSource} initialThoughts={data.thoughts} />;
 }

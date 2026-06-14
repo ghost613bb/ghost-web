@@ -20,7 +20,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("./supabaseRepository", () => supabaseRepositoryState);
 
 import { resetStoredThoughts, upsertStoredThought } from "./repository";
-import { createThought, deleteThought, getLatestThought, getThoughtBySlug, listThoughts } from "./service";
+import { createThought, deleteThought, getLatestThought, getThoughtBySlug, getThoughtPageData, listThoughts } from "./service";
 
 describe("thoughts service", () => {
   beforeEach(async () => {
@@ -31,6 +31,7 @@ describe("thoughts service", () => {
 
   it("falls back to local thoughts when storage is empty", async () => {
     await expect(listThoughts()).resolves.toEqual(thoughts);
+    await expect(getThoughtPageData()).resolves.toEqual({ dataSource: "local", thoughts });
   });
 
   it("returns the latest stored thought before fallback thoughts when storage has data", async () => {
@@ -195,7 +196,7 @@ describe("thoughts service", () => {
 
   it("uses Supabase storage when server env is configured", async () => {
     supabaseEnvState.enabled = true;
-    supabaseRepositoryState.getSupabaseThoughtIds.mockResolvedValue(new Set(["thought-supabase"]));
+    supabaseRepositoryState.getSupabaseThoughtIds.mockResolvedValue(new Set(["thought-supabase", ...thoughts.map((thought) => thought.id)]));
     supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([
       {
         id: "thought-supabase",
@@ -213,11 +214,23 @@ describe("thoughts service", () => {
       },
     ]);
 
-    const result = await listThoughts();
+    const result = await getThoughtPageData();
 
-    expect(result[0]).toEqual(expect.objectContaining({ id: "thought-supabase" }));
+    expect(result.dataSource).toBe("supabase");
+    expect(result.thoughts[0]).toEqual(expect.objectContaining({ id: "thought-supabase" }));
     expect(supabaseRepositoryState.getSupabaseThoughtIds).toHaveBeenCalled();
     expect(supabaseRepositoryState.listVisibleSupabaseThoughts).toHaveBeenCalled();
+  });
+
+  it("marks Supabase data as mixed when fallback records are still visible", async () => {
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.getSupabaseThoughtIds.mockResolvedValue(new Set([thoughts[0].id]));
+    supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([thoughts[0]]);
+
+    const result = await getThoughtPageData();
+
+    expect(result.dataSource).toBe("mixed");
+    expect(result.thoughts.some((thought) => thought.id === thoughts[1].id)).toBe(true);
   });
 
   it("creates and reads back thoughts through Supabase storage", async () => {

@@ -5,8 +5,10 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Thought } from "@/data/thoughts";
 import { thoughtBodyToPlainText } from "./text";
+import type { ThoughtDataSource } from "./service";
 
 type ThoughtsPageViewProps = {
+  dataSource?: ThoughtDataSource;
   initialThoughts: Thought[];
 };
 
@@ -84,6 +86,20 @@ function renderHighlightedText(value: string, query: string) {
   return fragments;
 }
 
+function DataSourceBadge({ source }: { source?: ThoughtDataSource }) {
+  if (process.env.NODE_ENV === "production" || !source) {
+    return null;
+  }
+
+  const label = source === "supabase" ? "数据源：Supabase" : source === "mixed" ? "数据源：Supabase + 本地 fallback" : "数据源：本地 fallback";
+
+  return (
+    <span className="fixed right-4 top-4 z-30 rounded-full border-2 border-[#5b3a30]/80 bg-[#fffaf0]/90 px-3 py-1 text-xs font-black text-[#5a352d] shadow-[0_4px_0_rgba(91,58,48,0.12)] backdrop-blur">
+      {label}
+    </span>
+  );
+}
+
 function CalendarPanel() {
   const markedDays = new Set([5, 10, 11, 12, 14, 15, 17, 18]);
 
@@ -104,7 +120,7 @@ function CalendarPanel() {
   );
 }
 
-export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
+export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageViewProps) {
   const [activeTag, setActiveTag] = useState("全部");
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
@@ -117,6 +133,7 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#fff8e6] text-[#4a2e28] [background-image:radial-gradient(circle_at_12%_18%,rgba(255,199,211,0.28)_0_80px,transparent_81px),radial-gradient(circle_at_88%_72%,rgba(190,233,221,0.36)_0_120px,transparent_121px),linear-gradient(90deg,rgba(121,76,55,0.04)_1px,transparent_1px),linear-gradient(rgba(121,76,55,0.035)_1px,transparent_1px)] [background-size:auto,auto,42px_42px,42px_42px]">
+      <DataSourceBadge source={dataSource} />
       <header className="relative overflow-hidden border-b-[2px] border-[#5b3a30] bg-[#ffe8a8] shadow-[0_8px_0_rgba(91,58,48,0.06)]">
         <div aria-hidden="true" className="absolute inset-0 opacity-45 [background-image:radial-gradient(circle,rgba(255,255,255,0.55)_0_2px,transparent_3px)] [background-size:34px_24px]" />
         <div className="relative mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pb-11 pt-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">

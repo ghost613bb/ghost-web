@@ -434,6 +434,7 @@ describe("content module pages", () => {
     expect(screen.getByText("Diaries")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
+    expect(screen.getByText("数据源：本地 fallback")).toBeInTheDocument();
     expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByText("Calendar")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveAttribute("href", "/thoughts/new");

@@ -4,6 +4,13 @@ import { hasSupabaseServiceRoleEnv } from "@/lib/supabase/server";
 import { deleteStoredThought, getStoredThoughtById, getStoredThoughtIds, listVisibleStoredThoughts, upsertStoredThought } from "./repository";
 import { deleteSupabaseThought, getSupabaseThoughtById, getSupabaseThoughtIds, listVisibleSupabaseThoughts, upsertSupabaseThought } from "./supabaseRepository";
 
+export type ThoughtDataSource = "local" | "mixed" | "supabase";
+
+export type ThoughtPageData = {
+  dataSource: ThoughtDataSource;
+  thoughts: Thought[];
+};
+
 type ThoughtStorage = {
   deleteThought: (id: string) => Promise<void>;
   getThoughtById: (id: string) => Promise<Thought | null>;
@@ -32,12 +39,18 @@ function getThoughtStorage() {
   return hasSupabaseServiceRoleEnv() ? supabaseStorage : sqliteStorage;
 }
 
-export async function listThoughts(): Promise<Thought[]> {
+export async function getThoughtPageData(): Promise<ThoughtPageData> {
   const storage = getThoughtStorage();
   const [storedThoughtIds, storedThoughts] = await Promise.all([storage.getThoughtIds(), storage.listVisibleThoughts()]);
   const visibleFallbackThoughts = fallbackThoughts.filter((thought) => !storedThoughtIds.has(thought.id));
+  const thoughts = [...storedThoughts, ...visibleFallbackThoughts];
+  const dataSource = hasSupabaseServiceRoleEnv() ? (visibleFallbackThoughts.length > 0 ? "mixed" : "supabase") : "local";
 
-  return [...storedThoughts, ...visibleFallbackThoughts];
+  return { dataSource, thoughts };
+}
+
+export async function listThoughts(): Promise<Thought[]> {
+  return (await getThoughtPageData()).thoughts;
 }
 
 export async function getLatestThought(): Promise<Thought | null> {
