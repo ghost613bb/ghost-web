@@ -9,6 +9,14 @@ type ThoughtsPageViewProps = {
   initialThoughts: Thought[];
 };
 
+type ThoughtListItem = {
+  bodyText: string;
+  primaryTag: string;
+  tags: string[];
+  tagsText: string;
+  thought: Thought;
+};
+
 function formatThoughtDate(createdAt: string | undefined) {
   if (!createdAt) {
     return "未记录日期";
@@ -19,10 +27,6 @@ function formatThoughtDate(createdAt: string | undefined) {
 
 function thoughtTags(thought: Thought) {
   return thought.tags ?? [];
-}
-
-function primaryTag(thought: Thought) {
-  return thoughtTags(thought)[0] ?? "日常";
 }
 
 function thoughtBodyToPlainText(body: string) {
@@ -38,12 +42,24 @@ function thoughtBodyToPlainText(body: string) {
     .trim();
 }
 
-function matchesQuery(thought: Thought, normalizedQuery: string) {
+function toThoughtListItem(thought: Thought): ThoughtListItem {
+  const tags = thoughtTags(thought);
+
+  return {
+    bodyText: thoughtBodyToPlainText(thought.body),
+    primaryTag: tags[0] ?? "日常",
+    tags,
+    tagsText: tags.join(" "),
+    thought,
+  };
+}
+
+function matchesQuery(item: ThoughtListItem, normalizedQuery: string) {
   if (!normalizedQuery) {
     return true;
   }
 
-  return [thought.title, thoughtBodyToPlainText(thought.body), thoughtTags(thought).join(" ")].some((value) => value.toLowerCase().includes(normalizedQuery));
+  return [item.thought.title, item.bodyText, item.tagsText].some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
 function renderHighlightedText(value: string, query: string) {
@@ -105,10 +121,11 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
   const normalizedQuery = trimmedQuery.toLowerCase();
-  const tags = useMemo(() => ["全部", ...Array.from(new Set(initialThoughts.flatMap((thought) => thoughtTags(thought))))], [initialThoughts]);
+  const thoughtItems = useMemo(() => initialThoughts.map((thought) => toThoughtListItem(thought)), [initialThoughts]);
+  const tags = useMemo(() => ["全部", ...Array.from(new Set(thoughtItems.flatMap((item) => item.tags)))], [thoughtItems]);
   const filteredThoughts = useMemo(() => {
-    return initialThoughts.filter((thought) => (activeTag === "全部" || thoughtTags(thought).includes(activeTag)) && matchesQuery(thought, normalizedQuery));
-  }, [activeTag, initialThoughts, normalizedQuery]);
+    return thoughtItems.filter((item) => (activeTag === "全部" || item.tags.includes(activeTag)) && matchesQuery(item, normalizedQuery));
+  }, [activeTag, normalizedQuery, thoughtItems]);
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#fff8e6] text-[#4a2e28] [background-image:radial-gradient(circle_at_12%_18%,rgba(255,199,211,0.28)_0_80px,transparent_81px),radial-gradient(circle_at_88%_72%,rgba(190,233,221,0.36)_0_120px,transparent_121px),linear-gradient(90deg,rgba(121,76,55,0.04)_1px,transparent_1px),linear-gradient(rgba(121,76,55,0.035)_1px,transparent_1px)] [background-size:auto,auto,42px_42px,42px_42px]">
@@ -161,9 +178,7 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
 
           {filteredThoughts.length > 0 ? (
             <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {filteredThoughts.map((thought) => {
-                const thoughtBody = thoughtBodyToPlainText(thought.body);
-
+              {filteredThoughts.map(({ bodyText, primaryTag, thought }) => {
                 return (
                   <article className="overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[8px_8px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-1 hover:shadow-[10px_12px_0_rgba(91,58,48,0.16)]" key={thought.id}>
                     <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]" href={`/thoughts/${thought.slug}`}>
@@ -173,9 +188,9 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
                       <div className="px-1 pb-1">
                         <h2 className="text-[1.05rem] font-black tracking-tight text-[#3f2823]">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
                         <p className="mt-1 text-xs font-bold text-[#7a5147]">{formatThoughtDate(thought.createdAt)}</p>
-                        <p className="mt-2 line-clamp-3 text-sm font-semibold leading-6 text-[#5e463f]">{renderHighlightedText(thoughtBody, trimmedQuery)}</p>
+                        <p className="mt-2 line-clamp-3 text-sm font-semibold leading-6 text-[#5e463f]">{renderHighlightedText(bodyText, trimmedQuery)}</p>
                         <span className="mt-3 inline-flex rounded-full border border-[#5b3a30]/30 bg-[#ffccd5] px-3 py-1 text-xs font-black text-[#6f343b] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">
-                          {renderHighlightedText(primaryTag(thought), trimmedQuery)}
+                          {renderHighlightedText(primaryTag, trimmedQuery)}
                         </span>
                       </div>
                     </Link>
