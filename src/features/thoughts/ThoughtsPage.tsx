@@ -116,9 +116,11 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
         <div aria-hidden="true" className="absolute inset-0 opacity-45 [background-image:radial-gradient(circle,rgba(255,255,255,0.55)_0_2px,transparent_3px)] [background-size:34px_24px]" />
         <div className="relative mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pb-11 pt-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid h-13 w-13 place-items-center rounded-full border-[2px] border-[#5b3a30] bg-[#fff8ed] text-2xl shadow-[3px_3px_0_rgba(91,58,48,0.12)]">👧🏻</span>
-            <h1 className="text-2xl font-black tracking-tight text-[#6a3c34] drop-shadow-[2px_2px_0_#fff7df] sm:text-[2rem]">
-              我的碎碎念 (My Daily Thoughts)
+            <span className="grid h-13 w-13 place-items-center overflow-hidden rounded-full border-[2px] border-[#5b3a30] bg-[#fff8ed] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
+              <img alt="碎碎念头像" className="h-full w-full object-cover" src="/images/daily-thoughts-avatar.jpeg" />
+            </span>
+            <h1 className="text-[2.55rem] font-semibold leading-none tracking-[0.02em] text-[#6a3c34] [text-shadow:2px_2px_0_#fff7df,0_1px_0_rgba(91,58,48,0.18)] sm:text-[3.1rem]" style={{ fontFamily: '"Snell Roundhand", "Apple Chancery", "Bradley Hand", cursive' }}>
+              Pocket Diary
             </h1>
           </div>
           <nav aria-label="碎碎念导航" className="flex flex-wrap items-center gap-3 text-base font-black text-[#4a2e28]">
@@ -193,7 +195,9 @@ export function ThoughtsPageView({ initialThoughts }: ThoughtsPageViewProps) {
           <section className="relative overflow-hidden rounded-[1.65rem] border-[2px] border-[#5b3a30] bg-[#fffaf0]/90 px-6 py-6 shadow-[8px_8px_0_rgba(91,58,48,0.12)]">
             <div className="text-center">
               <h2 className="text-[1.45rem] font-black text-[#5a352d]">Profile</h2>
-              <div className="mx-auto mt-4 grid h-28 w-28 place-items-center rounded-full border-[2px] border-[#5b3a30] bg-[#ffe8a8] text-6xl shadow-[4px_4px_0_rgba(91,58,48,0.12)]">👧🏻</div>
+              <div className="mx-auto mt-4 grid h-28 w-28 place-items-center overflow-hidden rounded-full border-[2px] border-[#5b3a30] bg-[#ffe8a8] shadow-[4px_4px_0_rgba(91,58,48,0.12)]">
+                <img alt="碎碎念头像" className="h-full w-full object-cover" src="/images/daily-thoughts-avatar.jpeg" />
+              </div>
               <p className="mt-4 text-sm font-bold leading-6 text-[#765247]">记录灵感、日常和突然冒出来的小念头。</p>
             </div>
 

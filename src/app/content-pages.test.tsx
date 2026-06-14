@@ -428,7 +428,7 @@ describe("content module pages", () => {
     render(await ThoughtsPage());
 
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#fff8e6]");
-    expect(screen.getByRole("heading", { level: 1, name: "我的碎碎念 (My Daily Thoughts)" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Pocket Diary" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveTextContent("Home");
     expect(screen.getByText("Diaries")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
