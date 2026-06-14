@@ -449,17 +449,15 @@ describe("content module pages", () => {
     expect(screen.getByRole("link", { name: "新建碎碎念" })).not.toHaveTextContent("新建碎碎念");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "h-15", "w-15", "rounded-full");
     expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
-    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("grid", "grid-cols-1", "gap-5", "xl:grid-cols-3");
+    expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-5", "xl:columns-3");
     expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
-    expect(screen.getAllByRole("article")[0]).toHaveClass("rounded-[1.45rem]", "border-[2px]", "bg-[#fffaf0]");
+    expect(screen.getAllByRole("article")[0]).toHaveClass("mb-5", "break-inside-avoid", "rounded-[1.45rem]", "border-[2px]", "bg-[#fffaf0]");
     const firstThoughtTag = screen.getAllByRole("article")[0].querySelector("span.mt-3") as HTMLElement;
     expect(firstThoughtTag).toHaveTextContent("网站");
     expect(firstThoughtTag).toHaveClass("rounded-full", "bg-[#ffccd5]", "px-3", "py-1");
-    const thoughtImage = screen.getAllByRole("img", { name: "碎碎念配图" })[0];
-    expect(thoughtImage).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
-    expect(thoughtImage.parentElement).toHaveClass("mb-3", "aspect-[4/3]", "overflow-hidden", "rounded-[1rem]");
-    expect(screen.getAllByRole("heading", { level: 2, name: thoughts[0].title })).toHaveClass("line-clamp-2");
+    expect(screen.queryByRole("img", { name: `${thoughts[0].title}封面` })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toHaveClass("line-clamp-2");
     expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
   });
 

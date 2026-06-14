@@ -69,4 +69,16 @@ describe("ThoughtsPageView", () => {
     expect(screen.getByRole("heading", { level: 2, name: "有标签的碎碎念" })).toBeInTheDocument();
     expect(screen.getByText("摘要", { selector: "mark" })).toBeInTheDocument();
   });
+
+  it("uses the first rich text image as the card cover", () => {
+    render(<ThoughtsPageView initialThoughts={[{ ...taggedThought, body: '<p>配图内容</p><img src="/thought-images/cover.jpg" />' }]} />);
+
+    expect(screen.getByRole("img", { name: "有标签的碎碎念封面" })).toHaveAttribute("src", "/thought-images/cover.jpg");
+  });
+
+  it("does not render a card cover when a thought has no image", () => {
+    render(<ThoughtsPageView initialThoughts={[taggedThought]} />);
+
+    expect(screen.queryByRole("img", { name: "有标签的碎碎念封面" })).not.toBeInTheDocument();
+  });
 });

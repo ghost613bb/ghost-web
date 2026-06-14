@@ -15,6 +15,7 @@ type ThoughtsPageViewProps = {
 
 type ThoughtListItem = {
   bodyText: string;
+  coverImageUrl?: string;
   primaryTag: string;
   tags: string[];
   tagsText: string;
@@ -33,11 +34,17 @@ function thoughtTags(thought: Thought) {
   return thought.tags ?? [];
 }
 
+function getFirstImageSrc(body: string) {
+  const match = body.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i);
+  return match?.[1];
+}
+
 function toThoughtListItem(thought: Thought): ThoughtListItem {
   const tags = thoughtTags(thought);
 
   return {
     bodyText: thought.bodyText ?? thoughtBodyToPlainText(thought.body),
+    coverImageUrl: thought.coverImageUrl ?? getFirstImageSrc(thought.body),
     primaryTag: tags[0] ?? "日常",
     tags,
     tagsText: tags.join(" "),
@@ -156,14 +163,16 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
           </div>
 
           {filteredThoughts.length > 0 ? (
-            <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {filteredThoughts.map(({ bodyText, primaryTag, thought }) => {
+            <section className="columns-1 gap-5 sm:columns-2 xl:columns-3">
+              {filteredThoughts.map(({ bodyText, coverImageUrl, primaryTag, thought }) => {
                 return (
-                  <article className="overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[8px_8px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-1 hover:shadow-[10px_12px_0_rgba(91,58,48,0.16)]" key={thought.id}>
+                  <article className="mb-5 break-inside-avoid overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[8px_8px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-1 hover:shadow-[10px_12px_0_rgba(91,58,48,0.16)]" key={thought.id}>
                     <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]" href={`/thoughts/${thought.slug}`}>
-                      <div className="mb-3 aspect-[4/3] overflow-hidden rounded-[1rem] border-[2px] border-[#5b3a30] bg-[#fff8e6]">
-                        <img alt="碎碎念配图" className="h-full w-full object-cover" src="/album-cover-placeholder.jpeg" />
-                      </div>
+                      {coverImageUrl ? (
+                        <div className="mb-3 overflow-hidden rounded-[1rem] border-[2px] border-[#5b3a30] bg-[#fff8e6]">
+                          <img alt={`${thought.title}封面`} className="h-auto w-full object-cover" src={coverImageUrl} />
+                        </div>
+                      ) : null}
                       <div className="px-1 pb-1">
                         <h2 className="line-clamp-2 text-[1.05rem] font-black tracking-tight text-[#3f2823]">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
                         <p className="mt-1 text-xs font-bold text-[#7a5147]">{formatThoughtDate(thought.createdAt)}</p>
