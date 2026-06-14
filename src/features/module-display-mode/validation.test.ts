@@ -5,11 +5,11 @@ describe("module display mode validation", () => {
   it("parses a valid update payload", () => {
     expect(
       parseDisplayModeUpdate({
-        moduleId: "thoughts",
+        moduleId: "album",
         displayMode: "demo",
       }),
     ).toEqual({
-      moduleId: "thoughts",
+      moduleId: "album",
       displayMode: "demo",
     });
   });
@@ -26,7 +26,7 @@ describe("module display mode validation", () => {
   it("rejects invalid display modes", () => {
     expect(() =>
       parseDisplayModeUpdate({
-        moduleId: "thoughts",
+        moduleId: "album",
         displayMode: "hidden",
       }),
     ).toThrowError("displayMode 只能是 real 或 demo");

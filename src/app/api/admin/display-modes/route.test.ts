@@ -32,7 +32,7 @@ describe("/api/admin/display-modes", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          moduleId: "thoughts",
+          moduleId: "album",
           displayMode: "demo",
         }),
       }),
@@ -46,15 +46,15 @@ describe("/api/admin/display-modes", () => {
     expect(data).toEqual({
       modes: {
         about: "real",
-        album: "real",
+        album: "demo",
         coffee: "real",
         message: "real",
         playlists: "real",
-        thoughts: "demo",
+        thoughts: "real",
         todo: "real",
       },
     });
-    expect(nextData.modes.thoughts).toBe("demo");
+    expect(nextData.modes.album).toBe("demo");
   });
 
   it("rejects invalid display modes", async () => {
@@ -65,7 +65,7 @@ describe("/api/admin/display-modes", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          moduleId: "thoughts",
+          moduleId: "album",
           displayMode: "hidden",
         }),
       }),

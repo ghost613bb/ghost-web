@@ -2,6 +2,21 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ModuleDisplayModeAdminForm } from "./ModuleDisplayModeAdminForm";
 
+const realModes = {
+  about: "real",
+  album: "real",
+  coffee: "real",
+  message: "real",
+  playlists: "real",
+  thoughts: "real",
+  todo: "real",
+};
+
+const albumDemoModes = {
+  ...realModes,
+  album: "demo",
+};
+
 describe("ModuleDisplayModeAdminForm", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -10,17 +25,7 @@ describe("ModuleDisplayModeAdminForm", () => {
   it("loads display modes from the API on mount", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({
-        modes: {
-          about: "real",
-          album: "real",
-          coffee: "real",
-          message: "real",
-          playlists: "real",
-          thoughts: "demo",
-          todo: "real",
-        },
-      }),
+      json: async () => ({ modes: albumDemoModes }),
     });
 
     vi.stubGlobal("fetch", fetchMock);
@@ -29,11 +34,11 @@ describe("ModuleDisplayModeAdminForm", () => {
 
     expect(screen.getByText("加载中...")).toBeInTheDocument();
 
-    const thoughtsFieldset = await screen.findByRole("group", { name: "碎碎念 展示模式" });
+    const albumFieldset = await screen.findByRole("group", { name: "个人相册 展示模式" });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/admin/display-modes", { method: "GET" });
-    expect(within(thoughtsFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
-    expect(within(thoughtsFieldset).getByRole("radio", { name: "试玩模式" })).toBeChecked();
+    expect(within(albumFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
+    expect(within(albumFieldset).getByRole("radio", { name: "试玩模式" })).toBeChecked();
   });
 
   it("updates a display mode through the API", async () => {
@@ -41,39 +46,19 @@ describe("ModuleDisplayModeAdminForm", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          modes: {
-            about: "real",
-            album: "real",
-            coffee: "real",
-            message: "real",
-            playlists: "real",
-            thoughts: "real",
-            todo: "real",
-          },
-        }),
+        json: async () => ({ modes: realModes }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          modes: {
-            about: "real",
-            album: "real",
-            coffee: "real",
-            message: "real",
-            playlists: "real",
-            thoughts: "demo",
-            todo: "real",
-          },
-        }),
+        json: async () => ({ modes: albumDemoModes }),
       });
 
     vi.stubGlobal("fetch", fetchMock);
 
     render(<ModuleDisplayModeAdminForm />);
 
-    const thoughtsFieldset = await screen.findByRole("group", { name: "碎碎念 展示模式" });
-    fireEvent.click(within(thoughtsFieldset).getByRole("radio", { name: "试玩模式" }));
+    const albumFieldset = await screen.findByRole("group", { name: "个人相册 展示模式" });
+    fireEvent.click(within(albumFieldset).getByRole("radio", { name: "试玩模式" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/admin/display-modes", {
@@ -82,14 +67,14 @@ describe("ModuleDisplayModeAdminForm", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          moduleId: "thoughts",
+          moduleId: "album",
           displayMode: "demo",
         }),
       });
     });
 
     await waitFor(() => {
-      expect(within(thoughtsFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
+      expect(within(albumFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
     });
   });
 
@@ -98,17 +83,7 @@ describe("ModuleDisplayModeAdminForm", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          modes: {
-            about: "real",
-            album: "real",
-            coffee: "real",
-            message: "real",
-            playlists: "real",
-            thoughts: "real",
-            todo: "real",
-          },
-        }),
+        json: async () => ({ modes: realModes }),
       })
       .mockResolvedValueOnce({
         ok: false,
@@ -121,11 +96,11 @@ describe("ModuleDisplayModeAdminForm", () => {
 
     render(<ModuleDisplayModeAdminForm />);
 
-    const thoughtsFieldset = await screen.findByRole("group", { name: "碎碎念 展示模式" });
-    fireEvent.click(within(thoughtsFieldset).getByRole("radio", { name: "试玩模式" }));
+    const albumFieldset = await screen.findByRole("group", { name: "个人相册 展示模式" });
+    fireEvent.click(within(albumFieldset).getByRole("radio", { name: "试玩模式" }));
 
     expect(await screen.findByText("当前模块暂时不能切到试玩模式")).toBeInTheDocument();
-    expect(within(thoughtsFieldset).getByText("当前：真实内容")).toBeInTheDocument();
+    expect(within(albumFieldset).getByText("当前：真实内容")).toBeInTheDocument();
   });
 
   it("shows the API error when initial load fails", async () => {
@@ -149,17 +124,7 @@ describe("ModuleDisplayModeAdminForm", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
-          modes: {
-            about: "real",
-            album: "real",
-            coffee: "real",
-            message: "real",
-            playlists: "real",
-            thoughts: "real",
-            todo: "real",
-          },
-        }),
+        json: async () => ({ modes: realModes }),
       }),
     );
 
@@ -178,17 +143,7 @@ describe("ModuleDisplayModeAdminForm", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
-          modes: {
-            about: "real",
-            album: "real",
-            coffee: "real",
-            message: "real",
-            playlists: "real",
-            thoughts: "real",
-            todo: "real",
-          },
-        }),
+        json: async () => ({ modes: realModes }),
       }),
     );
 
@@ -198,23 +153,13 @@ describe("ModuleDisplayModeAdminForm", () => {
   });
 
   it("disables only the saving module and shows saving text", async () => {
-    let resolvePatch: ((value: { ok: boolean; json: () => Promise<{ modes: { about: string; album: string; coffee: string; message: string; playlists: string; thoughts: string; todo: string; }; }> }) => void) | undefined;
+    let resolvePatch: ((value: { ok: boolean; json: () => Promise<{ modes: typeof realModes }> }) => void) | undefined;
 
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          modes: {
-            about: "real",
-            album: "real",
-            coffee: "real",
-            message: "real",
-            playlists: "real",
-            thoughts: "real",
-            todo: "real",
-          },
-        }),
+        json: async () => ({ modes: realModes }),
       })
       .mockImplementationOnce(
         () =>
@@ -227,35 +172,25 @@ describe("ModuleDisplayModeAdminForm", () => {
 
     render(<ModuleDisplayModeAdminForm />);
 
-    const thoughtsFieldset = await screen.findByRole("group", { name: "碎碎念 展示模式" });
+    const albumFieldset = await screen.findByRole("group", { name: "个人相册 展示模式" });
     const aboutFieldset = screen.getByRole("group", { name: "心情日记 展示模式" });
 
-    fireEvent.click(within(thoughtsFieldset).getByRole("radio", { name: "试玩模式" }));
+    fireEvent.click(within(albumFieldset).getByRole("radio", { name: "试玩模式" }));
 
-    expect(within(thoughtsFieldset).getByText("保存中...")).toBeInTheDocument();
-    expect(within(thoughtsFieldset).getByRole("radio", { name: "真实内容" })).toBeDisabled();
-    expect(within(thoughtsFieldset).getByRole("radio", { name: "试玩模式" })).toBeDisabled();
+    expect(within(albumFieldset).getByText("保存中...")).toBeInTheDocument();
+    expect(within(albumFieldset).getByRole("radio", { name: "真实内容" })).toBeDisabled();
+    expect(within(albumFieldset).getByRole("radio", { name: "试玩模式" })).toBeDisabled();
     expect(within(aboutFieldset).getByRole("radio", { name: "真实内容" })).not.toBeDisabled();
     expect(within(aboutFieldset).getByRole("radio", { name: "试玩模式" })).not.toBeDisabled();
 
     resolvePatch?.({
       ok: true,
-      json: async () => ({
-        modes: {
-          about: "real",
-          album: "real",
-          coffee: "real",
-          message: "real",
-          playlists: "real",
-          thoughts: "demo",
-          todo: "real",
-        },
-      }),
+      json: async () => ({ modes: albumDemoModes }),
     });
 
     await waitFor(() => {
-      expect(within(thoughtsFieldset).queryByText("保存中...")).not.toBeInTheDocument();
-      expect(within(thoughtsFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
+      expect(within(albumFieldset).queryByText("保存中...")).not.toBeInTheDocument();
+      expect(within(albumFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
     });
   });
 });

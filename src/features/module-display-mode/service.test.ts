@@ -29,37 +29,37 @@ describe("module display mode service", () => {
   });
 
   it("returns the default mode for a single module", async () => {
-    await expect(getDisplayMode("thoughts")).resolves.toBe("real");
+    await expect(getDisplayMode("album")).resolves.toBe("real");
   });
 
   it("returns the stored mode for a single module", async () => {
-    await updateDisplayMode("thoughts", "demo");
+    await updateDisplayMode("album", "demo");
 
-    await expect(getDisplayMode("thoughts")).resolves.toBe("demo");
+    await expect(getDisplayMode("album")).resolves.toBe("demo");
   });
 
   it("updates a single module mode while preserving others", async () => {
-    await updateDisplayMode("thoughts", "demo");
+    await updateDisplayMode("album", "demo");
 
     await expect(getDisplayModes()).resolves.toEqual({
       about: "real",
-      album: "real",
+      album: "demo",
       coffee: "real",
       message: "real",
       playlists: "real",
-      thoughts: "demo",
+      thoughts: "real",
       todo: "real",
     });
   });
 
   it("persists only changed display modes in repository storage", async () => {
-    await upsertStoredDisplayMode("thoughts", "demo");
+    await upsertStoredDisplayMode("album", "demo");
 
-    await expect(listStoredDisplayModes()).resolves.toEqual([{ moduleId: "thoughts", displayMode: "demo" }]);
+    await expect(listStoredDisplayModes()).resolves.toEqual([{ moduleId: "album", displayMode: "demo" }]);
   });
 
   it("clears repository storage when resetting stored display modes", async () => {
-    await upsertStoredDisplayMode("thoughts", "demo");
+    await upsertStoredDisplayMode("album", "demo");
     await resetStoredDisplayModes();
 
     await expect(listStoredDisplayModes()).resolves.toEqual([]);
