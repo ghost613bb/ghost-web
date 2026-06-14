@@ -375,6 +375,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(payload).toEqual(expect.objectContaining({ body: "<p>新的碎碎念内容</p>", tags: ["日常"], title: "新的碎碎念内容", visibility: "public", status: "published" }));
     expect(payload.id).toMatch(/^thought-created-/);
     expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(payload.sortOrder).toBeLessThan(2147483647);
     expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/new-thought-slug");
   });
 

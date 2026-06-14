@@ -330,7 +330,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       visibility: "public",
       status: "published",
       createdAt: formatThoughtDate(new Date()),
-      sortOrder: timestamp,
+      sortOrder: Math.floor(timestamp / 1000),
     });
   }
 
