@@ -46,7 +46,7 @@ const Video = TiptapNode.create({
     return [{ tag: "video[src]" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["video", mergeAttributes(HTMLAttributes, { controls: "true" }), 0];
+    return ["video", mergeAttributes(HTMLAttributes, { controls: "true" })];
   },
   addCommands() {
     return {

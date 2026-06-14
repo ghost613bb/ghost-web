@@ -361,6 +361,13 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it("serializes video nodes without requiring child content", () => {
+    render(<ThoughtRichTextDraftPage />);
+    const videoExtension = capturedUseEditorOptions?.extensions?.find((extension) => typeof extension === "object" && extension !== null && "name" in extension && extension.name === "video") as { config?: { renderHTML: (props: { HTMLAttributes: Record<string, string> }) => unknown } } | undefined;
+
+    expect(videoExtension?.config?.renderHTML({ HTMLAttributes: { src: "/thought-attachments/demo.mp4" } })).toEqual(["video", expect.objectContaining({ controls: "true", src: "/thought-attachments/demo.mp4" })]);
+  });
+
   it("saves a new thought with generated metadata", async () => {
     mockEditor.getHTML.mockReturnValue("<p>新的碎碎念内容</p>");
     mockEditor.getText.mockReturnValue("新的碎碎念内容");
