@@ -28,6 +28,7 @@ import type { PlaylistCollection, PlaylistNote, PlaylistPlayerSnapshot, Playlist
 import { CommentPlayerPanel } from "./CommentPlayerPanel";
 import { PlaylistBatchImportDialog } from "./PlaylistBatchImportDialog";
 import { PlaylistCollectionDialog } from "./PlaylistCollectionDialog";
+import { PlaylistConfirmDialog } from "./PlaylistConfirmDialog";
 import { PlaylistDropdown } from "./PlaylistDropdown";
 import type { PlaylistDataSource } from "./service";
 import { getFeaturedSong, getSongDuration, SongDurationPreloader, usePlaylistPlayer, type PlaylistPlayerControls, type PlaylistMode, type SongDurationLabels } from "./usePlaylistPlayer";
@@ -579,6 +580,11 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   const [bulkTargetCollectionId, setBulkTargetCollectionId] = useState(() => displayCollections.find((collection) => collection.id !== initialCollection.id)?.id ?? "");
   const [bulkSongError, setBulkSongError] = useState<string | null>(null);
   const [isBulkSongSubmitting, setIsBulkSongSubmitting] = useState(false);
+  const [pendingDeleteCollection, setPendingDeleteCollection] = useState<PlaylistCollection | null>(null);
+  const [deleteCollectionError, setDeleteCollectionError] = useState<string | null>(null);
+  const [isDeletingCollection, setIsDeletingCollection] = useState(false);
+  const [isRemoveSongsDialogOpen, setIsRemoveSongsDialogOpen] = useState(false);
+  const [removeSongsError, setRemoveSongsError] = useState<string | null>(null);
   const activeCollection = displayCollections.find((collection) => collection.id === activeCollectionId) ?? initialCollection;
   const visibleSongs = songs.filter((song) => activeCollection.songIds.includes(song.id));
   const activeFeaturedSong = visibleSongs.find((song) => song.id === featuredSongId) ?? visibleSongs[0] ?? getFeaturedSong(songs, featuredSongId);
@@ -700,18 +706,26 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
     setEditingCollection(null);
   };
 
-  const handleDeleteCollection = async (collection: PlaylistCollection) => {
+  const handleDeleteCollection = (collection: PlaylistCollection) => {
     if (displayCollections.length <= 1) {
       setAdminError("至少保留一个歌单");
       return;
     }
 
-    if (!window.confirm(`确定删除「${collection.title}」吗？`)) {
+    setDeleteCollectionError(null);
+    setPendingDeleteCollection(collection);
+  };
+
+  const confirmDeleteCollection = async () => {
+    if (!pendingDeleteCollection) {
       return;
     }
 
+    setDeleteCollectionError(null);
+    setIsDeletingCollection(true);
+
     try {
-      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(collection.id)}`, {
+      const response = await fetch(`/api/playlists/collections/${encodeURIComponent(pendingDeleteCollection.id)}`, {
         credentials: "same-origin",
         method: "DELETE",
       });
@@ -722,16 +736,19 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
       }
 
       setDisplayCollections((currentCollections) => {
-        const nextCollections = currentCollections.filter((currentCollection) => currentCollection.id !== collection.id);
+        const nextCollections = currentCollections.filter((currentCollection) => currentCollection.id !== pendingDeleteCollection.id);
 
-        if (activeCollectionId === collection.id) {
-          setActiveCollectionId(nextCollections[0]?.id ?? collection.id);
+        if (activeCollectionId === pendingDeleteCollection.id) {
+          setActiveCollectionId(nextCollections[0]?.id ?? pendingDeleteCollection.id);
         }
 
         return nextCollections;
       });
+      setPendingDeleteCollection(null);
     } catch (error) {
-      setAdminError(error instanceof Error ? error.message : "删除歌单失败");
+      setDeleteCollectionError(error instanceof Error ? error.message : "删除歌单失败");
+    } finally {
+      setIsDeletingCollection(false);
     }
   };
 
@@ -798,8 +815,9 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
     });
   };
 
-  const handleRemoveSelectedSongs = async () => {
+  const handleRemoveSelectedSongs = () => {
     setBulkSongError(null);
+    setRemoveSongsError(null);
 
     if (!isManagementUnlocked) {
       setBulkSongError("请先解锁 Admin 管理模式。");
@@ -813,10 +831,18 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
       return;
     }
 
-    if (!window.confirm(`确定从「${activeCollection.title}」移除选中的 ${orderedSelectedSongIds.length} 首歌吗？不会删除歌曲本体。`)) {
+    setIsRemoveSongsDialogOpen(true);
+  };
+
+  const confirmRemoveSelectedSongs = async () => {
+    const orderedSelectedSongIds = getOrderedSelectedSongIds();
+
+    if (orderedSelectedSongIds.length === 0) {
+      setRemoveSongsError("请选择要移除的歌曲");
       return;
     }
 
+    setRemoveSongsError(null);
     setIsBulkSongSubmitting(true);
 
     try {
@@ -842,9 +868,10 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
 
       setDisplayCollections((currentCollections) => currentCollections.map((collection) => (collection.id === activeCollection.id ? { ...collection, songIds: sourceSongIds } : collection)));
       setSelectedSongIds([]);
+      setIsRemoveSongsDialogOpen(false);
       syncPlayerAfterRemovingSongs(sourceSongIds, removedSongIds);
     } catch (error) {
-      setBulkSongError(error instanceof Error ? error.message : "批量移除歌曲失败");
+      setRemoveSongsError(error instanceof Error ? error.message : "批量移除歌曲失败");
     } finally {
       setIsBulkSongSubmitting(false);
     }
@@ -925,6 +952,12 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
       {isCreateCollectionDialogOpen ? <PlaylistCollectionDialog mode="create" onClose={() => setIsCreateCollectionDialogOpen(false)} onSaved={handleCreatedCollection} /> : null}
       {editingCollection ? <PlaylistCollectionDialog collection={editingCollection} mode="edit" onClose={() => setEditingCollection(null)} onSaved={handleUpdatedCollection} /> : null}
       {isImportDialogOpen ? <PlaylistBatchImportDialog activeCollectionId={activeCollection.id} collections={displayCollections} onClose={() => setIsImportDialogOpen(false)} /> : null}
+      {pendingDeleteCollection ? (
+        <PlaylistConfirmDialog body={`确定删除「${pendingDeleteCollection.title}」吗？`} confirmLabel="确认删除" error={deleteCollectionError} isSubmitting={isDeletingCollection} onCancel={() => setPendingDeleteCollection(null)} onConfirm={() => void confirmDeleteCollection()} title="删除歌单" />
+      ) : null}
+      {isRemoveSongsDialogOpen ? (
+        <PlaylistConfirmDialog body={`确定从「${activeCollection.title}」移除选中的 ${getOrderedSelectedSongIds().length} 首歌吗？不会删除歌曲本体。`} confirmLabel="确认移出" error={removeSongsError} isSubmitting={isBulkSongSubmitting} onCancel={() => setIsRemoveSongsDialogOpen(false)} onConfirm={() => void confirmRemoveSelectedSongs()} title="移出当前歌单" />
+      ) : null}
       <PlaylistHeader />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-4 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">

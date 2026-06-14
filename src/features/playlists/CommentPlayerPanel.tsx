@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Disc3, MessageCircle } from "lucide-react";
 import type { PlaylistNote, PlaylistSong } from "@/data/playlists";
+import { PlaylistConfirmDialog } from "./PlaylistConfirmDialog";
 import type { PlaylistDataSource } from "./service";
 
 type CommentPlayerPanelProps = {
@@ -20,6 +21,8 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+  const [deleteNoteError, setDeleteNoteError] = useState<string | null>(null);
   const isCommentDisabled = dataSource !== "supabase" || !isAdminUnlocked;
   const visibleNotes = notes.filter((note) => note.songId === featuredSong.id);
   const disabledMessage = dataSource !== "supabase" ? "当前为本地 fallback，歌曲评论需要 Supabase 数据源。" : "请先解锁 Admin 管理模式，再提交评论。";
@@ -68,16 +71,21 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
     }
   };
 
-  const handleDeleteNote = async (noteId: string) => {
-    if (!window.confirm("确定删除这条评论吗？")) {
+  const handleDeleteNote = (noteId: string) => {
+    setDeleteNoteError(null);
+    setPendingDeleteNoteId(noteId);
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!pendingDeleteNoteId) {
       return;
     }
 
-    setError(null);
-    setUpdatingNoteId(noteId);
+    setDeleteNoteError(null);
+    setUpdatingNoteId(pendingDeleteNoteId);
 
     try {
-      const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes/${encodeURIComponent(noteId)}`, {
+      const response = await fetch(`/api/playlists/songs/${encodeURIComponent(featuredSong.id)}/notes/${encodeURIComponent(pendingDeleteNoteId)}`, {
         credentials: "same-origin",
         method: "DELETE",
       });
@@ -87,9 +95,10 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
         throw new Error(data.error ?? "删除歌曲评论失败");
       }
 
-      onDeletedNote(noteId);
+      onDeletedNote(pendingDeleteNoteId);
+      setPendingDeleteNoteId(null);
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "删除歌曲评论失败");
+      setDeleteNoteError(deleteError instanceof Error ? deleteError.message : "删除歌曲评论失败");
     } finally {
       setUpdatingNoteId(null);
     }
@@ -97,6 +106,7 @@ export function CommentPlayerPanel({ dataSource, featuredSong, isAdminUnlocked, 
 
   return (
     <aside aria-label="耳机留言播放器" className="space-y-4 xl:sticky xl:top-5 xl:self-start">
+      {pendingDeleteNoteId ? <PlaylistConfirmDialog body="确定删除这条评论吗？" confirmLabel="确认删除" error={deleteNoteError} isSubmitting={Boolean(updatingNoteId)} onCancel={() => setPendingDeleteNoteId(null)} onConfirm={() => void confirmDeleteNote()} title="删除耳机留言" /> : null}
       <section className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff4d8] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)]">
         <div className="mb-3 flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#aa6a70] bg-[#fbd4d9] text-lg">

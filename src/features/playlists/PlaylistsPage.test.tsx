@@ -369,7 +369,6 @@ describe("PlaylistsPageView", () => {
 
       return { ok: true, json: async () => ({ ok: true }) };
     });
-    const confirmMock = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     vi.stubGlobal("fetch", fetchMock);
     renderPlaylistsPage();
@@ -378,8 +377,12 @@ describe("PlaylistsPageView", () => {
     const sidebar = screen.getByLabelText("歌单列表");
     fireEvent.click(within(sidebar).getAllByRole("button", { name: "删除" })[0]);
 
+    const confirmDialog = screen.getByRole("dialog", { name: "删除歌单" });
+
+    expect(within(confirmDialog).getByText(`确定删除「${playlistCollections[0].title}」吗？`)).toBeInTheDocument();
+    fireEvent.click(within(confirmDialog).getByRole("button", { name: "确认删除" }));
+
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/playlists/collections/${playlistCollections[0].id}`, expect.objectContaining({ method: "DELETE" })));
-    expect(confirmMock).toHaveBeenCalledWith(`确定删除「${playlistCollections[0].title}」吗？`);
     expect(screen.getByRole("heading", { level: 2, name: "Sunset Walk" })).toBeInTheDocument();
   });
 
@@ -426,7 +429,6 @@ describe("PlaylistsPageView", () => {
         }),
       };
     });
-    const confirmMock = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     vi.stubGlobal("fetch", fetchMock);
     renderPlaylistsPage();
@@ -438,10 +440,14 @@ describe("PlaylistsPageView", () => {
     fireEvent.click(within(songSection).getAllByLabelText("选择doll")[0]);
     fireEvent.click(within(songSection).getByRole("button", { name: "从当前歌单移除选中歌曲" }));
 
+    const confirmDialog = screen.getByRole("dialog", { name: "移出当前歌单" });
+
+    expect(within(confirmDialog).getByText(`确定从「${playlistCollections[0].title}」移除选中的 1 首歌吗？不会删除歌曲本体。`)).toBeInTheDocument();
+    fireEvent.click(within(confirmDialog).getByRole("button", { name: "确认移出" }));
+
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(`/api/playlists/collections/${playlistCollections[0].id}/songs`, expect.objectContaining({ method: "PATCH" })));
     const songsRequest = fetchMock.mock.calls.find(([input]) => String(input) === `/api/playlists/collections/${playlistCollections[0].id}/songs`);
 
-    expect(confirmMock).toHaveBeenCalledWith(`确定从「${playlistCollections[0].title}」移除选中的 1 首歌吗？不会删除歌曲本体。`);
     expect(JSON.parse(String((songsRequest?.[1] as RequestInit).body))).toEqual({ action: "remove", songIds: ["song-001"] });
     expect(within(songSection).getByText("1 首")).toBeInTheDocument();
     expect(within(songSection).queryByText("doll")).not.toBeInTheDocument();
@@ -564,6 +570,37 @@ describe("PlaylistsPageView", () => {
     fireEvent.click(screen.getByRole("button", { name: /Coding Spark/ }));
 
     expect(screen.queryByText("今晚循环这一首。")).not.toBeInTheDocument();
+  });
+
+  it("confirms before deleting a comment", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/admin/session") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      return { ok: true, json: async () => ({ ok: true }) };
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+    renderPlaylistsPage();
+    await screen.findByText("已解锁");
+
+    const commentPanel = screen.getByLabelText("耳机留言播放器");
+    fireEvent.click(within(commentPanel).getByRole("button", { name: "删除" }));
+
+    const confirmDialog = screen.getByRole("dialog", { name: "删除耳机留言" });
+
+    expect(within(confirmDialog).getByText("确定删除这条评论吗？")).toBeInTheDocument();
+    fireEvent.click(within(confirmDialog).getByRole("button", { name: "确认删除" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `/api/playlists/songs/${featuredPlaylistSongId}/notes/${playlistNotes[0].id}`,
+      expect.objectContaining({
+        credentials: "same-origin",
+        method: "DELETE",
+      }),
+    ));
+    expect(within(commentPanel).queryByText(playlistNotes[0].content)).not.toBeInTheDocument();
   });
 
   it("switches the right panel to lyrics from the bottom player", () => {
