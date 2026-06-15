@@ -63,8 +63,9 @@ export async function getThoughtBySlug(slug: string): Promise<Thought | null> {
 
 export async function createThought(thought: Thought): Promise<Thought> {
   const storage = getThoughtStorage();
+  const existingThought = await storage.getThoughtById(thought.id);
 
-  await storage.upsertThought(thought);
+  await storage.upsertThought(existingThought ? { ...thought, createdAt: existingThought.createdAt } : thought);
   return (await storage.getThoughtById(thought.id)) ?? thought;
 }
 

@@ -2,18 +2,11 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Thought } from "@/data/thoughts";
+import { formatThoughtListDate } from "./time";
 
 type ThoughtDetailPageViewProps = {
   thought: Thought;
 };
-
-function formatThoughtDate(createdAt: string | undefined) {
-  if (!createdAt) {
-    return "未记录日期";
-  }
-
-  return createdAt.replaceAll("-", ".");
-}
 
 function thoughtTags(thought: Thought) {
   return thought.tags?.length ? thought.tags : ["日常"];
@@ -93,7 +86,7 @@ export function ThoughtDetailPageView({ thought }: ThoughtDetailPageViewProps) {
               <article aria-label="碎碎念正文纸张" className="relative min-h-[605px] overflow-hidden rounded-[1.2rem] border border-[#eee3d5] bg-[repeating-linear-gradient(0deg,#fffdf7_0,#fffdf7_31px,#efe6d8_32px)] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] sm:px-7 sm:py-6">
                 <div className="relative max-w-[780px] space-y-2">
                   <div className="flex flex-wrap items-center gap-2 pb-2 text-sm font-black text-[#9a7f74]">
-                    <span>{formatThoughtDate(thought.createdAt)}</span>
+                    <span>{formatThoughtListDate(thought.createdAt)}</span>
                     {tags.map((tag) => (
                       <span className="rounded-full bg-[#f8cfd5] px-3 py-1 text-xs text-[#7a3f4a] shadow-[0_5px_12px_rgba(132,82,90,0.08)]" key={tag}>
                         {tag}

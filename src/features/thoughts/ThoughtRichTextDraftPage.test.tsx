@@ -280,7 +280,7 @@ describe("ThoughtRichTextDraftPage", () => {
   it("renders an existing thought in read-only mode with its title and escaped initial editor content", () => {
     const thought: Thought = {
       body: "第一行 <script>\n\n第二行 & more",
-      createdAt: "2026-06-05",
+      createdAt: "2026-06-05T08:30:00.000Z",
       id: "thought-editing",
       slug: "thought-editing",
       status: "published",
@@ -300,6 +300,9 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "图片" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "糖果波纹" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "自定义背景" })).toBeDisabled();
+    expect(screen.getByText(/写入时间/)).toBeInTheDocument();
+    expect(screen.getByText(/2026\.06\.05 16:30/)).toBeInTheDocument();
+    expect(screen.queryByText(/上次编辑时间/)).not.toBeInTheDocument();
     expect(capturedUseEditorOptions?.editable).toBe(false);
     expect(capturedUseEditorOptions?.content).toBe("<p>第一行 &lt;script&gt;</p><p></p><p>第二行 &amp; more</p>");
   });
@@ -328,21 +331,22 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(mockEditor.setEditable).toHaveBeenCalledWith(true);
   });
 
-  it("saves an existing thought with editor HTML and keeps its metadata", async () => {
+  it("saves an existing thought with editor HTML and keeps created time while refreshing updated time", async () => {
     const thought: Thought = {
       body: "旧内容",
-      createdAt: "2026-06-05",
+      createdAt: "2026-06-05T08:30:00.000Z",
       id: "thought-editing",
       slug: "thought-editing",
       sortOrder: 3,
       status: "published",
       tags: ["日常"],
       title: "已有碎碎念",
+      updatedAt: "2026-06-05T08:30:00.000Z",
       visibility: "public",
     };
     mockEditor.getHTML.mockReturnValue("<p>更新后的富文本</p>");
     mockEditor.getText.mockReturnValue("更新后的富文本");
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ thought: { ...thought, body: "<p>更新后的富文本</p>" } }) } as Response);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ thought: { ...thought, body: "<p>更新后的富文本</p>", updatedAt: "2026-06-06T09:45:00.000Z" } }) } as Response);
 
     render(<ThoughtRichTextDraftPage thought={thought} />);
     expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
@@ -353,10 +357,28 @@ describe("ThoughtRichTextDraftPage", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/thoughts", expect.objectContaining({ method: "POST" })));
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(request.body))).toEqual({ ...thought, body: "<p>更新后的富文本</p>", paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg", paperBackgroundOpacity: 45 });
+    const payload = JSON.parse(String(request.body));
+    expect(payload).toEqual(expect.objectContaining({
+      body: "<p>更新后的富文本</p>",
+      createdAt: "2026-06-05T08:30:00.000Z",
+      id: "thought-editing",
+      paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
+      paperBackgroundOpacity: 45,
+      slug: "thought-editing",
+      sortOrder: 3,
+      status: "published",
+      tags: ["日常"],
+      title: "已有碎碎念",
+      visibility: "public",
+    }));
+    expect(payload.createdAt).toBe("2026-06-05T08:30:00.000Z");
+    expect(payload.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(payload.updatedAt).not.toBe(payload.createdAt);
     const successToast = await screen.findByText("保存成功");
     expect(successToast).toHaveClass("fixed", "left-1/2", "top-24", "-translate-x-1/2");
     expect(successToast).not.toHaveClass("right-6");
+    expect(screen.getByText("写入时间 2026.06.05 16:30", { selector: "span" })).toBeInTheDocument();
+    expect(screen.getByText("上次编辑时间 2026.06.06 17:45", { selector: "span" })).toBeInTheDocument();
     expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/thought-editing");
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
   });
@@ -381,7 +403,9 @@ describe("ThoughtRichTextDraftPage", () => {
     const payload = JSON.parse(String(request.body));
     expect(payload).toEqual(expect.objectContaining({ body: "<p>新的碎碎念内容</p>", tags: ["日常"], title: "新的碎碎念内容", visibility: "public", status: "published" }));
     expect(payload.id).toMatch(/^thought-created-/);
-    expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(payload.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(payload.updatedAt).toBe(payload.createdAt);
     expect(payload.sortOrder).toBeLessThan(2147483647);
     expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/new-thought-slug");
   });

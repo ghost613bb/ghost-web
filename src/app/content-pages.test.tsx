@@ -497,6 +497,9 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
+    expect(screen.getByText(/写入时间/)).toBeInTheDocument();
+    expect(screen.getByText(/2026\.05\.13/)).toBeInTheDocument();
+    expect(screen.queryByText(/上次编辑时间/)).not.toBeInTheDocument();
     expect(mockTiptapState.useEditorOptions?.content).toContain(thoughts[0].body);
   });
 

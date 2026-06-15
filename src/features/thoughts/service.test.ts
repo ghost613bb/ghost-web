@@ -99,6 +99,43 @@ describe("thoughts service", () => {
     expect(storedThoughts).toHaveLength(thoughts.length + 1);
   });
 
+  it("preserves the original createdAt when updating an existing thought", async () => {
+    await upsertStoredThought({
+      id: "thought-db-created-at",
+      title: "旧碎碎念",
+      slug: "old-thought",
+      body: "旧内容",
+      tags: ["旧"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-05-20T08:00:00.000Z",
+      updatedAt: "2026-05-20T08:00:00.000Z",
+      sortOrder: 5,
+    });
+
+    await createThought({
+      id: "thought-db-created-at",
+      title: "更新后的碎碎念",
+      slug: "old-thought",
+      body: "更新后的内容",
+      tags: ["旧"],
+      visibility: "public",
+      status: "published",
+      createdAt: "2026-06-01T09:30:00.000Z",
+      updatedAt: "2026-06-01T09:30:00.000Z",
+      sortOrder: 5,
+    });
+
+    await expect(getThoughtBySlug("old-thought")).resolves.toEqual(
+      expect.objectContaining({
+        title: "更新后的碎碎念",
+        body: "更新后的内容",
+        createdAt: "2026-05-20T08:00:00.000Z",
+        updatedAt: "2026-06-01T09:30:00.000Z",
+      }),
+    );
+  });
+
   it("gets a stored thought by slug", async () => {
     await upsertStoredThought({
       id: "thought-db-003",

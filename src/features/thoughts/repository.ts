@@ -62,7 +62,7 @@ function normalizeThoughtForStorage(thought: Thought) {
   const now = new Date().toISOString();
   const bodyText = thought.bodyText ?? thoughtBodyToPlainText(thought.body);
   const createdAt = thought.createdAt ?? now;
-  const updatedAt = thought.updatedAt ?? now;
+  const updatedAt = thought.updatedAt ?? createdAt;
   const publishedAt = thought.publishedAt ?? (thought.status === "published" ? createdAt : null);
 
   return {

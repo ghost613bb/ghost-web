@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import type { Thought } from "@/data/thoughts";
+import { formatThoughtMetaTimestamp, shouldShowThoughtUpdatedAt } from "./time";
 
 const toolbarButtonBaseClass =
   "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-[0.85rem] border px-2.5 text-sm font-black shadow-[0_8px_18px_rgba(122,79,85,0.08)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0";
@@ -169,11 +170,6 @@ function thoughtBodyToEditorContent(body: string) {
     .join("");
 }
 
-function formatThoughtDate(date: Date) {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 function getThoughtSlug(title: string, timestamp: number) {
   const normalizedTitle = title
     .trim()
@@ -217,6 +213,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   const toolbarRef = useRef<HTMLElement | null>(null);
   const isReadOnly = Boolean(currentThought) && !isEditing;
   const pageTitle = currentThought?.title ?? "新建碎碎念";
+  const shouldShowUpdatedAt = shouldShowThoughtUpdatedAt(currentThought?.createdAt, currentThought?.updatedAt);
   const editorInitialContent = currentThought ? thoughtBodyToEditorContent(currentThought.body) : "";
   const editor = useEditor({
     extensions: [StarterKit.configure({ underline: false }), Underline, TextStyle, Color, TaskList, TaskItem, Image, LinkExtension, Table, TableRow, TableHeader, TableCell, Video],
@@ -311,10 +308,13 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   }
 
   function buildThoughtPayload(html: string, text: string): Thought {
+    const now = new Date().toISOString();
+
     if (currentThought) {
       return applyPaperBackgroundToThought({
         ...currentThought,
         body: html,
+        updatedAt: now,
       });
     }
 
@@ -329,7 +329,8 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       tags: ["日常"],
       visibility: "public",
       status: "published",
-      createdAt: formatThoughtDate(new Date()),
+      createdAt: now,
+      updatedAt: now,
       sortOrder: Math.floor(timestamp / 1000),
     });
   }
@@ -720,11 +721,19 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
 
           <div aria-label="新建碎碎念内容滚动区" className="rounded-[1.8rem] border border-[#eadccf] bg-[#fffdf8] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] sm:p-4">
             <header className="mb-3 flex flex-col gap-3 border-b border-[#efe4d8] pb-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-center gap-3">
-                <Link aria-label="返回碎碎念" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
-                  <ArrowLeft aria-hidden="true" size={22} strokeWidth={3} />
-                </Link>
-                <h1 className="text-xl font-black tracking-tight text-[#4c2b2d] sm:text-2xl">{pageTitle}</h1>
+              <div className="flex min-w-0 flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link aria-label="返回碎碎念" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#d97891] transition hover:-translate-x-0.5 hover:bg-[#fff2f5]" href="/thoughts">
+                    <ArrowLeft aria-hidden="true" size={22} strokeWidth={3} />
+                  </Link>
+                  <h1 className="text-xl font-black tracking-tight text-[#4c2b2d] sm:text-2xl">{pageTitle}</h1>
+                </div>
+                {currentThought ? (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 text-xs font-black text-[#8a5b62] sm:text-sm">
+                    <span>写入时间 {formatThoughtMetaTimestamp(currentThought.createdAt)}</span>
+                    {shouldShowUpdatedAt ? <span>上次编辑时间 {formatThoughtMetaTimestamp(currentThought.updatedAt)}</span> : null}
+                  </div>
+                ) : null}
               </div>
               <div aria-label="碎碎念操作" className="flex flex-wrap items-center gap-2">
                 {currentThought ? (

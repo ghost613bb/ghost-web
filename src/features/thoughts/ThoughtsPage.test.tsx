@@ -40,6 +40,13 @@ describe("ThoughtsPageView", () => {
     expect(screen.getByRole("heading", { level: 2, name: "有标签的碎碎念" })).toBeInTheDocument();
   });
 
+  it("formats ISO timestamps as readable list dates", () => {
+    render(<ThoughtsPageView initialThoughts={[{ ...taggedThought, createdAt: "2026-05-13T00:00:00+00:00" }]} />);
+
+    expect(screen.getByText("2026.05.13")).toBeInTheDocument();
+    expect(screen.queryByText(/T00:00:00\+00:00/)).not.toBeInTheDocument();
+  });
+
   it("highlights matching keywords in filtered thought content", () => {
     render(<ThoughtsPageView initialThoughts={[taggedThought]} />);
 

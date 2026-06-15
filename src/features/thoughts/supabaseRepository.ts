@@ -69,7 +69,7 @@ function toThought(row: SupabaseThoughtRow): Thought {
 function toSupabaseThoughtRow(thought: Thought) {
   const now = new Date().toISOString();
   const createdAt = thought.createdAt ?? now;
-  const updatedAt = thought.updatedAt ?? now;
+  const updatedAt = thought.updatedAt ?? createdAt;
 
   return {
     id: thought.id,

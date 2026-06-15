@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import type { Thought } from "@/data/thoughts";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { thoughtBodyToPlainText } from "./text";
+import { formatThoughtListDate } from "./time";
 import type { ThoughtDataSource } from "./service";
 
 type ThoughtsPageViewProps = {
@@ -22,14 +23,6 @@ type ThoughtListItem = {
   tagsText: string;
   thought: Thought;
 };
-
-function formatThoughtDate(createdAt: string | undefined) {
-  if (!createdAt) {
-    return "未记录日期";
-  }
-
-  return createdAt.replaceAll("-", ".");
-}
 
 function thoughtTags(thought: Thought) {
   return thought.tags ?? [];
@@ -192,7 +185,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
                       ) : null}
                       <div className="px-1 pb-1">
                         <h2 className="line-clamp-2 text-[1.05rem] font-black tracking-tight text-[#3f2823]">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
-                        <p className="mt-1 text-xs font-bold text-[#7a5147]">{formatThoughtDate(thought.createdAt)}</p>
+                        <p className="mt-1 text-xs font-bold text-[#7a5147]">{formatThoughtListDate(thought.createdAt)}</p>
                         <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-[#5e463f]">{renderHighlightedText(bodyText, trimmedQuery)}</p>
                         <span className="mt-3 inline-flex rounded-full border border-[#5b3a30]/30 bg-[#ffccd5] px-3 py-1 text-xs font-black text-[#6f343b] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">
                           {renderHighlightedText(primaryTag, trimmedQuery)}
