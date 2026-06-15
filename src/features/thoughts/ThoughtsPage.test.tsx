@@ -1,7 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Thought } from "@/data/thoughts";
 import { ThoughtsPageView } from "./ThoughtsPage";
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-16T12:00:00+08:00"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const thoughtWithoutTags: Thought = {
   id: "thought-no-tags",
@@ -104,6 +113,19 @@ describe("ThoughtsPageView", () => {
     const highlightedDays = Array.from(container.querySelectorAll("span")).filter((element) => element.className.includes("bg-[#ffbac7]"));
 
     expect(highlightedDays).toHaveLength(1);
+    expect(screen.getByText("15")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+  });
+
+  it("styles today with a note-like accent", () => {
+    render(
+      <ThoughtsPageView
+        initialThoughts={[
+          { ...taggedThought, id: "thought-june-15", slug: "thought-june-15", createdAt: "2026-06-15" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("16")).toHaveClass("-rotate-3", "border", "border-[#5b3a30]/22", "bg-[#fff0ba]", "text-[#6a4a3f]");
     expect(screen.getByText("15")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
   });
 

@@ -191,6 +191,10 @@ function CalendarPanel({ calendarDates, month, onNextMonth, onPreviousMonth }: C
   const monthLabel = formatCalendarMonthLabel(month.year, month.month);
   const daysInMonth = getDaysInCalendarMonth(month);
   const firstDayOffset = getFirstDayOfCalendarMonth(month);
+  const today = new Date();
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth() + 1;
+  const todayDate = today.getDate();
 
   return (
     <div>
@@ -223,11 +227,20 @@ function CalendarPanel({ calendarDates, month, onNextMonth, onPreviousMonth }: C
         {Array.from({ length: firstDayOffset }, (_, index) => (
           <span aria-hidden="true" className="h-7 w-7" key={`empty-${monthLabel}-${index}`} />
         ))}
-        {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => (
-          <span className={`mx-auto grid h-7 w-7 place-items-center rounded-full ${markedDays.has(day) ? "bg-[#ffbac7] text-[#6a3d35]" : ""}`} key={day}>
-            {day}
-          </span>
-        ))}
+        {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
+          const isMarkedDay = markedDays.has(day);
+          const isToday = month.year === todayYear && month.month === todayMonth && day === todayDate;
+
+          return (
+            <span
+              className={`relative mx-auto grid h-7 w-7 place-items-center rounded-full text-[0.92rem] transition ${isMarkedDay ? "bg-[#ffbac7] text-[#6a3d35]" : ""} ${isToday ? "-rotate-3 border border-[#5b3a30]/22 shadow-[0_3px_0_rgba(91,58,48,0.12)]" : ""} ${isToday && !isMarkedDay ? "bg-[#fff0ba] text-[#6a4a3f]" : ""} ${isToday && isMarkedDay ? "border-[#fff4cf]" : ""}`}
+              key={day}
+            >
+              {day}
+              {isToday ? <span aria-hidden="true" className="absolute -right-0.5 top-0.5 h-2 w-2 rounded-full border border-[#fffaf0] bg-[#ffd86f] shadow-[0_1px_0_rgba(91,58,48,0.12)]" /> : null}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
