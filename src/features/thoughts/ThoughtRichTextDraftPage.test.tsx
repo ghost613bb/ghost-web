@@ -301,7 +301,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "糖果波纹" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "自定义背景" })).toBeDisabled();
     expect(screen.getByText(/写入时间/)).toBeInTheDocument();
-    expect(screen.getByText(/2026\.06\.05 16:30/)).toBeInTheDocument();
+    expect(screen.getByText(/2026\.06\.05/)).toBeInTheDocument();
     expect(screen.queryByText(/上次编辑时间/)).not.toBeInTheDocument();
     expect(capturedUseEditorOptions?.editable).toBe(false);
     expect(capturedUseEditorOptions?.content).toBe("<p>第一行 &lt;script&gt;</p><p></p><p>第二行 &amp; more</p>");
@@ -377,8 +377,8 @@ describe("ThoughtRichTextDraftPage", () => {
     const successToast = await screen.findByText("保存成功");
     expect(successToast).toHaveClass("fixed", "left-1/2", "top-24", "-translate-x-1/2");
     expect(successToast).not.toHaveClass("right-6");
-    expect(screen.getByText("写入时间 2026.06.05 16:30", { selector: "span" })).toBeInTheDocument();
-    expect(screen.getByText("上次编辑时间 2026.06.06 17:45", { selector: "span" })).toBeInTheDocument();
+    expect(screen.getByText("写入时间 2026.06.05", { selector: "span" })).toBeInTheDocument();
+    expect(screen.getByText("上次编辑时间 2026.06.06", { selector: "span" })).toBeInTheDocument();
     expect(mockRouter.replace).toHaveBeenCalledWith("/thoughts/thought-editing");
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
   });
