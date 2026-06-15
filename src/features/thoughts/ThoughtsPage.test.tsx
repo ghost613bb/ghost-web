@@ -74,6 +74,14 @@ describe("ThoughtsPageView", () => {
     render(<ThoughtsPageView initialThoughts={[{ ...taggedThought, body: '<p>配图内容</p><img src="/thought-images/cover.jpg" />' }]} />);
 
     expect(screen.getByRole("img", { name: "有标签的碎碎念封面" })).toHaveAttribute("src", "/thought-images/cover.jpg");
+    expect(screen.queryByLabelText("视频封面")).not.toBeInTheDocument();
+  });
+
+  it("shows a play badge on the existing cover when the first media is a video", () => {
+    render(<ThoughtsPageView initialThoughts={[{ ...taggedThought, coverImageUrl: "/thought-images/cover.jpg", body: '<video src="/thought-videos/cover.mp4"></video>' }]} />);
+
+    expect(screen.getByRole("img", { name: "有标签的碎碎念封面" })).toHaveAttribute("src", "/thought-images/cover.jpg");
+    expect(screen.getByLabelText("视频封面")).toBeInTheDocument();
   });
 
   it("does not render a card cover when a thought has no image", () => {

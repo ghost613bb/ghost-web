@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Play, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Thought } from "@/data/thoughts";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
@@ -16,6 +16,7 @@ type ThoughtsPageViewProps = {
 type ThoughtListItem = {
   bodyText: string;
   coverImageUrl?: string;
+  coverMediaType?: "image" | "video";
   primaryTag: string;
   tags: string[];
   tagsText: string;
@@ -39,12 +40,23 @@ function getFirstImageSrc(body: string) {
   return match?.[1];
 }
 
+function getFirstMediaType(body: string) {
+  const match = body.match(/<(img|video)\b/i);
+
+  if (!match) {
+    return undefined;
+  }
+
+  return match[1] === "video" ? "video" : "image";
+}
+
 function toThoughtListItem(thought: Thought): ThoughtListItem {
   const tags = thoughtTags(thought);
 
   return {
     bodyText: thought.bodyText ?? thoughtBodyToPlainText(thought.body),
     coverImageUrl: thought.coverImageUrl ?? getFirstImageSrc(thought.body),
+    coverMediaType: getFirstMediaType(thought.body),
     primaryTag: tags[0] ?? "日常",
     tags,
     tagsText: tags.join(" "),
@@ -164,13 +176,18 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
 
           {filteredThoughts.length > 0 ? (
             <section className="columns-1 gap-5 sm:columns-2 xl:columns-3">
-              {filteredThoughts.map(({ bodyText, coverImageUrl, primaryTag, thought }) => {
+              {filteredThoughts.map(({ bodyText, coverImageUrl, coverMediaType, primaryTag, thought }) => {
                 return (
                   <article className="mb-5 break-inside-avoid overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[8px_8px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-1 hover:shadow-[10px_12px_0_rgba(91,58,48,0.16)]" key={thought.id}>
                     <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]" href={`/thoughts/${thought.slug}`}>
                       {coverImageUrl ? (
-                        <div className="mb-3 overflow-hidden rounded-[1rem] border-[2px] border-[#5b3a30] bg-[#fff8e6]">
+                        <div className="relative mb-3 overflow-hidden rounded-[1rem] border-[2px] border-[#5b3a30] bg-[#fff8e6]">
                           <img alt={`${thought.title}封面`} className="h-auto w-full object-cover" src={coverImageUrl} />
+                          {coverMediaType === "video" ? (
+                            <span aria-label="视频封面" className="pointer-events-none absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-[0.45rem] border border-[#5b3a30]/18 bg-[#fff7ea]/92 text-[#5b3a30] shadow-[0_3px_8px_rgba(91,58,48,0.12)] backdrop-blur-[1px]">
+                              <Play aria-hidden="true" className="h-4 w-4 fill-current" />
+                            </span>
+                          ) : null}
                         </div>
                       ) : null}
                       <div className="px-1 pb-1">

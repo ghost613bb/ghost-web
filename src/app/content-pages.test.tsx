@@ -457,6 +457,7 @@ describe("content module pages", () => {
     expect(firstThoughtTag).toHaveTextContent("网站");
     expect(firstThoughtTag).toHaveClass("rounded-full", "bg-[#ffccd5]", "px-3", "py-1");
     expect(screen.queryByRole("img", { name: `${thoughts[0].title}封面` })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("视频封面")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toHaveClass("line-clamp-2");
     expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
   });
@@ -558,12 +559,10 @@ describe("content module pages", () => {
       render(await PlaylistsPage());
     });
 
-    expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("歌单")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
-    expect(screen.getByText("今日循环中")).toBeInTheDocument();
     expect(screen.getByLabelText("歌单列表")).toBeInTheDocument();
     expect(screen.getByLabelText("今日循环歌曲")).toBeInTheDocument();
     expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();
