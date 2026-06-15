@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Play, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Thought } from "@/data/thoughts";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
@@ -24,9 +24,16 @@ type ThoughtListItem = {
   thought: Thought;
 };
 
+type CalendarDateParts = NonNullable<ReturnType<typeof getThoughtDateParts>>;
+
 type CalendarViewModel = {
-  markedDays: Set<number>;
-  monthLabel: string;
+  calendarDates: CalendarDateParts[];
+  initialMonth: CalendarMonth;
+};
+
+type CalendarMonth = {
+  month: number;
+  year: number;
 };
 
 function thoughtTags(thought: Thought) {
@@ -112,12 +119,27 @@ function toCalendarDateParts(thought: Thought) {
   return getThoughtDateParts(thought.createdAt) ?? getThoughtDateParts(thought.publishedAt);
 }
 
-function buildCalendarViewModel(thoughts: Thought[]): CalendarViewModel {
-  const calendarDates = thoughts
-    .map((thought) => toCalendarDateParts(thought))
-    .filter((dateParts): dateParts is NonNullable<ReturnType<typeof getThoughtDateParts>> => Boolean(dateParts));
+function getCalendarMonthOffset(month: CalendarMonth, offset: number): CalendarMonth {
+  const date = new Date(month.year, month.month - 1 + offset, 1);
 
-  const latestDate = calendarDates.reduce<NonNullable<ReturnType<typeof getThoughtDateParts>> | null>((latest, dateParts) => {
+  return {
+    month: date.getMonth() + 1,
+    year: date.getFullYear(),
+  };
+}
+
+function getDaysInCalendarMonth(month: CalendarMonth) {
+  return new Date(month.year, month.month, 0).getDate();
+}
+
+function getFirstDayOfCalendarMonth(month: CalendarMonth) {
+  return new Date(month.year, month.month - 1, 1).getDay();
+}
+
+function buildCalendarViewModel(thoughts: Thought[]): CalendarViewModel {
+  const calendarDates = thoughts.map((thought) => toCalendarDateParts(thought)).filter((dateParts): dateParts is CalendarDateParts => Boolean(dateParts));
+
+  const latestDate = calendarDates.reduce<CalendarDateParts | null>((latest, dateParts) => {
     if (!latest) {
       return dateParts;
     }
@@ -127,20 +149,19 @@ function buildCalendarViewModel(thoughts: Thought[]): CalendarViewModel {
     return currentTime > latestTime ? dateParts : latest;
   }, null);
 
-  if (!latestDate) {
-    return {
-      markedDays: new Set(),
-      monthLabel: formatCalendarMonthLabel(new Date().getFullYear(), new Date().getMonth() + 1),
-    };
-  }
-
-  const markedDays = new Set(
-    calendarDates.filter((dateParts) => dateParts.year === latestDate.year && dateParts.month === latestDate.month).map((dateParts) => dateParts.day),
-  );
+  const fallbackDate = new Date();
 
   return {
-    markedDays,
-    monthLabel: formatCalendarMonthLabel(latestDate.year, latestDate.month),
+    calendarDates,
+    initialMonth: latestDate
+      ? {
+          month: latestDate.month,
+          year: latestDate.year,
+        }
+      : {
+          month: fallbackDate.getMonth() + 1,
+          year: fallbackDate.getFullYear(),
+        },
   };
 }
 
@@ -159,22 +180,50 @@ function DataSourceBadge({ source }: { source?: ThoughtDataSource }) {
 }
 
 type CalendarPanelProps = {
-  markedDays: Set<number>;
-  monthLabel: string;
+  calendarDates: CalendarDateParts[];
+  month: CalendarMonth;
+  onNextMonth: () => void;
+  onPreviousMonth: () => void;
 };
 
-function CalendarPanel({ markedDays, monthLabel }: CalendarPanelProps) {
+function CalendarPanel({ calendarDates, month, onNextMonth, onPreviousMonth }: CalendarPanelProps) {
+  const markedDays = new Set(calendarDates.filter((dateParts) => dateParts.year === month.year && dateParts.month === month.month).map((dateParts) => dateParts.day));
+  const monthLabel = formatCalendarMonthLabel(month.year, month.month);
+  const daysInMonth = getDaysInCalendarMonth(month);
+  const firstDayOffset = getFirstDayOfCalendarMonth(month);
+
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-[1.45rem] font-black text-[#5a352d]">Calendar</h2>
-        <span className="text-xs font-black uppercase tracking-[0.18em] text-[#7a5147]">{monthLabel}</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            aria-label="上一个月"
+            className="grid h-7 w-7 place-items-center rounded-full border border-[#5b3a30]/35 bg-[#fff8e6] text-[#5a352d] transition hover:-translate-y-0.5 hover:bg-[#ffd6de] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]"
+            onClick={onPreviousMonth}
+            type="button"
+          >
+            <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+          </button>
+          <span className="min-w-16 text-center text-xs font-black uppercase tracking-[0.18em] text-[#7a5147]">{monthLabel}</span>
+          <button
+            aria-label="下一个月"
+            className="grid h-7 w-7 place-items-center rounded-full border border-[#5b3a30]/35 bg-[#fff8e6] text-[#5a352d] transition hover:-translate-y-0.5 hover:bg-[#ffd6de] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]"
+            onClick={onNextMonth}
+            type="button"
+          >
+            <ChevronRight aria-hidden="true" className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       <div className="mt-4 grid grid-cols-7 gap-y-2 text-center text-sm font-black text-[#5a352d]">
         {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
           <span key={`${day}-${index}`}>{day}</span>
         ))}
-        {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+        {Array.from({ length: firstDayOffset }, (_, index) => (
+          <span aria-hidden="true" className="h-7 w-7" key={`empty-${monthLabel}-${index}`} />
+        ))}
+        {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => (
           <span className={`mx-auto grid h-7 w-7 place-items-center rounded-full ${markedDays.has(day) ? "bg-[#ffbac7] text-[#6a3d35]" : ""}`} key={day}>
             {day}
           </span>
@@ -191,6 +240,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
   const normalizedQuery = trimmedQuery.toLowerCase();
   const thoughtItems = useMemo(() => initialThoughts.map((thought) => toThoughtListItem(thought)), [initialThoughts]);
   const calendar = useMemo(() => buildCalendarViewModel(initialThoughts), [initialThoughts]);
+  const [visibleCalendarMonth, setVisibleCalendarMonth] = useState(calendar.initialMonth);
   const tags = useMemo(() => ["全部", ...Array.from(new Set(thoughtItems.flatMap((item) => item.tags)))], [thoughtItems]);
   const filteredThoughts = useMemo(() => {
     return thoughtItems.filter((item) => (activeTag === "全部" || item.tags.includes(activeTag)) && matchesQuery(item, normalizedQuery));
@@ -285,7 +335,12 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
             </div>
 
             <div className="mt-10">
-              <CalendarPanel markedDays={calendar.markedDays} monthLabel={calendar.monthLabel} />
+              <CalendarPanel
+                calendarDates={calendar.calendarDates}
+                month={visibleCalendarMonth}
+                onNextMonth={() => setVisibleCalendarMonth((currentMonth) => getCalendarMonthOffset(currentMonth, 1))}
+                onPreviousMonth={() => setVisibleCalendarMonth((currentMonth) => getCalendarMonthOffset(currentMonth, -1))}
+              />
             </div>
           </section>
         </aside>

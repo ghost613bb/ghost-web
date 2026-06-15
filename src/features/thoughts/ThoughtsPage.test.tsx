@@ -71,6 +71,26 @@ describe("ThoughtsPageView", () => {
     expect(screen.getByText("13")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
   });
 
+  it("highlights days with thoughts after switching calendar months", () => {
+    render(
+      <ThoughtsPageView
+        initialThoughts={[
+          { ...taggedThought, id: "thought-june-15", slug: "thought-june-15", createdAt: "2026-06-15" },
+          { ...thoughtWithoutTags, id: "thought-may-28", slug: "thought-may-28", createdAt: "2026-05-28" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("2026.06")).toBeInTheDocument();
+    expect(screen.getByText("15")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+
+    fireEvent.click(screen.getByRole("button", { name: "上一个月" }));
+
+    expect(screen.getByText("2026.05")).toBeInTheDocument();
+    expect(screen.getByText("28")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+    expect(screen.getByText("15")).not.toHaveClass("bg-[#ffbac7]");
+  });
+
   it("keeps one highlighted calendar day when multiple thoughts share the same date", () => {
     const { container } = render(
       <ThoughtsPageView
