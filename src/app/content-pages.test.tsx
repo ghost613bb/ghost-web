@@ -12,11 +12,47 @@ import ThoughtsPage from "./thoughts/page";
 import ThoughtDetailPage from "./thoughts/[slug]/page";
 import NewThoughtPage from "./thoughts/new/page";
 import TodoPage from "./todo/page";
-import { thoughts } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { resetDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
 import { resetStoredAlbums, upsertStoredAlbum, upsertStoredAlbumPhoto } from "@/features/album/repository";
 import * as albumService from "@/features/album/service";
-import { resetStoredThoughts } from "@/features/thoughts/repository";
+const mockThoughtServiceState = vi.hoisted(() => ({
+  getThoughtBySlug: vi.fn(),
+  getThoughtPageData: vi.fn(),
+}));
+
+vi.mock("@/features/thoughts/service", async () => {
+  const actual = await vi.importActual<typeof import("@/features/thoughts/service")>("@/features/thoughts/service");
+
+  return {
+    ...actual,
+    getThoughtBySlug: mockThoughtServiceState.getThoughtBySlug,
+    getThoughtPageData: mockThoughtServiceState.getThoughtPageData,
+  };
+});
+
+const mockThoughts: Thought[] = [
+  {
+    id: "thought-001",
+    title: "先把网站做成一个会发光的小镇",
+    slug: "glowing-town",
+    body: "个人网站的第一步，是先让访客知道这里和模板站不一样。后台、数据库和复杂权限都很重要，但第一眼的记忆点会决定我有没有动力继续把它养大。",
+    visibility: "public",
+    status: "published",
+    createdAt: "2026-05-13",
+    sortOrder: 1,
+  },
+  {
+    id: "thought-002",
+    title: "面试模式存在的原因",
+    slug: "interview-mode",
+    body: "有些内容不是不能公开，而是不适合在所有场景公开。面试模式不是把自己藏起来，而是给不同访问场景一个更舒服的边界。",
+    visibility: "interview_hidden",
+    status: "published",
+    createdAt: "2026-05-12",
+    sortOrder: 2,
+  },
+];
 
 const mockTiptapState = vi.hoisted(() => ({
   useEditorOptions: undefined as { content?: unknown } | undefined,
@@ -106,9 +142,10 @@ describe("content module pages", () => {
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
     mockTiptapState.useEditorOptions = undefined;
     vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-001" ? albumServiceFallbackAlbum : null));
+    mockThoughtServiceState.getThoughtPageData.mockResolvedValue({ dataSource: "supabase", thoughts: mockThoughts });
+    mockThoughtServiceState.getThoughtBySlug.mockImplementation(async (slug) => mockThoughts.find((thought) => thought.slug === slug) ?? null);
     await resetDisplayModes();
     await resetStoredAlbums();
-    await resetStoredThoughts();
   });
 
   afterEach(async () => {
@@ -430,7 +467,7 @@ describe("content module pages", () => {
     expect(screen.getByText("这是个人相册模块的基础演示内容。")).toBeInTheDocument();
   });
 
-  it("renders the thoughts display page with hand-drawn diary layout and fallback cards", async () => {
+  it("renders the thoughts display page with hand-drawn diary layout and Supabase cards", async () => {
     render(await ThoughtsPage());
 
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#fff8e6]");
@@ -441,46 +478,55 @@ describe("content module pages", () => {
     expect(screen.getByText("碎碎念")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.queryByRole("button", { name: "全部" })).not.toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
-    expect(screen.getByText("数据源：本地 fallback")).toBeInTheDocument();
+    expect(screen.getByText("数据源：Supabase")).toBeInTheDocument();
     expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByText("Calendar")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveAttribute("href", "/thoughts/new");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveTextContent("+");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).not.toHaveTextContent("新建碎碎念");
     expect(screen.getByRole("link", { name: "新建碎碎念" })).toHaveClass("fixed", "bottom-6", "right-6", "h-15", "w-15", "rounded-full");
-    expect(screen.getAllByRole("article")).toHaveLength(thoughts.length);
+    expect(screen.getAllByRole("article")).toHaveLength(mockThoughts.length);
     expect(screen.getAllByRole("article")[0].parentElement).toHaveClass("columns-1", "gap-5", "xl:columns-3");
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
-    expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: mockThoughts[0].title })).toBeInTheDocument();
+    expect(screen.getByText(mockThoughts[0].body)).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("mb-5", "break-inside-avoid", "rounded-[1.45rem]", "border-[2px]", "bg-[#fffaf0]");
     expect(screen.getAllByRole("article")[0].querySelector("span.mt-3")).not.toBeInTheDocument();
-    expect(screen.queryByRole("img", { name: `${thoughts[0].title}封面` })).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: `${mockThoughts[0].title}封面` })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("视频封面")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toHaveClass("line-clamp-2");
-    expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
+    expect(screen.getByRole("heading", { level: 2, name: mockThoughts[0].title })).toHaveClass("line-clamp-2");
+    expect(screen.getAllByText(mockThoughts[0].body)[0]).toHaveClass("line-clamp-2");
   });
 
-  it("does not render fallback thought tag filters", async () => {
+  it("does not render thought tag filters", async () => {
     render(await ThoughtsPage());
 
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "边界感" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: mockThoughts[0].title })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: mockThoughts[1].title })).toBeInTheDocument();
+    expect(screen.queryByText("Tags")).not.toBeInTheDocument();
   });
 
-  it("searches fallback thoughts and shows an empty state when nothing matches", async () => {
+  it("renders a mokugyo notice when thoughts are unavailable", async () => {
+    mockThoughtServiceState.getThoughtPageData.mockResolvedValueOnce({ dataSource: "unavailable", statusReason: "read-error", thoughts: [] });
+
+    render(await ThoughtsPage());
+
+    expect(screen.getByTestId("mokugyo-state-notice")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "服务器在打瞌睡" })).toBeInTheDocument();
+  });
+
+  it("searches thoughts and shows an empty state when nothing matches", async () => {
     render(await ThoughtsPage());
 
     const searchbox = screen.getByRole("searchbox", { name: "搜索碎碎念" });
 
     fireEvent.change(searchbox, { target: { value: "模板站" } });
 
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: thoughts[1].title })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: mockThoughts[0].title })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: mockThoughts[1].title })).not.toBeInTheDocument();
 
     fireEvent.change(searchbox, { target: { value: "没有这条碎碎念" } });
 
-    expect(screen.queryByRole("heading", { level: 2, name: thoughts[0].title })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: mockThoughts[0].title })).not.toBeInTheDocument();
     expect(screen.getByText("没有找到相关碎碎念")).toBeInTheDocument();
     expect(screen.getByText("换个关键词，或者先回到全部分类看看。")).toBeInTheDocument();
   });
@@ -488,13 +534,13 @@ describe("content module pages", () => {
   it("renders the thought rich text page from a slug", async () => {
     render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
 
-    expect(screen.getByRole("heading", { level: 1, name: thoughts[0].title })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: mockThoughts[0].title })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
     expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
     expect(screen.getByText(/写入时间/)).toBeInTheDocument();
     expect(screen.getByText(/2026\.05\.13/)).toBeInTheDocument();
     expect(screen.queryByText(/上次编辑时间/)).not.toBeInTheDocument();
-    expect(mockTiptapState.useEditorOptions?.content).toContain(thoughts[0].body);
+    expect(mockTiptapState.useEditorOptions?.content).toContain(mockThoughts[0].body);
   });
 
   it("renders the new thought rich text draft page", () => {

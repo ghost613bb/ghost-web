@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Thought } from "@/data/thoughts";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
+import { MokugyoStateNotice } from "@/features/content-modules/components/MokugyoStateNotice";
+import type { Thought } from "@/features/thoughts/types";
 import { thoughtBodyToPlainText } from "./text";
 import { formatThoughtListDate, getThoughtDateParts } from "./time";
-import type { ThoughtDataSource } from "./service";
+import type { ThoughtDataSource, ThoughtStatusReason } from "./service";
 
 type ThoughtsPageViewProps = {
   dataSource?: ThoughtDataSource;
   initialThoughts: Thought[];
+  statusReason?: ThoughtStatusReason;
 };
 
 type ThoughtListItem = {
@@ -158,7 +160,7 @@ function DataSourceBadge({ source }: { source?: ThoughtDataSource }) {
     return null;
   }
 
-  const label = source === "supabase" ? "数据源：Supabase" : source === "mixed" ? "数据源：Supabase + 本地 fallback" : "数据源：本地 fallback";
+  const label = source === "supabase" ? "数据源：Supabase" : source === "empty" ? "数据源：暂无碎碎念" : "数据源：暂时不可用";
 
   return (
     <span className="fixed right-4 top-4 z-30 rounded-full border-2 border-[#5b3a30]/80 bg-[#fffaf0]/90 px-3 py-1 text-xs font-black text-[#5a352d] shadow-[0_4px_0_rgba(91,58,48,0.12)] backdrop-blur">
@@ -234,7 +236,7 @@ function CalendarPanel({ calendarDates, month, onNextMonth, onPreviousMonth }: C
   );
 }
 
-export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageViewProps) {
+export function ThoughtsPageView({ dataSource, initialThoughts, statusReason }: ThoughtsPageViewProps) {
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
   const normalizedQuery = trimmedQuery.toLowerCase();
@@ -244,6 +246,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
   const filteredThoughts = useMemo(() => {
     return thoughtItems.filter((item) => matchesQuery(item, normalizedQuery));
   }, [normalizedQuery, thoughtItems]);
+  const shouldShowMokugyoNotice = initialThoughts.length === 0 && !trimmedQuery;
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#fff8e6] text-[#4a2e28] [background-image:radial-gradient(circle_at_12%_18%,rgba(255,199,211,0.28)_0_80px,transparent_81px),radial-gradient(circle_at_88%_72%,rgba(190,233,221,0.36)_0_120px,transparent_121px),linear-gradient(90deg,rgba(121,76,55,0.04)_1px,transparent_1px),linear-gradient(rgba(121,76,55,0.035)_1px,transparent_1px)] [background-size:auto,auto,42px_42px,42px_42px]">
@@ -268,7 +271,9 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
             </label>
           </div>
 
-          {filteredThoughts.length > 0 ? (
+          {shouldShowMokugyoNotice ? (
+            <MokugyoStateNotice page="/thoughts" reason={statusReason ?? (dataSource === "empty" ? "empty" : "read-error")} />
+          ) : filteredThoughts.length > 0 ? (
             <section className="columns-1 gap-5 sm:columns-2 xl:columns-3">
               {filteredThoughts.map(({ bodyText, coverImageUrl, coverMediaType, thought }) => {
                 return (

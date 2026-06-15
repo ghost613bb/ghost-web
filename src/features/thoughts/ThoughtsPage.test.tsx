@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { ThoughtsPageView } from "./ThoughtsPage";
 
 beforeEach(() => {
@@ -43,6 +43,23 @@ describe("ThoughtsPageView", () => {
     expect(screen.queryByText("Tags")).not.toBeInTheDocument();
     expect(screen.queryByText("日常")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "全部" })).not.toBeInTheDocument();
+  });
+
+  it("renders the mokugyo notice when there are no thoughts", () => {
+    render(<ThoughtsPageView dataSource="unavailable" initialThoughts={[]} statusReason="read-error" />);
+
+    expect(screen.getByTestId("mokugyo-state-notice")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "服务器在打瞌睡" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "敲一下木鱼提醒作者" })).toBeInTheDocument();
+  });
+
+  it("keeps the search empty state separate from the mokugyo notice", () => {
+    render(<ThoughtsPageView initialThoughts={[sampleThought]} />);
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "搜索碎碎念" }), { target: { value: "没有这条碎碎念" } });
+
+    expect(screen.queryByTestId("mokugyo-state-notice")).not.toBeInTheDocument();
+    expect(screen.getByText("没有找到相关碎碎念")).toBeInTheDocument();
   });
 
   it("formats ISO timestamps as readable list dates", () => {
