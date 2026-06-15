@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import type { Thought } from "@/data/thoughts";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { thoughtBodyToPlainText } from "./text";
-import { formatThoughtListDate } from "./time";
+import { formatThoughtListDate, getThoughtDateParts } from "./time";
 import type { ThoughtDataSource } from "./service";
 
 type ThoughtsPageViewProps = {
@@ -22,6 +22,11 @@ type ThoughtListItem = {
   tags: string[];
   tagsText: string;
   thought: Thought;
+};
+
+type CalendarViewModel = {
+  markedDays: Set<number>;
+  monthLabel: string;
 };
 
 function thoughtTags(thought: Thought) {
@@ -99,6 +104,46 @@ function renderHighlightedText(value: string, query: string) {
   return fragments;
 }
 
+function formatCalendarMonthLabel(year: number, month: number) {
+  return `${year}.${String(month).padStart(2, "0")}`;
+}
+
+function toCalendarDateParts(thought: Thought) {
+  return getThoughtDateParts(thought.createdAt) ?? getThoughtDateParts(thought.publishedAt);
+}
+
+function buildCalendarViewModel(thoughts: Thought[]): CalendarViewModel {
+  const calendarDates = thoughts
+    .map((thought) => toCalendarDateParts(thought))
+    .filter((dateParts): dateParts is NonNullable<ReturnType<typeof getThoughtDateParts>> => Boolean(dateParts));
+
+  const latestDate = calendarDates.reduce<NonNullable<ReturnType<typeof getThoughtDateParts>> | null>((latest, dateParts) => {
+    if (!latest) {
+      return dateParts;
+    }
+
+    const latestTime = new Date(latest.year, latest.month - 1, latest.day).getTime();
+    const currentTime = new Date(dateParts.year, dateParts.month - 1, dateParts.day).getTime();
+    return currentTime > latestTime ? dateParts : latest;
+  }, null);
+
+  if (!latestDate) {
+    return {
+      markedDays: new Set(),
+      monthLabel: formatCalendarMonthLabel(new Date().getFullYear(), new Date().getMonth() + 1),
+    };
+  }
+
+  const markedDays = new Set(
+    calendarDates.filter((dateParts) => dateParts.year === latestDate.year && dateParts.month === latestDate.month).map((dateParts) => dateParts.day),
+  );
+
+  return {
+    markedDays,
+    monthLabel: formatCalendarMonthLabel(latestDate.year, latestDate.month),
+  };
+}
+
 function DataSourceBadge({ source }: { source?: ThoughtDataSource }) {
   if (process.env.NODE_ENV === "production" || !source) {
     return null;
@@ -113,12 +158,18 @@ function DataSourceBadge({ source }: { source?: ThoughtDataSource }) {
   );
 }
 
-function CalendarPanel() {
-  const markedDays = new Set([5, 10, 11, 12, 14, 15, 17, 18]);
+type CalendarPanelProps = {
+  markedDays: Set<number>;
+  monthLabel: string;
+};
 
+function CalendarPanel({ markedDays, monthLabel }: CalendarPanelProps) {
   return (
     <div>
-      <h2 className="text-[1.45rem] font-black text-[#5a352d]">Calendar</h2>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-[1.45rem] font-black text-[#5a352d]">Calendar</h2>
+        <span className="text-xs font-black uppercase tracking-[0.18em] text-[#7a5147]">{monthLabel}</span>
+      </div>
       <div className="mt-4 grid grid-cols-7 gap-y-2 text-center text-sm font-black text-[#5a352d]">
         {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
           <span key={`${day}-${index}`}>{day}</span>
@@ -139,6 +190,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
   const trimmedQuery = query.trim();
   const normalizedQuery = trimmedQuery.toLowerCase();
   const thoughtItems = useMemo(() => initialThoughts.map((thought) => toThoughtListItem(thought)), [initialThoughts]);
+  const calendar = useMemo(() => buildCalendarViewModel(initialThoughts), [initialThoughts]);
   const tags = useMemo(() => ["全部", ...Array.from(new Set(thoughtItems.flatMap((item) => item.tags)))], [thoughtItems]);
   const filteredThoughts = useMemo(() => {
     return thoughtItems.filter((item) => (activeTag === "全部" || item.tags.includes(activeTag)) && matchesQuery(item, normalizedQuery));
@@ -233,7 +285,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
             </div>
 
             <div className="mt-10">
-              <CalendarPanel />
+              <CalendarPanel markedDays={calendar.markedDays} monthLabel={calendar.monthLabel} />
             </div>
           </section>
         </aside>

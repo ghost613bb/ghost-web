@@ -47,6 +47,46 @@ describe("ThoughtsPageView", () => {
     expect(screen.queryByText(/T00:00:00\+00:00/)).not.toBeInTheDocument();
   });
 
+  it("highlights only the days that have thoughts in the displayed month", () => {
+    render(
+      <ThoughtsPageView
+        initialThoughts={[
+          { ...taggedThought, id: "thought-june-15", slug: "thought-june-15", createdAt: "2026-06-15" },
+          { ...thoughtWithoutTags, id: "thought-june-12", slug: "thought-june-12", createdAt: "2026-06-12" },
+          { ...taggedThought, id: "thought-may-28", slug: "thought-may-28", createdAt: "2026-05-28" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("2026.06")).toBeInTheDocument();
+    expect(screen.getByText("15")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+    expect(screen.getByText("12")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+    expect(screen.getByText("28")).not.toHaveClass("bg-[#ffbac7]");
+  });
+
+  it("uses ISO timestamps to highlight calendar days", () => {
+    render(<ThoughtsPageView initialThoughts={[{ ...taggedThought, createdAt: "2026-06-13T08:30:00+08:00" }]} />);
+
+    expect(screen.getByText("2026.06")).toBeInTheDocument();
+    expect(screen.getByText("13")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+  });
+
+  it("keeps one highlighted calendar day when multiple thoughts share the same date", () => {
+    const { container } = render(
+      <ThoughtsPageView
+        initialThoughts={[
+          { ...taggedThought, id: "thought-june-15-a", slug: "thought-june-15-a", createdAt: "2026-06-15" },
+          { ...thoughtWithoutTags, id: "thought-june-15-b", slug: "thought-june-15-b", createdAt: "2026-06-15" },
+        ]}
+      />,
+    );
+
+    const highlightedDays = Array.from(container.querySelectorAll("span")).filter((element) => element.className.includes("bg-[#ffbac7]"));
+
+    expect(highlightedDays).toHaveLength(1);
+    expect(screen.getByText("15")).toHaveClass("bg-[#ffbac7]", "text-[#6a3d35]");
+  });
+
   it("highlights matching keywords in filtered thought content", () => {
     render(<ThoughtsPageView initialThoughts={[taggedThought]} />);
 

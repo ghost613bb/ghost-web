@@ -10,23 +10,37 @@ function formatDateParts(year: number, month: number, day: number) {
   return `${year}.${pad(month)}.${pad(day)}`;
 }
 
-export function formatThoughtListDate(value?: string) {
+export function getThoughtDateParts(value?: string) {
   if (!value) {
-    return "未记录日期";
+    return null;
   }
 
   if (isDateOnly(value)) {
     const [year, month, day] = value.split("-").map(Number);
-    return formatDateParts(year, month, day);
+    return { day, month, year };
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return {
+    day: date.getDate(),
+    month: date.getMonth() + 1,
+    year: date.getFullYear(),
+  };
+}
+
+export function formatThoughtListDate(value?: string) {
+  const dateParts = getThoughtDateParts(value);
+
+  if (!dateParts) {
     return "未记录日期";
   }
 
-  return formatDateParts(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  return formatDateParts(dateParts.year, dateParts.month, dateParts.day);
 }
 
 export function formatThoughtMetaTimestamp(value?: string) {
