@@ -43,7 +43,6 @@ sqlite.exec(`
     body text NOT NULL,
     body_text text NOT NULL DEFAULT '',
     excerpt text,
-    tags text NOT NULL DEFAULT '[]',
     cover_image_url text,
     visibility text NOT NULL DEFAULT 'public',
     status text NOT NULL DEFAULT 'draft',

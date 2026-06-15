@@ -18,9 +18,6 @@ type ThoughtListItem = {
   bodyText: string;
   coverImageUrl?: string;
   coverMediaType?: "image" | "video";
-  primaryTag: string;
-  tags: string[];
-  tagsText: string;
   thought: Thought;
 };
 
@@ -35,10 +32,6 @@ type CalendarMonth = {
   month: number;
   year: number;
 };
-
-function thoughtTags(thought: Thought) {
-  return thought.tags ?? [];
-}
 
 function getFirstImageSrc(body: string) {
   const match = body.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i);
@@ -56,15 +49,10 @@ function getFirstMediaType(body: string) {
 }
 
 function toThoughtListItem(thought: Thought): ThoughtListItem {
-  const tags = thoughtTags(thought);
-
   return {
     bodyText: thought.bodyText ?? thoughtBodyToPlainText(thought.body),
     coverImageUrl: thought.coverImageUrl ?? getFirstImageSrc(thought.body),
     coverMediaType: getFirstMediaType(thought.body),
-    primaryTag: tags[0] ?? "日常",
-    tags,
-    tagsText: tags.join(" "),
     thought,
   };
 }
@@ -74,7 +62,7 @@ function matchesQuery(item: ThoughtListItem, normalizedQuery: string) {
     return true;
   }
 
-  return [item.thought.title, item.bodyText, item.tagsText].some((value) => value.toLowerCase().includes(normalizedQuery));
+  return [item.thought.title, item.bodyText].some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
 function renderHighlightedText(value: string, query: string) {
@@ -247,17 +235,15 @@ function CalendarPanel({ calendarDates, month, onNextMonth, onPreviousMonth }: C
 }
 
 export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageViewProps) {
-  const [activeTag, setActiveTag] = useState("全部");
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
   const normalizedQuery = trimmedQuery.toLowerCase();
   const thoughtItems = useMemo(() => initialThoughts.map((thought) => toThoughtListItem(thought)), [initialThoughts]);
   const calendar = useMemo(() => buildCalendarViewModel(initialThoughts), [initialThoughts]);
   const [visibleCalendarMonth, setVisibleCalendarMonth] = useState(calendar.initialMonth);
-  const tags = useMemo(() => ["全部", ...Array.from(new Set(thoughtItems.flatMap((item) => item.tags)))], [thoughtItems]);
   const filteredThoughts = useMemo(() => {
-    return thoughtItems.filter((item) => (activeTag === "全部" || item.tags.includes(activeTag)) && matchesQuery(item, normalizedQuery));
-  }, [activeTag, normalizedQuery, thoughtItems]);
+    return thoughtItems.filter((item) => matchesQuery(item, normalizedQuery));
+  }, [normalizedQuery, thoughtItems]);
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#fff8e6] text-[#4a2e28] [background-image:radial-gradient(circle_at_12%_18%,rgba(255,199,211,0.28)_0_80px,transparent_81px),radial-gradient(circle_at_88%_72%,rgba(190,233,221,0.36)_0_120px,transparent_121px),linear-gradient(90deg,rgba(121,76,55,0.04)_1px,transparent_1px),linear-gradient(rgba(121,76,55,0.035)_1px,transparent_1px)] [background-size:auto,auto,42px_42px,42px_42px]">
@@ -284,7 +270,7 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
 
           {filteredThoughts.length > 0 ? (
             <section className="columns-1 gap-5 sm:columns-2 xl:columns-3">
-              {filteredThoughts.map(({ bodyText, coverImageUrl, coverMediaType, primaryTag, thought }) => {
+              {filteredThoughts.map(({ bodyText, coverImageUrl, coverMediaType, thought }) => {
                 return (
                   <article className="mb-5 break-inside-avoid overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[8px_8px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-1 hover:shadow-[10px_12px_0_rgba(91,58,48,0.16)]" key={thought.id}>
                     <Link className="block rounded-[1rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d97891]" href={`/thoughts/${thought.slug}`}>
@@ -302,9 +288,6 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
                         <h2 className="line-clamp-2 text-[1.05rem] font-black tracking-tight text-[#3f2823]">{renderHighlightedText(thought.title, trimmedQuery)}</h2>
                         <p className="mt-1 text-xs font-bold text-[#7a5147]">{formatThoughtListDate(thought.createdAt)}</p>
                         <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-[#5e463f]">{renderHighlightedText(bodyText, trimmedQuery)}</p>
-                        <span className="mt-3 inline-flex rounded-full border border-[#5b3a30]/30 bg-[#ffccd5] px-3 py-1 text-xs font-black text-[#6f343b] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">
-                          {renderHighlightedText(primaryTag, trimmedQuery)}
-                        </span>
                       </div>
                     </Link>
                   </article>
@@ -327,24 +310,6 @@ export function ThoughtsPageView({ dataSource, initialThoughts }: ThoughtsPageVi
                 <img alt="碎碎念头像" className="h-full w-full object-cover" src="/images/daily-thoughts-avatar.jpeg" />
               </div>
               <p className="mt-4 text-sm font-bold leading-6 text-[#765247]">记录灵感、日常和突然冒出来的小念头。</p>
-            </div>
-
-            <div className="mt-9" id="thought-tags">
-              <h2 className="text-[1.45rem] font-black text-[#5a352d]">Tags</h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <button
-                    aria-pressed={activeTag === tag}
-                    className={`rounded-full border-[2px] border-[#5b3a30] px-3 py-1.5 text-xs font-black shadow-[2px_2px_0_rgba(91,58,48,0.12)] transition hover:-translate-y-0.5 ${activeTag === tag ? "bg-[#ffb9c8] text-[#5a352d]" : "bg-[#dff4ff] text-[#5a352d] hover:bg-[#fff4cf]"
-                      }`}
-                    key={tag}
-                    onClick={() => setActiveTag(tag)}
-                    type="button"
-                  >
-                    {renderHighlightedText(tag, trimmedQuery)}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div className="mt-10">

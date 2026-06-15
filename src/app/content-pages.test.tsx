@@ -439,7 +439,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveTextContent("Home");
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
     expect(screen.getByText("碎碎念")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
-    expect(screen.getByRole("button", { name: "全部" })).toHaveClass("rounded-full", "bg-[#ffb9c8]");
+    expect(screen.queryByRole("button", { name: "全部" })).not.toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "搜索碎碎念" })).toBeInTheDocument();
     expect(screen.getByText("数据源：本地 fallback")).toBeInTheDocument();
     expect(screen.getByText("Profile")).toBeInTheDocument();
@@ -453,25 +453,19 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByText(thoughts[0].body)).toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveClass("mb-5", "break-inside-avoid", "rounded-[1.45rem]", "border-[2px]", "bg-[#fffaf0]");
-    const firstThoughtTag = screen.getAllByRole("article")[0].querySelector("span.mt-3") as HTMLElement;
-    expect(firstThoughtTag).toHaveTextContent("网站");
-    expect(firstThoughtTag).toHaveClass("rounded-full", "bg-[#ffccd5]", "px-3", "py-1");
+    expect(screen.getAllByRole("article")[0].querySelector("span.mt-3")).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: `${thoughts[0].title}封面` })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("视频封面")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toHaveClass("line-clamp-2");
     expect(screen.getAllByText(thoughts[0].body)[0]).toHaveClass("line-clamp-2");
   });
 
-  it("filters fallback thoughts by tag", async () => {
+  it("does not render fallback thought tag filters", async () => {
     render(await ThoughtsPage());
 
     expect(screen.getByRole("heading", { level: 2, name: thoughts[0].title })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "边界感" }));
-
-    expect(screen.queryByRole("heading", { level: 2, name: thoughts[0].title })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: thoughts[1].title })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "边界感" })).not.toBeInTheDocument();
   });
 
   it("searches fallback thoughts and shows an empty state when nothing matches", async () => {

@@ -326,7 +326,6 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       title,
       slug: getThoughtSlug(title, timestamp),
       body: html,
-      tags: ["日常"],
       visibility: "public",
       status: "published",
       createdAt: now,

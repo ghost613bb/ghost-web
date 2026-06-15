@@ -8,10 +8,6 @@ type ThoughtDetailPageViewProps = {
   thought: Thought;
 };
 
-function thoughtTags(thought: Thought) {
-  return thought.tags?.length ? thought.tags : ["日常"];
-}
-
 function renderThoughtLine(line: string, index: number): ReactNode {
   const trimmedLine = line.trim();
 
@@ -51,8 +47,6 @@ function renderThoughtLine(line: string, index: number): ReactNode {
 }
 
 export function ThoughtDetailPageView({ thought }: ThoughtDetailPageViewProps) {
-  const tags = thoughtTags(thought);
-
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] px-3 py-3 text-[#4c2b2d] sm:px-5 sm:py-3">
       <div className="mx-auto max-w-[1360px]">
@@ -87,11 +81,6 @@ export function ThoughtDetailPageView({ thought }: ThoughtDetailPageViewProps) {
                 <div className="relative max-w-[780px] space-y-2">
                   <div className="flex flex-wrap items-center gap-2 pb-2 text-sm font-black text-[#9a7f74]">
                     <span>{formatThoughtListDate(thought.createdAt)}</span>
-                    {tags.map((tag) => (
-                      <span className="rounded-full bg-[#f8cfd5] px-3 py-1 text-xs text-[#7a3f4a] shadow-[0_5px_12px_rgba(132,82,90,0.08)]" key={tag}>
-                        {tag}
-                      </span>
-                    ))}
                   </div>
                   <div className="space-y-2 pt-2">{thought.body.split("\n").map((line, index) => renderThoughtLine(line, index))}</div>
                 </div>

@@ -20,20 +20,10 @@ type StoredThoughtRow = {
   slug: string;
   sortOrder: number | null;
   status: Thought["status"];
-  tags: string;
   title: string;
   updatedAt: string;
   visibility: Thought["visibility"];
 };
-
-function parseStoredTags(tags: string): string[] {
-  try {
-    const parsedTags = JSON.parse(tags) as unknown;
-    return Array.isArray(parsedTags) ? parsedTags.filter((tag): tag is string => typeof tag === "string") : [];
-  } catch {
-    return [];
-  }
-}
 
 function toThought(row: StoredThoughtRow): Thought {
   return {
@@ -46,7 +36,6 @@ function toThought(row: StoredThoughtRow): Thought {
     createdAt: row.createdAt || undefined,
     deletedAt: row.deletedAt ?? undefined,
     excerpt: row.excerpt ?? undefined,
-    tags: parseStoredTags(row.tags),
     visibility: row.visibility,
     status: row.status,
     pinned: row.pinned,
@@ -72,7 +61,6 @@ function normalizeThoughtForStorage(thought: Thought) {
     body: thought.body,
     bodyText,
     excerpt: thought.excerpt ?? null,
-    tags: JSON.stringify(thought.tags ?? []),
     coverImageUrl: thought.coverImageUrl ?? null,
     visibility: thought.visibility,
     status: thought.status,
@@ -117,7 +105,6 @@ export async function upsertStoredThought(thought: Thought) {
       body: row.body,
       bodyText: row.bodyText,
       excerpt: row.excerpt,
-      tags: row.tags,
       coverImageUrl: row.coverImageUrl,
       visibility: row.visibility,
       status: row.status,

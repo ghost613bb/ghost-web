@@ -13,7 +13,6 @@ export const thoughts = sqliteTable("thoughts", {
   body: text("body").notNull(), // 正文内容
   bodyText: text("body_text").notNull().default(""),
   excerpt: text("excerpt"),
-  tags: text("tags").notNull().default("[]"), // 标签（字符串形式存储）
   coverImageUrl: text("cover_image_url"),
   visibility: text("visibility", { enum: ["public", "private", "interview_hidden", "masked"] }).notNull().default("public"), // 可见性
   status: text("status", { enum: ["draft", "published"] }).notNull().default("draft"), // 发布状态

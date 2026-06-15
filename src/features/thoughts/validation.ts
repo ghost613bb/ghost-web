@@ -94,10 +94,6 @@ export function parseCreateThought(body: unknown): Thought {
     throw new Error("thought 参数不合法");
   }
 
-  if (!Array.isArray(thought.tags) || !thought.tags.every((tag) => typeof tag === "string")) {
-    throw new Error("thought 参数不合法");
-  }
-
   if (!isThoughtVisibility(thought.visibility)) {
     throw new Error("thought 参数不合法");
   }
@@ -125,7 +121,6 @@ export function parseCreateThought(body: unknown): Thought {
     createdAt: normalizeOptionalDateString(thought.createdAt),
     deletedAt: normalizeOptionalDateString(thought.deletedAt),
     excerpt: normalizeOptionalString(thought.excerpt),
-    tags: thought.tags,
     visibility: thought.visibility,
     status: thought.status,
     pinned: normalizeBoolean(thought.pinned),

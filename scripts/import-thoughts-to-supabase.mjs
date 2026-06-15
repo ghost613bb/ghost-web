@@ -122,7 +122,6 @@ function toThoughtRow(thought) {
     body: thought.body,
     body_text: thought.bodyText ?? bodyToPlainText(thought.body),
     excerpt: thought.excerpt ?? null,
-    tags: thought.tags ?? [],
     cover_image_url: thought.coverImageUrl ?? null,
     visibility: thought.visibility ?? "public",
     status: thought.status ?? "published",

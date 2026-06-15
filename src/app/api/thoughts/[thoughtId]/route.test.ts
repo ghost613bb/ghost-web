@@ -15,7 +15,6 @@ describe("/api/thoughts/[thoughtId]", () => {
       title: "待删除碎碎念",
       slug: "delete-stored-thought",
       body: "这条内容会被删除。",
-      tags: ["删除"],
       visibility: "public",
       status: "published",
       createdAt: "2026-06-05",

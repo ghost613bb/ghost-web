@@ -284,7 +284,6 @@ describe("ThoughtRichTextDraftPage", () => {
       id: "thought-editing",
       slug: "thought-editing",
       status: "published",
-      tags: ["日常"],
       title: "已有碎碎念",
       visibility: "public",
     };
@@ -339,7 +338,6 @@ describe("ThoughtRichTextDraftPage", () => {
       slug: "thought-editing",
       sortOrder: 3,
       status: "published",
-      tags: ["日常"],
       title: "已有碎碎念",
       updatedAt: "2026-06-05T08:30:00.000Z",
       visibility: "public",
@@ -367,7 +365,6 @@ describe("ThoughtRichTextDraftPage", () => {
       slug: "thought-editing",
       sortOrder: 3,
       status: "published",
-      tags: ["日常"],
       title: "已有碎碎念",
       visibility: "public",
     }));
@@ -401,7 +398,8 @@ describe("ThoughtRichTextDraftPage", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/thoughts", expect.objectContaining({ method: "POST" })));
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
     const payload = JSON.parse(String(request.body));
-    expect(payload).toEqual(expect.objectContaining({ body: "<p>新的碎碎念内容</p>", tags: ["日常"], title: "新的碎碎念内容", visibility: "public", status: "published" }));
+    expect(payload).toEqual(expect.objectContaining({ body: "<p>新的碎碎念内容</p>", title: "新的碎碎念内容", visibility: "public", status: "published" }));
+    expect(payload).not.toHaveProperty("tags");
     expect(payload.id).toMatch(/^thought-created-/);
     expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(payload.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);

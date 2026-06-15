@@ -17,31 +17,13 @@ type SupabaseThoughtRow = {
   slug: string;
   sort_order: number | null;
   status: Thought["status"];
-  tags: unknown;
   title: string;
   updated_at: string | null;
   visibility: Thought["visibility"];
 };
 
 const thoughtColumns =
-  "id,title,slug,body,body_text,excerpt,tags,cover_image_url,visibility,status,pinned,sort_order,published_at,created_at,updated_at,deleted_at,paper_background_image_url,paper_background_opacity";
-
-function parseSupabaseTags(tags: unknown): string[] {
-  if (Array.isArray(tags)) {
-    return tags.filter((tag): tag is string => typeof tag === "string");
-  }
-
-  if (typeof tags === "string") {
-    try {
-      const parsedTags = JSON.parse(tags) as unknown;
-      return Array.isArray(parsedTags) ? parsedTags.filter((tag): tag is string => typeof tag === "string") : [];
-    } catch {
-      return [];
-    }
-  }
-
-  return [];
-}
+  "id,title,slug,body,body_text,excerpt,cover_image_url,visibility,status,pinned,sort_order,published_at,created_at,updated_at,deleted_at,paper_background_image_url,paper_background_opacity";
 
 function toThought(row: SupabaseThoughtRow): Thought {
   return {
@@ -54,7 +36,6 @@ function toThought(row: SupabaseThoughtRow): Thought {
     createdAt: row.created_at ?? undefined,
     deletedAt: row.deleted_at ?? undefined,
     excerpt: row.excerpt ?? undefined,
-    tags: parseSupabaseTags(row.tags),
     visibility: row.visibility,
     status: row.status,
     pinned: row.pinned ?? false,
@@ -78,7 +59,6 @@ function toSupabaseThoughtRow(thought: Thought) {
     body: thought.body,
     body_text: thought.bodyText ?? thoughtBodyToPlainText(thought.body),
     excerpt: thought.excerpt ?? null,
-    tags: thought.tags ?? [],
     cover_image_url: thought.coverImageUrl ?? null,
     visibility: thought.visibility,
     status: thought.status,
