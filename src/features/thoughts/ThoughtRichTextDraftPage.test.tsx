@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorState } from "@tiptap/react";
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { ThoughtRichTextDraftPage } from "./ThoughtRichTextDraftPage";
 
 const mockStarterKit = vi.hoisted(() => ({

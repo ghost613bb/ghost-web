@@ -16,11 +16,13 @@ export async function POST(request: Request) {
       thought: await createThought(thought),
     });
   } catch (error) {
+    const message = error instanceof SyntaxError ? "请求体必须是合法 JSON" : error instanceof Error ? error.message : "thought 参数不合法";
+
     return NextResponse.json(
       {
-        error: error instanceof SyntaxError ? "请求体必须是合法 JSON" : error instanceof Error ? error.message : "thought 参数不合法",
+        error: message,
       },
-      { status: 400 },
+      { status: message === "碎碎念数据源未配置" ? 503 : 400 },
     );
   }
 }

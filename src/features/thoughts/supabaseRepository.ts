@@ -1,4 +1,4 @@
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { thoughtBodyToPlainText } from "./text";
 

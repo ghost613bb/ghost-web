@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { formatThoughtListDate } from "./time";
 
 type ThoughtDetailPageViewProps = {

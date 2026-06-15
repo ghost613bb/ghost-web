@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { ThoughtDetailPageView } from "./ThoughtDetailPage";
 
 const thought: Thought = {

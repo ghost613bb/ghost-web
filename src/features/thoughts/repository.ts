@@ -1,6 +1,6 @@
 // 负责 thoughts 表的数据库读写操作
 import { asc, eq, isNull } from "drizzle-orm";
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { db } from "@/lib/db/client";
 import { thoughts as thoughtsTable } from "@/lib/db/schema";
 import { thoughtBodyToPlainText } from "./text";

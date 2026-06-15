@@ -16,7 +16,7 @@ import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { formatThoughtMetaTimestamp, shouldShowThoughtUpdatedAt } from "./time";
 
 const toolbarButtonBaseClass =

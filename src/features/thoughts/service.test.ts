@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { thoughts } from "@/data/thoughts";
+import type { Thought } from "./types";
 
 const supabaseEnvState = vi.hoisted(() => ({
   enabled: false,
@@ -19,269 +19,100 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("./supabaseRepository", () => supabaseRepositoryState);
 
-import { resetStoredThoughts, upsertStoredThought } from "./repository";
 import { createThought, deleteThought, getLatestThought, getThoughtBySlug, getThoughtPageData, listThoughts } from "./service";
 
+const supabaseThought: Thought = {
+  id: "thought-supabase",
+  title: "Supabase 里的碎碎念",
+  slug: "thought-supabase",
+  body: "这条内容来自 Supabase。",
+  bodyText: "这条内容来自 Supabase。",
+  visibility: "public",
+  status: "published",
+  createdAt: "2026-06-14",
+  publishedAt: "2026-06-14",
+  pinned: false,
+  sortOrder: 1,
+};
+
 describe("thoughts service", () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     supabaseEnvState.enabled = false;
     Object.values(supabaseRepositoryState).forEach((mock) => mock.mockReset());
-    await resetStoredThoughts();
   });
 
-  it("falls back to local thoughts when storage is empty", async () => {
-    await expect(listThoughts()).resolves.toEqual(thoughts);
-    await expect(getThoughtPageData()).resolves.toEqual({ dataSource: "local", thoughts });
+  it("returns an unavailable empty state when Supabase storage is not configured", async () => {
+    await expect(listThoughts()).resolves.toEqual([]);
+    await expect(getThoughtPageData()).resolves.toEqual({ dataSource: "unavailable", statusReason: "missing-env", thoughts: [] });
+    expect(supabaseRepositoryState.listVisibleSupabaseThoughts).not.toHaveBeenCalled();
   });
 
-  it("returns the latest stored thought before fallback thoughts when storage has data", async () => {
-    await upsertStoredThought({
-      id: "thought-db-001",
-      title: "数据库里的碎碎念",
-      slug: "thought-in-db",
-      body: "这条内容来自数据库，不再直接依赖本地数组。",
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-05-25",
-      sortOrder: 1,
-    });
-
-    await expect(getLatestThought()).resolves.toEqual(
-      expect.objectContaining({
-        id: "thought-db-001",
-        title: "数据库里的碎碎念",
-        slug: "thought-in-db",
-        body: "这条内容来自数据库，不再直接依赖本地数组。",
-        bodyText: "这条内容来自数据库，不再直接依赖本地数组。",
-        visibility: "public",
-        status: "published",
-        createdAt: "2026-05-25",
-        publishedAt: "2026-05-25",
-        pinned: false,
-        sortOrder: 1,
-      }),
-    );
-    await expect(listThoughts()).resolves.toHaveLength(thoughts.length + 1);
-  });
-
-  it("creates a stored thought", async () => {
-    await createThought({
-      id: "thought-db-002",
-      title: "新写入的碎碎念",
-      slug: "new-thought",
-      body: "先把最小写入链路跑通。",
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-05-26",
-      sortOrder: 2,
-    });
-
-    const storedThoughts = await listThoughts();
-    expect(storedThoughts).toContainEqual(
-      expect.objectContaining({
-        id: "thought-db-002",
-        title: "新写入的碎碎念",
-        slug: "new-thought",
-        body: "先把最小写入链路跑通。",
-        bodyText: "先把最小写入链路跑通。",
-        visibility: "public",
-        status: "published",
-        createdAt: "2026-05-26",
-        publishedAt: "2026-05-26",
-        pinned: false,
-        sortOrder: 2,
-      }),
-    );
-    expect(storedThoughts).toHaveLength(thoughts.length + 1);
-  });
-
-  it("preserves the original createdAt when updating an existing thought", async () => {
-    await upsertStoredThought({
-      id: "thought-db-created-at",
-      title: "旧碎碎念",
-      slug: "old-thought",
-      body: "旧内容",
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-05-20T08:00:00.000Z",
-      updatedAt: "2026-05-20T08:00:00.000Z",
-      sortOrder: 5,
-    });
-
-    await createThought({
-      id: "thought-db-created-at",
-      title: "更新后的碎碎念",
-      slug: "old-thought",
-      body: "更新后的内容",
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-06-01T09:30:00.000Z",
-      updatedAt: "2026-06-01T09:30:00.000Z",
-      sortOrder: 5,
-    });
-
-    await expect(getThoughtBySlug("old-thought")).resolves.toEqual(
-      expect.objectContaining({
-        title: "更新后的碎碎念",
-        body: "更新后的内容",
-        createdAt: "2026-05-20T08:00:00.000Z",
-        updatedAt: "2026-06-01T09:30:00.000Z",
-      }),
-    );
-  });
-
-  it("gets a stored thought by slug", async () => {
-    await upsertStoredThought({
-      id: "thought-db-003",
-      title: "详情页里的碎碎念",
-      slug: "detail-thought",
-      body: "详情页应该能拿到完整正文。",
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-05-27",
-      sortOrder: 3,
-      paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
-      paperBackgroundOpacity: 45,
-    });
-
-    await expect(getThoughtBySlug("detail-thought")).resolves.toEqual(
-      expect.objectContaining({
-        id: "thought-db-003",
-        title: "详情页里的碎碎念",
-        slug: "detail-thought",
-        body: "详情页应该能拿到完整正文。",
-        bodyText: "详情页应该能拿到完整正文。",
-        visibility: "public",
-        status: "published",
-        createdAt: "2026-05-27",
-        publishedAt: "2026-05-27",
-        pinned: false,
-        sortOrder: 3,
-        paperBackgroundImageUrl: "/thought-backgrounds/candy-waves.jpg",
-        paperBackgroundOpacity: 45,
-      }),
-    );
-  });
-
-  it("falls back to local thoughts when getting a thought by slug", async () => {
-    await expect(getThoughtBySlug("glowing-town")).resolves.toEqual(thoughts[0]);
-  });
-
-  it("returns null when no thought matches the slug", async () => {
-    await expect(getThoughtBySlug("missing-thought")).resolves.toBeNull();
-  });
-
-  it("overrides a fallback thought with a stored thought using the same id", async () => {
-    await upsertStoredThought({
-      ...thoughts[0],
-      body: "编辑后的本地碎碎念。",
-      title: "编辑后的标题",
-    });
-
-    const nextThoughts = await listThoughts();
-
-    expect(nextThoughts).toContainEqual(
-      expect.objectContaining({
-        ...thoughts[0],
-        body: "编辑后的本地碎碎念。",
-        bodyText: "编辑后的本地碎碎念。",
-        title: "编辑后的标题",
-      }),
-    );
-    expect(nextThoughts.filter((thought) => thought.id === thoughts[0].id)).toHaveLength(1);
-    expect(nextThoughts).toHaveLength(thoughts.length);
-  });
-
-  it("deletes a stored thought", async () => {
-    await createThought({
-      id: "thought-db-delete",
-      title: "待删除碎碎念",
-      slug: "delete-stored-thought",
-      body: "这条内容会被删除。",
-      visibility: "public",
-      status: "published",
-      createdAt: "2026-05-28",
-      sortOrder: 4,
-    });
-
-    await expect(deleteThought("thought-db-delete")).resolves.toBe(true);
-    expect((await listThoughts()).some((thought) => thought.id === "thought-db-delete")).toBe(false);
-  });
-
-  it("hides a fallback thought through delete without hiding other fallback thoughts", async () => {
-    await expect(deleteThought(thoughts[0].id)).resolves.toBe(true);
-
-    const nextThoughts = await listThoughts();
-
-    expect(nextThoughts.some((thought) => thought.id === thoughts[0].id)).toBe(false);
-    expect(nextThoughts.some((thought) => thought.id === thoughts[1].id)).toBe(true);
-    await expect(getThoughtBySlug(thoughts[0].slug)).resolves.toBeNull();
-  });
-
-  it("returns false when deleting a missing thought", async () => {
-    await expect(deleteThought("missing-thought")).resolves.toBe(false);
-  });
-
-  it("uses Supabase storage when server env is configured", async () => {
+  it("returns an empty state when Supabase has no visible thoughts", async () => {
     supabaseEnvState.enabled = true;
-    supabaseRepositoryState.getSupabaseThoughtIds.mockResolvedValue(new Set(["thought-supabase", ...thoughts.map((thought) => thought.id)]));
-    supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([
-      {
-        id: "thought-supabase",
-        title: "Supabase 里的碎碎念",
-        slug: "thought-supabase",
-        body: "这条内容来自 Supabase。",
-        bodyText: "这条内容来自 Supabase。",
-        visibility: "public",
-        status: "published",
-        createdAt: "2026-06-14",
-        publishedAt: "2026-06-14",
-        pinned: false,
-        sortOrder: 1,
-      },
-    ]);
+    supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([]);
+
+    await expect(getLatestThought()).resolves.toBeNull();
+    await expect(getThoughtPageData()).resolves.toEqual({ dataSource: "empty", statusReason: "empty", thoughts: [] });
+  });
+
+  it("returns Supabase thoughts when storage is configured", async () => {
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([supabaseThought]);
 
     const result = await getThoughtPageData();
 
-    expect(result.dataSource).toBe("supabase");
-    expect(result.thoughts[0]).toEqual(expect.objectContaining({ id: "thought-supabase" }));
-    expect(supabaseRepositoryState.getSupabaseThoughtIds).toHaveBeenCalled();
-    expect(supabaseRepositoryState.listVisibleSupabaseThoughts).toHaveBeenCalled();
+    expect(result).toEqual({ dataSource: "supabase", thoughts: [supabaseThought] });
+    await expect(getThoughtBySlug("thought-supabase")).resolves.toEqual(supabaseThought);
+    await expect(getLatestThought()).resolves.toEqual(supabaseThought);
   });
 
-  it("marks Supabase data as mixed when fallback records are still visible", async () => {
+  it("returns an unavailable empty state when Supabase read fails", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     supabaseEnvState.enabled = true;
-    supabaseRepositoryState.getSupabaseThoughtIds.mockResolvedValue(new Set([thoughts[0].id]));
-    supabaseRepositoryState.listVisibleSupabaseThoughts.mockResolvedValue([thoughts[0]]);
+    supabaseRepositoryState.listVisibleSupabaseThoughts.mockRejectedValue(new Error("supabase down"));
 
-    const result = await getThoughtPageData();
+    await expect(getThoughtPageData()).resolves.toEqual({ dataSource: "unavailable", statusReason: "read-error", thoughts: [] });
+    expect(warnSpy).toHaveBeenCalledWith("supabase down");
 
-    expect(result.dataSource).toBe("mixed");
-    expect(result.thoughts.some((thought) => thought.id === thoughts[1].id)).toBe(true);
+    warnSpy.mockRestore();
+  });
+
+  it("throws a clear error when creating without Supabase storage", async () => {
+    await expect(createThought(supabaseThought)).rejects.toThrow("碎碎念数据源未配置");
+    expect(supabaseRepositoryState.upsertSupabaseThought).not.toHaveBeenCalled();
   });
 
   it("creates and reads back thoughts through Supabase storage", async () => {
-    const thought = {
-      id: "thought-supabase-create",
-      title: "写入 Supabase",
-      slug: "thought-supabase-create",
-      body: "写入后从 Supabase 读回。",
-      visibility: "public" as const,
-      status: "published" as const,
-      createdAt: "2026-06-14",
-      sortOrder: 1,
-    };
-
     supabaseEnvState.enabled = true;
-    supabaseRepositoryState.getSupabaseThoughtById.mockResolvedValue({
-      ...thought,
-      bodyText: thought.body,
-      pinned: false,
-      publishedAt: thought.createdAt,
-    });
+    supabaseRepositoryState.getSupabaseThoughtById.mockResolvedValueOnce(null).mockResolvedValueOnce(supabaseThought);
 
-    await expect(createThought(thought)).resolves.toEqual(expect.objectContaining({ bodyText: thought.body, id: thought.id }));
-    expect(supabaseRepositoryState.upsertSupabaseThought).toHaveBeenCalledWith(thought);
-    expect(supabaseRepositoryState.getSupabaseThoughtById).toHaveBeenCalledWith(thought.id);
+    await expect(createThought(supabaseThought)).resolves.toEqual(supabaseThought);
+    expect(supabaseRepositoryState.upsertSupabaseThought).toHaveBeenCalledWith(supabaseThought);
+  });
+
+  it("preserves the original createdAt when updating an existing thought", async () => {
+    const existingThought = { ...supabaseThought, createdAt: "2026-06-01" };
+    const nextThought = { ...supabaseThought, title: "更新后的碎碎念", createdAt: "2026-06-14" };
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.getSupabaseThoughtById.mockResolvedValueOnce(existingThought).mockResolvedValueOnce({ ...nextThought, createdAt: existingThought.createdAt });
+
+    await expect(createThought(nextThought)).resolves.toEqual(expect.objectContaining({ createdAt: "2026-06-01" }));
+    expect(supabaseRepositoryState.upsertSupabaseThought).toHaveBeenCalledWith({ ...nextThought, createdAt: "2026-06-01" });
+  });
+
+  it("deletes an existing Supabase thought", async () => {
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.getSupabaseThoughtById.mockResolvedValue(supabaseThought);
+
+    await expect(deleteThought("thought-supabase")).resolves.toBe(true);
+    expect(supabaseRepositoryState.deleteSupabaseThought).toHaveBeenCalledWith("thought-supabase");
+  });
+
+  it("returns false when deleting a missing thought", async () => {
+    supabaseEnvState.enabled = true;
+    supabaseRepositoryState.getSupabaseThoughtById.mockResolvedValue(null);
+
+    await expect(deleteThought("missing-thought")).resolves.toBe(false);
+    expect(supabaseRepositoryState.deleteSupabaseThought).not.toHaveBeenCalled();
   });
 });

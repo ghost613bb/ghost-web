@@ -1,5 +1,5 @@
 // 专门解析和校验创建 thought 的请求体
-import type { Thought } from "@/data/thoughts";
+import type { Thought } from "@/features/thoughts/types";
 import { thoughtBodyToPlainText } from "./text";
 
 const thoughtVisibilities = ["public", "private", "interview_hidden", "masked"] as const;

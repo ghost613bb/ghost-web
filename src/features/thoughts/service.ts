@@ -1,52 +1,41 @@
 // 负责 thoughts 表的业务逻辑
-import { thoughts as fallbackThoughts, type Thought } from "@/data/thoughts";
 import { hasSupabaseServiceRoleEnv } from "@/lib/supabase/server";
-import { deleteStoredThought, getStoredThoughtById, getStoredThoughtIds, listVisibleStoredThoughts, upsertStoredThought } from "./repository";
 import { deleteSupabaseThought, getSupabaseThoughtById, getSupabaseThoughtIds, listVisibleSupabaseThoughts, upsertSupabaseThought } from "./supabaseRepository";
+import type { Thought } from "./types";
 
-export type ThoughtDataSource = "local" | "mixed" | "supabase";
+export type ThoughtDataSource = "empty" | "supabase" | "unavailable";
+
+export type ThoughtStatusReason = "empty" | "missing-env" | "read-error";
 
 export type ThoughtPageData = {
   dataSource: ThoughtDataSource;
+  statusReason?: ThoughtStatusReason;
   thoughts: Thought[];
 };
 
-type ThoughtStorage = {
-  deleteThought: (id: string) => Promise<void>;
-  getThoughtById: (id: string) => Promise<Thought | null>;
-  getThoughtIds: () => Promise<Set<string>>;
-  listVisibleThoughts: () => Promise<Thought[]>;
-  upsertThought: (thought: Thought) => Promise<void>;
-};
-
-const sqliteStorage: ThoughtStorage = {
-  deleteThought: deleteStoredThought,
-  getThoughtById: getStoredThoughtById,
-  getThoughtIds: getStoredThoughtIds,
-  listVisibleThoughts: listVisibleStoredThoughts,
-  upsertThought: upsertStoredThought,
-};
-
-const supabaseStorage: ThoughtStorage = {
-  deleteThought: deleteSupabaseThought,
-  getThoughtById: getSupabaseThoughtById,
-  getThoughtIds: getSupabaseThoughtIds,
-  listVisibleThoughts: listVisibleSupabaseThoughts,
-  upsertThought: upsertSupabaseThought,
-};
-
-function getThoughtStorage() {
-  return hasSupabaseServiceRoleEnv() ? supabaseStorage : sqliteStorage;
+function assertThoughtStorageConfigured() {
+  if (!hasSupabaseServiceRoleEnv()) {
+    throw new Error("碎碎念数据源未配置");
+  }
 }
 
 export async function getThoughtPageData(): Promise<ThoughtPageData> {
-  const storage = getThoughtStorage();
-  const [storedThoughtIds, storedThoughts] = await Promise.all([storage.getThoughtIds(), storage.listVisibleThoughts()]);
-  const visibleFallbackThoughts = fallbackThoughts.filter((thought) => !storedThoughtIds.has(thought.id));
-  const thoughts = [...storedThoughts, ...visibleFallbackThoughts];
-  const dataSource = hasSupabaseServiceRoleEnv() ? (visibleFallbackThoughts.length > 0 ? "mixed" : "supabase") : "local";
+  if (!hasSupabaseServiceRoleEnv()) {
+    return { dataSource: "unavailable", statusReason: "missing-env", thoughts: [] };
+  }
 
-  return { dataSource, thoughts };
+  try {
+    const thoughts = await listVisibleSupabaseThoughts();
+
+    if (thoughts.length === 0) {
+      return { dataSource: "empty", statusReason: "empty", thoughts };
+    }
+
+    return { dataSource: "supabase", thoughts };
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : "读取 Supabase 碎碎念失败");
+    return { dataSource: "unavailable", statusReason: "read-error", thoughts: [] };
+  }
 }
 
 export async function listThoughts(): Promise<Thought[]> {
@@ -62,30 +51,26 @@ export async function getThoughtBySlug(slug: string): Promise<Thought | null> {
 }
 
 export async function createThought(thought: Thought): Promise<Thought> {
-  const storage = getThoughtStorage();
-  const existingThought = await storage.getThoughtById(thought.id);
+  assertThoughtStorageConfigured();
+  const existingThought = await getSupabaseThoughtById(thought.id);
 
-  await storage.upsertThought(existingThought ? { ...thought, createdAt: existingThought.createdAt } : thought);
-  return (await storage.getThoughtById(thought.id)) ?? thought;
+  await upsertSupabaseThought(existingThought ? { ...thought, createdAt: existingThought.createdAt } : thought);
+  return (await getSupabaseThoughtById(thought.id)) ?? thought;
 }
 
 export async function deleteThought(id: string): Promise<boolean> {
-  const storage = getThoughtStorage();
-  const [storedThought, fallbackThought] = await Promise.all([storage.getThoughtById(id), Promise.resolve(fallbackThoughts.find((thought) => thought.id === id) ?? null)]);
+  assertThoughtStorageConfigured();
+  const existingThought = await getSupabaseThoughtById(id);
 
-  if (!storedThought && !fallbackThought) {
+  if (!existingThought) {
     return false;
   }
 
-  if (!fallbackThought) {
-    await storage.deleteThought(id);
-    return true;
-  }
-
-  await storage.upsertThought({
-    ...(storedThought ?? fallbackThought),
-    deletedAt: new Date().toISOString(),
-    status: "draft",
-  });
+  await deleteSupabaseThought(id);
   return true;
+}
+
+export async function getThoughtIds(): Promise<Set<string>> {
+  assertThoughtStorageConfigured();
+  return getSupabaseThoughtIds();
 }

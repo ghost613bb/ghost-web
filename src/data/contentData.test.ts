@@ -38,19 +38,8 @@ describe("local content data", () => {
     expect(playlistPlayerSnapshot.volumePercent).toBeLessThanOrEqual(100);
   });
 
-  it("defines thoughts for public, interview-hidden, and masked visibility", () => {
-    expect(thoughts).toHaveLength(7);
-    expect(thoughts.map((thought) => thought.slug)).toEqual([
-      "glowing-town",
-      "interview-mode",
-      "masked-note",
-      "glowing-town-copy-1",
-      "glowing-town-copy-2",
-      "glowing-town-copy-3",
-      "glowing-town-copy-4",
-    ]);
-    expect(thoughts.every((thought) => !("description" in thought))).toBe(true);
-    expect(thoughts.map((thought) => thought.visibility)).toEqual(["public", "interview_hidden", "masked", "public", "public", "public", "public"]);
+  it("keeps local thoughts empty because Supabase is the source of truth", () => {
+    expect(thoughts).toEqual([]);
   });
 
   it("defines album photo records and adjacent navigation helpers", () => {
