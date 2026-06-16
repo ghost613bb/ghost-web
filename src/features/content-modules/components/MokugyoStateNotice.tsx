@@ -29,16 +29,28 @@ const copyByReason: Record<MokugyoStateNoticeReason, { description: string; titl
 };
 
 export function MokugyoStateNotice({ description, page = "/thoughts", reason = "empty", title }: MokugyoStateNoticeProps) {
+  const [isKnocking, setIsKnocking] = useState(false);
   const [knockCount, setKnockCount] = useState(0);
   const [knockState, setKnockState] = useState<KnockState>("idle");
   const [message, setMessage] = useState("木鱼在等一声咚。");
   const copy = copyByReason[reason];
+
+  function playKnockAnimation() {
+    setIsKnocking(false);
+    requestAnimationFrame(() => {
+      setIsKnocking(true);
+    });
+    window.setTimeout(() => {
+      setIsKnocking(false);
+    }, 620);
+  }
 
   async function knockMokugyo() {
     if (knockState === "sending") {
       return;
     }
 
+    playKnockAnimation();
     const nextCount = knockCount + 1;
     setKnockCount(nextCount);
     setKnockState("sending");
@@ -76,10 +88,24 @@ export function MokugyoStateNotice({ description, page = "/thoughts", reason = "
       <div aria-hidden="true" className="absolute -left-8 top-8 h-18 w-18 rounded-full bg-[#ffccd5]/45" />
       <div aria-hidden="true" className="absolute -right-10 bottom-6 h-24 w-24 rounded-full bg-[#bee9dd]/45" />
       <div className="relative mx-auto max-w-[34rem]">
-        <div className="mx-auto mb-5 flex h-28 w-36 items-center justify-center rounded-[45%] border-[3px] border-[#5b3a30] bg-[radial-gradient(circle_at_42%_38%,#d39a5e_0_18%,#9a6237_19%_58%,#704326_59%_100%)] shadow-[8px_9px_0_rgba(91,58,48,0.14)]">
-          <span className="relative block h-10 w-15 rounded-full border-[2px] border-[#5b3a30]/70 bg-[#3f2619]/85 shadow-[inset_0_5px_0_rgba(255,244,207,0.16)]">
-            <span className="absolute left-1/2 top-1/2 h-2 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fff0ba]/45" />
-          </span>
+        <div className="relative mx-auto mb-6 h-38 w-56" aria-hidden="true" data-testid="mokugyo-stage">
+          <div className={`absolute bottom-4 left-1/2 h-24 w-40 -translate-x-1/2 rounded-[48%] border-[3px] border-[#5b3a30] bg-[radial-gradient(circle_at_38%_30%,#e2ad70_0_15%,#b97743_16%_46%,#744225_72%_100%)] shadow-[8px_10px_0_rgba(91,58,48,0.14)] ${isKnocking ? "animate-[mokugyo-body-knock_620ms_ease-out]" : ""}`}>
+            <span className="absolute left-7 top-4 h-3 w-12 -rotate-12 rounded-full bg-[#fff0ba]/30" />
+            <span className="absolute bottom-5 left-5 h-2 w-10 rotate-6 rounded-full bg-[#5b3a30]/18" />
+            <span className="absolute bottom-6 right-7 h-2 w-11 -rotate-6 rounded-full bg-[#5b3a30]/16" />
+            <span className="absolute left-1/2 top-1/2 h-10 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-[2px] border-[#5b3a30]/70 bg-[#3f2619]/90 shadow-[inset_0_5px_0_rgba(255,244,207,0.16)]">
+              <span className="absolute left-1/2 top-1/2 h-2 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fff0ba]/45" />
+            </span>
+          </div>
+          <div className={`absolute right-7 top-0 h-30 w-22 origin-[68%_88%] ${isKnocking ? "animate-[mokugyo-mallet-knock_620ms_cubic-bezier(.2,.9,.24,1)]" : "-rotate-[28deg]"}`} data-testid="mokugyo-mallet">
+            <span className="absolute bottom-1 right-8 h-23 w-3 rounded-full border border-[#5b3a30]/55 bg-[#b87745] shadow-[2px_2px_0_rgba(91,58,48,0.12)]" />
+            <span className="absolute right-2 top-1 h-9 w-14 rounded-[999px] border-[2px] border-[#5b3a30] bg-[linear-gradient(135deg,#ffd596_0%,#d98b4d_72%)] shadow-[3px_3px_0_rgba(91,58,48,0.16)]">
+              <span className="absolute left-2 top-2 h-1.5 w-8 rounded-full bg-white/35" />
+            </span>
+          </div>
+          {isKnocking ? (
+            <span className="absolute left-[45%] top-8 rounded-full border border-[#5b3a30]/20 bg-[#fff4cf] px-3 py-1 text-xs font-black text-[#7a5147] shadow-[2px_2px_0_rgba(91,58,48,0.1)] animate-[mokugyo-sound-pop_620ms_ease-out]">咚</span>
+          ) : null}
         </div>
 
         <h2 className="text-xl font-black tracking-tight text-[#4a2e28] sm:text-2xl">{title ?? copy.title}</h2>
@@ -92,7 +118,6 @@ export function MokugyoStateNotice({ description, page = "/thoughts", reason = "
           onClick={knockMokugyo}
           type="button"
         >
-          <span aria-hidden="true" className="inline-block origin-bottom-right -rotate-12 text-lg transition group-hover:-rotate-45 group-active:rotate-6">🔨</span>
           {knockState === "sending" ? "木鱼传声中..." : "敲一下木鱼"}
         </button>
 
