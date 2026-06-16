@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type MokugyoStateNoticeReason = "empty" | "missing-env" | "read-error";
 
@@ -29,6 +29,7 @@ const copyByReason: Record<MokugyoStateNoticeReason, { description: string; titl
 };
 
 export function MokugyoStateNotice({ description, page = "/thoughts", reason = "empty", title }: MokugyoStateNoticeProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isKnocking, setIsKnocking] = useState(false);
   const [knockCount, setKnockCount] = useState(0);
   const [knockState, setKnockState] = useState<KnockState>("idle");
@@ -45,12 +46,24 @@ export function MokugyoStateNotice({ description, page = "/thoughts", reason = "
     }, 620);
   }
 
+  function playKnockSound() {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    audio.currentTime = 0;
+    void audio.play().catch(() => undefined);
+  }
+
   async function knockMokugyo() {
     if (knockState === "sending") {
       return;
     }
 
     playKnockAnimation();
+    playKnockSound();
     const nextCount = knockCount + 1;
     setKnockCount(nextCount);
     setKnockState("sending");
@@ -85,6 +98,7 @@ export function MokugyoStateNotice({ description, page = "/thoughts", reason = "
 
   return (
     <section className="relative overflow-hidden rounded-[1.7rem] border-[2px] border-dashed border-[#5b3a30] bg-[#fffdf2]/90 px-6 py-10 text-center shadow-[7px_7px_0_rgba(91,58,48,0.12)]" data-testid="mokugyo-state-notice">
+      <audio preload="auto" ref={audioRef} src="/sounds/mokugyo-dong.mp3" />
       <div aria-hidden="true" className="absolute -left-8 top-8 h-18 w-18 rounded-full bg-[#ffccd5]/45" />
       <div aria-hidden="true" className="absolute -right-10 bottom-6 h-24 w-24 rounded-full bg-[#bee9dd]/45" />
       <div className="relative mx-auto max-w-[34rem]">
