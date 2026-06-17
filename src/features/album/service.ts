@@ -47,6 +47,17 @@ export type AlbumPhotoDetailPageData = {
   statusReason?: AlbumPageStatusReason;
 };
 
+export type AlbumWorkspaceData = {
+  activeAlbum: Album | null;
+  activePhoto: AlbumPhoto | null;
+  albums: Album[];
+  dataSource: AlbumPageDataSource;
+  nextPhotoId: string | null;
+  photos: AlbumPhoto[];
+  previousPhotoId: string | null;
+  statusReason?: AlbumPageStatusReason;
+};
+
 function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
   return {
     id: album.id,
@@ -440,6 +451,65 @@ export async function getAlbumPhotoDetailPageData(albumId: string, photoId: stri
       dataSource: "unavailable",
       nextPhotoId: null,
       photo: null,
+      previousPhotoId: null,
+      statusReason: "read-error",
+    };
+  }
+}
+
+export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPhotoId?: string): Promise<AlbumWorkspaceData> {
+  if (!isAlbumStorageConfigured()) {
+    return {
+      activeAlbum: null,
+      activePhoto: null,
+      albums: [],
+      dataSource: "unavailable",
+      nextPhotoId: null,
+      photos: [],
+      previousPhotoId: null,
+      statusReason: "missing-env",
+    };
+  }
+
+  try {
+    const albums = await listAlbums();
+    const activeAlbum = selectedAlbumId ? await getAlbumById(selectedAlbumId) : albums[0] ?? null;
+
+    if (!activeAlbum) {
+      return {
+        activeAlbum: null,
+        activePhoto: null,
+        albums,
+        dataSource: "available",
+        nextPhotoId: null,
+        photos: [],
+        previousPhotoId: null,
+      };
+    }
+
+    const photos = await listAlbumPhotos(activeAlbum.id);
+    const activePhoto = selectedPhotoId ? await getAlbumPhotoById(activeAlbum.id, selectedPhotoId) : null;
+    const adjacentPhotoIds = activePhoto ? await getAdjacentAlbumPhotoIds(activeAlbum.id, activePhoto.id) : { previousPhotoId: null, nextPhotoId: null };
+
+    return {
+      activeAlbum,
+      activePhoto,
+      albums,
+      dataSource: "available",
+      nextPhotoId: adjacentPhotoIds.nextPhotoId,
+      photos,
+      previousPhotoId: adjacentPhotoIds.previousPhotoId,
+    };
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : "读取相册工作台失败");
+
+    return {
+      activeAlbum: null,
+      activePhoto: null,
+      albums: [],
+      dataSource: "unavailable",
+      nextPhotoId: null,
+      photos: [],
       previousPhotoId: null,
       statusReason: "read-error",
     };

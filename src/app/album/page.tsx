@@ -1,9 +1,21 @@
-import { AlbumPageView } from "@/features/album/AlbumPage";
-import { getAlbumPageData } from "@/features/album/service";
+import { notFound } from "next/navigation";
+import { AlbumWorkspacePageView } from "@/features/album/AlbumWorkspacePage";
+import { getAlbumWorkspaceData } from "@/features/album/service";
 import { MokugyoStateNotice } from "@/features/content-modules/components/MokugyoStateNotice";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
-export default async function AlbumPage() {
+type AlbumPageProps = {
+  searchParams?: Promise<{
+    albumId?: string | string[];
+    photoId?: string | string[];
+  }>;
+};
+
+function getSingleSearchParam(value?: string | string[]) {
+  return typeof value === "string" ? value : undefined;
+}
+
+export default async function AlbumPage({ searchParams }: AlbumPageProps = {}) {
   if ((await getDisplayMode("album")) === "demo") {
     return (
       <section className="space-y-3">
@@ -13,11 +25,31 @@ export default async function AlbumPage() {
     );
   }
 
-  const data = await getAlbumPageData();
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const albumId = getSingleSearchParam(resolvedSearchParams.albumId);
+  const photoId = getSingleSearchParam(resolvedSearchParams.photoId);
+  const data = await getAlbumWorkspaceData(albumId, photoId);
 
   if (data.dataSource === "unavailable") {
     return <MokugyoStateNotice page="/album" reason={data.statusReason} />;
   }
 
-  return <AlbumPageView initialAlbums={data.albums} />;
+  if (albumId && !data.activeAlbum) {
+    notFound();
+  }
+
+  if (photoId && !data.activePhoto) {
+    notFound();
+  }
+
+  return (
+    <AlbumWorkspacePageView
+      initialActiveAlbum={data.activeAlbum}
+      initialActivePhoto={data.activePhoto}
+      initialAlbums={data.albums}
+      initialNextPhotoId={data.nextPhotoId}
+      initialPhotos={data.photos}
+      initialPreviousPhotoId={data.previousPhotoId}
+    />
+  );
 }

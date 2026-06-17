@@ -15,7 +15,7 @@ vi.mock("@/lib/supabase/server", async () => {
 });
 
 import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
-import { createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, listAlbums } from "./service";
+import { createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, getAlbumWorkspaceData, listAlbums } from "./service";
 
 describe("album service", () => {
   const fallbackAlbum = albumCollections[0]!;
@@ -140,5 +140,31 @@ describe("album service", () => {
       previousPhotoId: null,
       statusReason: "missing-env",
     });
+  });
+
+  it("returns workspace data with the first album selected by default", async () => {
+    const data = await getAlbumWorkspaceData();
+
+    expect(data).toEqual(
+      expect.objectContaining({
+        activeAlbum: expect.objectContaining({ id: fallbackAlbum.id }),
+        activePhoto: null,
+        albums: expect.any(Array),
+        dataSource: "available",
+        photos: expect.any(Array),
+      }),
+    );
+  });
+
+  it("returns workspace data for a selected photo", async () => {
+    const data = await getAlbumWorkspaceData(fallbackAlbum.id, "photo-001");
+
+    expect(data).toEqual(
+      expect.objectContaining({
+        activeAlbum: expect.objectContaining({ id: fallbackAlbum.id }),
+        activePhoto: expect.objectContaining({ id: "photo-001" }),
+        dataSource: "available",
+      }),
+    );
   });
 });
