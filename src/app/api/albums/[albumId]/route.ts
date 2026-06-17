@@ -3,6 +3,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { deleteAlbum, getAlbumById, updateAlbum } from "@/features/album/service";
 import type { CreateAlbumInput } from "@/features/album/types";
+import { requireAdminRequest } from "@/lib/admin-auth";
 import { parseCreateAlbum } from "@/features/album/validation";
 
 function sanitizeFileName(fileName: string) {
@@ -19,6 +20,8 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
   );
 }
 
+export const runtime = "nodejs";
+
 type AlbumRouteContext = {
   params: Promise<{
     albumId: string;
@@ -27,6 +30,11 @@ type AlbumRouteContext = {
 
 export async function PATCH(request: Request, context: AlbumRouteContext) {
   const { albumId } = await context.params;
+  const unauthorizedResponse = requireAdminRequest(request, "无权限编辑相册");
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
 
   try {
     const currentAlbum = await getAlbumById(albumId);
@@ -76,17 +84,24 @@ export async function PATCH(request: Request, context: AlbumRouteContext) {
 
     return NextResponse.json({ album });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "album 参数不合法";
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "album 参数不合法",
+        error: message,
       },
-      { status: 400 },
+      { status: message === "相册数据源未配置" ? 503 : 400 },
     );
   }
 }
 
-export async function DELETE(_request: Request, context: AlbumRouteContext) {
+export async function DELETE(request: Request, context: AlbumRouteContext) {
   const { albumId } = await context.params;
+  const unauthorizedResponse = requireAdminRequest(request, "无权限删除相册");
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
 
   const currentAlbum = await getAlbumById(albumId);
 

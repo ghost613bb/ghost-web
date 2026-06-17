@@ -1,5 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { albumCollections } from "@/data/album";
+
+const supabaseEnvState = vi.hoisted(() => ({
+  enabled: true,
+}));
+
+vi.mock("@/lib/supabase/server", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/supabase/server")>("@/lib/supabase/server");
+
+  return {
+    ...actual,
+    hasSupabaseServiceRoleEnv: () => supabaseEnvState.enabled,
+  };
+});
+
 import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
 import { createAlbumPhoto, getAlbumById, listAlbums } from "./service";
 
@@ -9,6 +23,7 @@ describe("album service", () => {
   beforeEach(async () => {
     vi.useRealTimers();
     process.env.TZ = "America/Los_Angeles";
+    supabaseEnvState.enabled = true;
     await resetStoredAlbums();
   });
 
@@ -71,5 +86,16 @@ describe("album service", () => {
 
     expect(albums.some((album) => album.id === fallbackAlbum.id)).toBe(false);
     await expect(getAlbumById(fallbackAlbum.id)).resolves.toBeNull();
+  });
+
+  it("throws a clear error when album storage is not configured", async () => {
+    supabaseEnvState.enabled = false;
+
+    await expect(
+      createAlbumPhoto(fallbackAlbum.id, {
+        title: "未配置数据源的照片",
+        imageUrl: "/uploads/albums/unavailable.png",
+      }),
+    ).rejects.toThrow("相册数据源未配置");
   });
 });

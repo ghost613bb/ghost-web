@@ -4,6 +4,7 @@ import {
   getAlbumPhotosByAlbumId as getFallbackAlbumPhotosByAlbumId,
   type AlbumPhoto,
 } from "@/data/albumPhotos";
+import { hasSupabaseServiceRoleEnv } from "@/lib/supabase/server";
 import {
   deleteStoredAlbum,
   deleteStoredAlbumPhoto,
@@ -44,7 +45,16 @@ function buildStoredAlbumPhotoId(albumId: string, index: number) {
   return `${albumId}-photo-${String(index).padStart(3, "0")}`;
 }
 
+function assertAlbumStorageConfigured() {
+  if (hasSupabaseServiceRoleEnv() || (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    return;
+  }
+
+  throw new Error("相册数据源未配置");
+}
+
 export async function getNextCreatedAlbumId(): Promise<string> {
+  assertAlbumStorageConfigured();
   const storedAlbums = await listStoredAlbums();
   const nextAlbumIndex = storedAlbums.reduce((maxIndex, album) => {
     const matchedSuffix = album.id.match(/^album-created-(\d+)$/)?.[1];
@@ -84,6 +94,7 @@ export async function getAlbumById(id: string): Promise<Album | null> {
 }
 
 export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
+  assertAlbumStorageConfigured();
   const storedAlbums = await listVisibleStoredAlbums();
   const nextAlbumIndex = storedAlbums.length + 1;
   const albumId = input.id ?? (await getNextCreatedAlbumId());
@@ -104,6 +115,7 @@ export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
 }
 
 export async function updateAlbum(id: string, input: CreateAlbumInput): Promise<Album> {
+  assertAlbumStorageConfigured();
   const currentAlbum = await getAlbumById(id);
 
   if (!currentAlbum) {
@@ -164,6 +176,7 @@ export async function getAdjacentAlbumPhotoIds(albumId: string, photoId: string)
 }
 
 export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoInput) {
+  assertAlbumStorageConfigured();
   const currentAlbum = await getAlbumById(albumId);
 
   if (!currentAlbum) {
@@ -200,6 +213,7 @@ export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoI
 }
 
 export async function updateAlbumPhoto(albumId: string, photoId: string, input: UpdateAlbumPhotoInput): Promise<AlbumPhoto> {
+  assertAlbumStorageConfigured();
   const currentPhoto = await getAlbumPhotoById(albumId, photoId);
 
   if (!currentPhoto) {
@@ -222,6 +236,7 @@ export async function updateAlbumPhoto(albumId: string, photoId: string, input: 
 }
 
 export async function deleteAlbumPhoto(albumId: string, photoId: string) {
+  assertAlbumStorageConfigured();
   const currentAlbum = await getAlbumById(albumId);
 
   if (!currentAlbum) {
@@ -260,6 +275,7 @@ export async function deleteAlbumPhoto(albumId: string, photoId: string) {
 }
 
 export async function deleteAlbum(id: string): Promise<void> {
+  assertAlbumStorageConfigured();
   const currentAlbum = await getAlbumById(id);
 
   if (!currentAlbum) {

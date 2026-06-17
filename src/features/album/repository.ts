@@ -1,187 +1,301 @@
-import { and, asc, desc, eq, ne } from "drizzle-orm";
 import type { AlbumPhoto } from "@/data/albumPhotos";
-import { db } from "@/lib/db/client";
-import { albumPhotoDeletions as albumPhotoDeletionsTable, albumPhotos as albumPhotosTable, albums as albumsTable } from "@/lib/db/schema";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { Album } from "./types";
 
 type StoredAlbumRow = {
-  coverImage: string | null;
-  createdAt: string | null;
+  cover_image: string | null;
+  created_at: string | null;
   description: string | null;
   id: string;
-  photoCount: number;
-  sortOrder: number | null;
+  photo_count: number;
+  sort_order: number | null;
   status: Album["status"];
   title: string;
   visibility: Album["visibility"];
 };
 
 type StoredAlbumPhotoRow = {
-  albumId: string;
+  album_id: string;
   id: string;
-  imagePosition: string;
-  imageUrl: string;
+  image_position: string;
+  image_url: string;
   note: string | null;
-  sortOrder: number;
+  sort_order: number;
   title: string;
-  uploadedAt: string;
+  uploaded_at: string;
 };
+
+const albumColumns = "id,title,description,cover_image,photo_count,visibility,status,created_at,sort_order";
+const albumPhotoColumns = "id,album_id,title,uploaded_at,note,image_url,image_position,sort_order";
+const isTestEnvironment = process.env.NODE_ENV === "test";
+const testAlbumStore = new Map<string, Album>();
+const testAlbumPhotoStore = new Map<string, StoredAlbumPhotoRow>();
+const testAlbumPhotoDeletionStore = new Map<string, Set<string>>();
 
 function toAlbum(row: StoredAlbumRow): Album {
   return {
     id: row.id,
     title: row.title,
     description: row.description ?? undefined,
-    coverImage: row.coverImage ?? undefined,
-    photoCount: row.photoCount,
+    coverImage: row.cover_image ?? undefined,
+    photoCount: row.photo_count,
     visibility: row.visibility,
     status: row.status,
-    createdAt: row.createdAt ?? undefined,
-    sortOrder: row.sortOrder ?? undefined,
+    createdAt: row.created_at ?? undefined,
+    sortOrder: row.sort_order ?? undefined,
+  };
+}
+
+function toStoredAlbumRow(album: Album): StoredAlbumRow {
+  return {
+    id: album.id,
+    title: album.title,
+    description: album.description ?? null,
+    cover_image: album.coverImage ?? null,
+    photo_count: album.photoCount,
+    visibility: album.visibility,
+    status: album.status,
+    created_at: album.createdAt ?? null,
+    sort_order: album.sortOrder ?? null,
   };
 }
 
 function toAlbumPhoto(row: StoredAlbumPhotoRow): AlbumPhoto {
   return {
     id: row.id,
-    albumId: row.albumId,
+    albumId: row.album_id,
     title: row.title,
-    uploadedAt: row.uploadedAt,
+    uploadedAt: row.uploaded_at,
     note: row.note ?? "",
-    imageUrl: row.imageUrl,
-    imagePosition: row.imagePosition,
+    imageUrl: row.image_url,
+    imagePosition: row.image_position,
   };
 }
 
+function toStoredAlbumPhotoRow(photo: AlbumPhoto, sortOrder: number): StoredAlbumPhotoRow {
+  return {
+    id: photo.id,
+    album_id: photo.albumId,
+    title: photo.title,
+    uploaded_at: photo.uploadedAt,
+    note: photo.note,
+    image_url: photo.imageUrl,
+    image_position: photo.imagePosition,
+    sort_order: sortOrder,
+  };
+}
+
+function sortAlbums(left: Album, right: Album) {
+  const leftSortOrder = left.sortOrder ?? Number.MAX_SAFE_INTEGER;
+  const rightSortOrder = right.sortOrder ?? Number.MAX_SAFE_INTEGER;
+
+  if (leftSortOrder !== rightSortOrder) {
+    return leftSortOrder - rightSortOrder;
+  }
+
+  return (right.createdAt ?? "").localeCompare(left.createdAt ?? "");
+}
+
+function sortAlbumPhotos(left: StoredAlbumPhotoRow, right: StoredAlbumPhotoRow) {
+  if (left.sort_order !== right.sort_order) {
+    return left.sort_order - right.sort_order;
+  }
+
+  return right.uploaded_at.localeCompare(left.uploaded_at);
+}
+
+function throwSupabaseError(context: string, error: { message: string } | null) {
+  if (error) {
+    throw new Error(`${context}: ${error.message}`);
+  }
+}
+
+function listTestStoredAlbumRows() {
+  return [...testAlbumStore.values()].sort(sortAlbums);
+}
+
+function listTestStoredAlbumPhotoRowsByAlbumId(albumId: string) {
+  return [...testAlbumPhotoStore.values()].filter((photo) => photo.album_id === albumId).sort(sortAlbumPhotos);
+}
+
 export async function listStoredAlbums(): Promise<Album[]> {
-  const rows = await db.select().from(albumsTable).orderBy(asc(albumsTable.sortOrder), desc(albumsTable.createdAt));
-  return rows.map((row) => toAlbum(row));
+  if (isTestEnvironment) {
+    return listTestStoredAlbumRows();
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("albums").select(albumColumns).order("sort_order", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false, nullsFirst: false });
+
+  throwSupabaseError("读取 Supabase 相册失败", error);
+
+  return ((data ?? []) as StoredAlbumRow[]).map((row) => toAlbum(row));
 }
 
 export async function upsertStoredAlbum(album: Album) {
-  await db
-    .insert(albumsTable)
-    .values({
-      id: album.id,
-      title: album.title,
-      description: album.description ?? null,
-      coverImage: album.coverImage ?? null,
-      photoCount: album.photoCount,
-      visibility: album.visibility,
-      status: album.status,
-      createdAt: album.createdAt ?? null,
-      sortOrder: album.sortOrder ?? null,
-    })
-    .onConflictDoUpdate({
-      target: albumsTable.id,
-      set: {
-        title: album.title,
-        description: album.description ?? null,
-        coverImage: album.coverImage ?? null,
-        photoCount: album.photoCount,
-        visibility: album.visibility,
-        status: album.status,
-        createdAt: album.createdAt ?? null,
-        sortOrder: album.sortOrder ?? null,
-      },
-    });
+  if (isTestEnvironment) {
+    testAlbumStore.set(album.id, album);
+    return;
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase.from("albums").upsert(toStoredAlbumRow(album), { onConflict: "id" });
+
+  throwSupabaseError("写入 Supabase 相册失败", error);
 }
 
 export async function listDeletedAlbumPhotoIds(albumId: string): Promise<Set<string>> {
-  const rows = await db.select({ photoId: albumPhotoDeletionsTable.photoId }).from(albumPhotoDeletionsTable).where(eq(albumPhotoDeletionsTable.albumId, albumId));
-  return new Set(rows.map((row) => row.photoId));
+  if (isTestEnvironment) {
+    return new Set(testAlbumPhotoDeletionStore.get(albumId) ?? []);
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("album_photo_deletions").select("photo_id").eq("album_id", albumId);
+
+  throwSupabaseError("读取 Supabase 已删除相册照片失败", error);
+
+  return new Set(((data ?? []) as { photo_id: string }[]).map((row) => row.photo_id));
 }
 
 export async function listStoredAlbumPhotosByAlbumId(albumId: string): Promise<AlbumPhoto[]> {
-  const rows = await db
-    .select()
-    .from(albumPhotosTable)
-    .where(eq(albumPhotosTable.albumId, albumId))
-    .orderBy(asc(albumPhotosTable.sortOrder), desc(albumPhotosTable.uploadedAt));
+  if (isTestEnvironment) {
+    return listTestStoredAlbumPhotoRowsByAlbumId(albumId).map((row) => toAlbumPhoto(row));
+  }
 
-  return rows.map((row) => toAlbumPhoto(row));
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("album_photos").select(albumPhotoColumns).eq("album_id", albumId).order("sort_order", { ascending: true, nullsFirst: false }).order("uploaded_at", { ascending: false, nullsFirst: false });
+
+  throwSupabaseError("读取 Supabase 相册照片失败", error);
+
+  return ((data ?? []) as StoredAlbumPhotoRow[]).map((row) => toAlbumPhoto(row));
 }
 
 export async function upsertStoredAlbumPhoto(photo: AlbumPhoto, sortOrder: number) {
-  await db
-    .insert(albumPhotosTable)
-    .values({
-      id: photo.id,
-      albumId: photo.albumId,
-      title: photo.title,
-      uploadedAt: photo.uploadedAt,
-      note: photo.note,
-      imageUrl: photo.imageUrl,
-      imagePosition: photo.imagePosition,
-      sortOrder,
-    })
-    .onConflictDoUpdate({
-      target: albumPhotosTable.id,
-      set: {
-        albumId: photo.albumId,
-        title: photo.title,
-        uploadedAt: photo.uploadedAt,
-        note: photo.note,
-        imageUrl: photo.imageUrl,
-        imagePosition: photo.imagePosition,
-        sortOrder,
-      },
-    });
+  if (isTestEnvironment) {
+    testAlbumPhotoStore.set(photo.id, toStoredAlbumPhotoRow(photo, sortOrder));
+    return;
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase.from("album_photos").upsert(toStoredAlbumPhotoRow(photo, sortOrder), { onConflict: "id" });
+
+  throwSupabaseError("写入 Supabase 相册照片失败", error);
 }
 
 export async function getStoredAlbumById(id: string): Promise<Album | null> {
-  const [row] = await db.select().from(albumsTable).where(eq(albumsTable.id, id)).limit(1);
+  if (isTestEnvironment) {
+    return testAlbumStore.get(id) ?? null;
+  }
 
-  return row ? toAlbum(row) : null;
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("albums").select(albumColumns).eq("id", id).maybeSingle();
+
+  throwSupabaseError("读取 Supabase 相册失败", error);
+
+  return data ? toAlbum(data as StoredAlbumRow) : null;
 }
 
 export async function getStoredAlbumPhotoById(albumId: string, photoId: string): Promise<AlbumPhoto | null> {
-  const [row] = await db
-    .select()
-    .from(albumPhotosTable)
-    .where(and(eq(albumPhotosTable.albumId, albumId), eq(albumPhotosTable.id, photoId)))
-    .limit(1);
+  if (isTestEnvironment) {
+    const row = testAlbumPhotoStore.get(photoId);
+    return row && row.album_id === albumId ? toAlbumPhoto(row) : null;
+  }
 
-  return row ? toAlbumPhoto(row) : null;
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("album_photos").select(albumPhotoColumns).eq("album_id", albumId).eq("id", photoId).maybeSingle();
+
+  throwSupabaseError("读取 Supabase 相册照片失败", error);
+
+  return data ? toAlbumPhoto(data as StoredAlbumPhotoRow) : null;
 }
 
 export async function deleteStoredAlbumPhoto(albumId: string, photoId: string) {
-  await db.delete(albumPhotosTable).where(and(eq(albumPhotosTable.albumId, albumId), eq(albumPhotosTable.id, photoId)));
+  if (isTestEnvironment) {
+    const row = testAlbumPhotoStore.get(photoId);
+
+    if (row?.album_id === albumId) {
+      testAlbumPhotoStore.delete(photoId);
+    }
+
+    return;
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase.from("album_photos").delete().eq("album_id", albumId).eq("id", photoId);
+
+  throwSupabaseError("删除 Supabase 相册照片失败", error);
 }
 
 export async function markFallbackAlbumPhotoDeleted(albumId: string, photoId: string) {
-  await db
-    .insert(albumPhotoDeletionsTable)
-    .values({ albumId, photoId })
-    .onConflictDoUpdate({
-      target: albumPhotoDeletionsTable.photoId,
-      set: { albumId, photoId },
-    });
+  if (isTestEnvironment) {
+    const deletedPhotoIds = testAlbumPhotoDeletionStore.get(albumId) ?? new Set<string>();
+    deletedPhotoIds.add(photoId);
+    testAlbumPhotoDeletionStore.set(albumId, deletedPhotoIds);
+    return;
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase.from("album_photo_deletions").upsert({ album_id: albumId, photo_id: photoId }, { onConflict: "photo_id" });
+
+  throwSupabaseError("写入 Supabase 相册照片删除记录失败", error);
 }
 
 export async function deleteStoredAlbum(id: string) {
-  await db.delete(albumsTable).where(eq(albumsTable.id, id));
-  await db.delete(albumPhotosTable).where(eq(albumPhotosTable.albumId, id));
-  await db.delete(albumPhotoDeletionsTable).where(eq(albumPhotoDeletionsTable.albumId, id));
+  if (isTestEnvironment) {
+    testAlbumStore.delete(id);
+
+    for (const [photoId, photo] of testAlbumPhotoStore.entries()) {
+      if (photo.album_id === id) {
+        testAlbumPhotoStore.delete(photoId);
+      }
+    }
+
+    testAlbumPhotoDeletionStore.delete(id);
+    return;
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const deletePhotosResult = await supabase.from("album_photos").delete().eq("album_id", id);
+  throwSupabaseError("删除 Supabase 相册照片失败", deletePhotosResult.error);
+
+  const deletePhotoDeletionsResult = await supabase.from("album_photo_deletions").delete().eq("album_id", id);
+  throwSupabaseError("删除 Supabase 相册照片删除记录失败", deletePhotoDeletionsResult.error);
+
+  const deleteAlbumResult = await supabase.from("albums").delete().eq("id", id);
+  throwSupabaseError("删除 Supabase 相册失败", deleteAlbumResult.error);
 }
 
 export async function getStoredAlbumIds(): Promise<Set<string>> {
-  const rows = await db.select({ id: albumsTable.id }).from(albumsTable);
-  return new Set(rows.map((row) => row.id));
+  if (isTestEnvironment) {
+    return new Set(testAlbumStore.keys());
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("albums").select("id");
+
+  throwSupabaseError("读取 Supabase 相册 ID 失败", error);
+
+  return new Set(((data ?? []) as { id: string }[]).map((row) => row.id));
 }
 
 export async function listVisibleStoredAlbums(): Promise<Album[]> {
-  const rows = await db
-    .select()
-    .from(albumsTable)
-    .where(ne(albumsTable.status, "draft"))
-    .orderBy(asc(albumsTable.sortOrder), desc(albumsTable.createdAt));
+  if (isTestEnvironment) {
+    return listTestStoredAlbumRows().filter((album) => album.status !== "draft");
+  }
 
-  return rows.map((row) => toAlbum(row));
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("albums").select(albumColumns).neq("status", "draft").order("sort_order", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false, nullsFirst: false });
+
+  throwSupabaseError("读取 Supabase 可见相册失败", error);
+
+  return ((data ?? []) as StoredAlbumRow[]).map((row) => toAlbum(row));
 }
 
 export async function resetStoredAlbums() {
-  await db.delete(albumPhotoDeletionsTable).where(eq(albumPhotoDeletionsTable.photoId, albumPhotoDeletionsTable.photoId));
-  await db.delete(albumPhotosTable).where(eq(albumPhotosTable.id, albumPhotosTable.id));
-  await db.delete(albumsTable).where(eq(albumsTable.id, albumsTable.id));
+  if (!isTestEnvironment) {
+    throw new Error("resetStoredAlbums 仅供测试使用");
+  }
+
+  testAlbumStore.clear();
+  testAlbumPhotoStore.clear();
+  testAlbumPhotoDeletionStore.clear();
 }

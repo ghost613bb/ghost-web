@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { deleteAlbumPhoto, updateAlbumPhoto } from "@/features/album/service";
+import { requireAdminRequest } from "@/lib/admin-auth";
 import { parseUpdateAlbumPhoto } from "@/features/album/validation";
+
+export const runtime = "nodejs";
 
 type AlbumPhotoRouteContext = {
   params: Promise<{
@@ -11,6 +14,11 @@ type AlbumPhotoRouteContext = {
 
 export async function PATCH(request: Request, context: AlbumPhotoRouteContext) {
   const { albumId, photoId } = await context.params;
+  const unauthorizedResponse = requireAdminRequest(request, "无权限编辑照片");
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
 
   try {
     const photoDraft = parseUpdateAlbumPhoto(await request.json());
@@ -18,17 +26,24 @@ export async function PATCH(request: Request, context: AlbumPhotoRouteContext) {
 
     return NextResponse.json({ photo });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "photo 参数不合法";
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "photo 参数不合法",
+        error: message,
       },
-      { status: 400 },
+      { status: message === "相册数据源未配置" ? 503 : 400 },
     );
   }
 }
 
-export async function DELETE(_request: Request, context: AlbumPhotoRouteContext) {
+export async function DELETE(request: Request, context: AlbumPhotoRouteContext) {
   const { albumId, photoId } = await context.params;
+  const unauthorizedResponse = requireAdminRequest(request, "无权限删除照片");
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
 
   try {
     const result = await deleteAlbumPhoto(albumId, photoId);

@@ -56,33 +56,6 @@ sqlite.exec(`
     paper_background_opacity integer
   );
 
-  CREATE TABLE IF NOT EXISTS albums (
-    id text PRIMARY KEY NOT NULL,
-    title text NOT NULL,
-    description text,
-    cover_image text,
-    photo_count integer NOT NULL,
-    visibility text NOT NULL,
-    status text NOT NULL,
-    created_at text,
-    sort_order integer
-  );
-
-  CREATE TABLE IF NOT EXISTS album_photos (
-    id text PRIMARY KEY NOT NULL,
-    album_id text NOT NULL,
-    title text NOT NULL,
-    uploaded_at text NOT NULL,
-    note text,
-    image_url text NOT NULL,
-    image_position text NOT NULL,
-    sort_order integer NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS album_photo_deletions (
-    album_id text NOT NULL,
-    photo_id text PRIMARY KEY NOT NULL
-  );
 `);
 
 ensureColumn("thoughts", "body_text", "text NOT NULL DEFAULT ''");

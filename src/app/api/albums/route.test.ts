@@ -12,6 +12,9 @@ describe("/api/albums", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
+    vi.stubEnv("PLAYLIST_IMPORT_ADMIN_TOKEN", "test-token");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
     process.env.ALBUM_UPLOAD_DIR = albumUploadDir;
     await resetStoredAlbums();
     await rm(albumUploadDir, { force: true, recursive: true });
@@ -19,6 +22,7 @@ describe("/api/albums", () => {
 
   afterEach(async () => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
     delete process.env.ALBUM_UPLOAD_DIR;
     await rm(albumUploadDir, { force: true, recursive: true });
   });
@@ -45,6 +49,9 @@ describe("/api/albums", () => {
     const response = await POST(
       new Request("http://localhost/api/albums", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: formData,
       }),
     );
@@ -96,12 +103,18 @@ describe("/api/albums", () => {
     const firstResponse = await POST(
       new Request("http://localhost/api/albums", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: firstFormData,
       }),
     );
     const secondResponse = await POST(
       new Request("http://localhost/api/albums", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: secondFormData,
       }),
     );
@@ -114,6 +127,9 @@ describe("/api/albums", () => {
     const recreatedFirstResponse = await POST(
       new Request("http://localhost/api/albums", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: firstFormData,
       }),
     );
@@ -133,6 +149,9 @@ describe("/api/albums", () => {
     const response = await POST(
       new Request("http://localhost/api/albums", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: formData,
       }),
     );
@@ -143,5 +162,22 @@ describe("/api/albums", () => {
     expect(data).toEqual({
       error: "请先填写相册名称",
     });
+  });
+
+  it("rejects album creation without admin permission", async () => {
+    const formData = new FormData();
+    formData.set("title", "未授权相册");
+
+    const response = await POST(
+      new Request("http://localhost/api/albums", {
+        method: "POST",
+        body: formData,
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data).toEqual({ error: "无权限新增相册" });
   });
 });

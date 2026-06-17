@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { createAlbum, getNextCreatedAlbumId, listAlbums } from "@/features/album/service";
+import { requireAdminRequest } from "@/lib/admin-auth";
 import { parseCreateAlbum } from "@/features/album/validation";
 
 function sanitizeFileName(fileName: string) {
@@ -18,6 +19,8 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
   );
 }
 
+export const runtime = "nodejs";
+
 export async function GET() {
   return NextResponse.json({
     albums: await listAlbums(),
@@ -25,6 +28,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const unauthorizedResponse = requireAdminRequest(request, "无权限新增相册");
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
+
   try {
     const formData = await request.formData();
     const rawTitle = formData.get("title");
@@ -61,11 +70,13 @@ export async function POST(request: Request) {
       }),
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "album 参数不合法";
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "album 参数不合法",
+        error: message,
       },
-      { status: 400 },
+      { status: message === "相册数据源未配置" ? 503 : 400 },
     );
   }
 }

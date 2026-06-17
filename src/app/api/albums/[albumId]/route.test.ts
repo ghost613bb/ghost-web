@@ -11,6 +11,9 @@ describe("/api/albums/[albumId]", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-28T10:00:00.000Z"));
+    vi.stubEnv("PLAYLIST_IMPORT_ADMIN_TOKEN", "test-token");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
     process.env.ALBUM_UPLOAD_DIR = albumUploadDir;
     await resetStoredAlbums();
     await rm(albumUploadDir, { force: true, recursive: true });
@@ -18,6 +21,7 @@ describe("/api/albums/[albumId]", () => {
 
   afterEach(async () => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
     delete process.env.ALBUM_UPLOAD_DIR;
     await rm(albumUploadDir, { force: true, recursive: true });
   });
@@ -32,6 +36,9 @@ describe("/api/albums/[albumId]", () => {
     const response = await PATCH(
       new Request("http://localhost/api/albums/album-001", {
         method: "PATCH",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: formData,
       }),
       {
@@ -62,6 +69,9 @@ describe("/api/albums/[albumId]", () => {
     const response = await POST(
       new Request("http://localhost/api/albums/album-001/photos", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: formData,
       }),
       {
@@ -99,6 +109,9 @@ describe("/api/albums/[albumId]", () => {
     const createResponse = await POST(
       new Request("http://localhost/api/albums/album-001/photos", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: formData,
       }),
       {
@@ -115,6 +128,7 @@ describe("/api/albums/[albumId]", () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          "x-playlist-import-token": "test-token",
         },
         body: JSON.stringify({
           title: "改名后的照片",
@@ -148,6 +162,9 @@ describe("/api/albums/[albumId]", () => {
     const createResponse = await POST(
       new Request("http://localhost/api/albums/album-001/photos", {
         method: "POST",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
         body: formData,
       }),
       {
@@ -162,6 +179,9 @@ describe("/api/albums/[albumId]", () => {
     const response = await DELETE_PHOTO(
       new Request(`http://localhost/api/albums/album-001/photos/${createdPhoto.id}`, {
         method: "DELETE",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
       }),
       {
         params: Promise.resolve({
@@ -186,6 +206,9 @@ describe("/api/albums/[albumId]", () => {
     const response = await DELETE(
       new Request("http://localhost/api/albums/album-001", {
         method: "DELETE",
+        headers: {
+          "x-playlist-import-token": "test-token",
+        },
       }),
       {
         params: Promise.resolve({
@@ -204,6 +227,7 @@ describe("/api/albums/[albumId]", () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          "x-playlist-import-token": "test-token",
         },
         body: JSON.stringify({
           title: "重新编辑",
@@ -218,5 +242,40 @@ describe("/api/albums/[albumId]", () => {
     );
 
     expect(nextResponse.status).toBe(404);
+  });
+
+  it("rejects album detail writes without admin permission", async () => {
+    const patchResponse = await PATCH(
+      new Request("http://localhost/api/albums/album-001", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "未授权编辑",
+          description: "不该成功",
+        }),
+      }),
+      {
+        params: Promise.resolve({
+          albumId: "album-001",
+        }),
+      },
+    );
+    const deleteResponse = await DELETE(
+      new Request("http://localhost/api/albums/album-001", {
+        method: "DELETE",
+      }),
+      {
+        params: Promise.resolve({
+          albumId: "album-001",
+        }),
+      },
+    );
+
+    expect(patchResponse.status).toBe(401);
+    await expect(patchResponse.json()).resolves.toEqual({ error: "无权限编辑相册" });
+    expect(deleteResponse.status).toBe(401);
+    await expect(deleteResponse.json()).resolves.toEqual({ error: "无权限删除相册" });
   });
 });

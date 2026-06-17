@@ -26,30 +26,3 @@ export const thoughts = sqliteTable("thoughts", {
   paperBackgroundOpacity: integer("paper_background_opacity"),
 });
 
-export const albums = sqliteTable("albums", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description"),
-  coverImage: text("cover_image"),
-  photoCount: integer("photo_count").notNull(),
-  visibility: text("visibility", { enum: ["public", "private", "interview_hidden", "masked"] }).notNull(),
-  status: text("status", { enum: ["draft", "published"] }).notNull(),
-  createdAt: text("created_at"),
-  sortOrder: integer("sort_order"),
-});
-
-export const albumPhotos = sqliteTable("album_photos", {
-  id: text("id").primaryKey(),
-  albumId: text("album_id").notNull(),
-  title: text("title").notNull(),
-  uploadedAt: text("uploaded_at").notNull(),
-  note: text("note"),
-  imageUrl: text("image_url").notNull(),
-  imagePosition: text("image_position").notNull(),
-  sortOrder: integer("sort_order").notNull(),
-});
-
-export const albumPhotoDeletions = sqliteTable("album_photo_deletions", {
-  albumId: text("album_id").notNull(),
-  photoId: text("photo_id").primaryKey().notNull(),
-});
