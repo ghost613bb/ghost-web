@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { AlbumPhotoDetailPageView } from "@/features/album/AlbumPhotoDetailPage";
-import { getAdjacentAlbumPhotoIds, getAlbumById, getAlbumPhotoById } from "@/features/album/service";
+import { getAlbumPhotoDetailPageData } from "@/features/album/service";
+import { MokugyoStateNotice } from "@/features/content-modules/components/MokugyoStateNotice";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 type AlbumPhotoDetailPageProps = {
@@ -21,19 +22,15 @@ export default async function AlbumPhotoDetailPage({ params }: AlbumPhotoDetailP
   }
 
   const { albumId, photoId } = await params;
-  const album = await getAlbumById(albumId);
+  const data = await getAlbumPhotoDetailPageData(albumId, photoId);
 
-  if (!album) {
+  if (data.dataSource === "unavailable") {
+    return <MokugyoStateNotice page={`/album/${albumId}/${photoId}`} reason={data.statusReason} />;
+  }
+
+  if (!data.album || !data.photo) {
     notFound();
   }
 
-  const photo = await getAlbumPhotoById(albumId, photoId);
-
-  if (!photo) {
-    notFound();
-  }
-
-  const { previousPhotoId, nextPhotoId } = await getAdjacentAlbumPhotoIds(albumId, photoId);
-
-  return <AlbumPhotoDetailPageView album={album} nextPhotoId={nextPhotoId} photo={photo} previousPhotoId={previousPhotoId} />;
+  return <AlbumPhotoDetailPageView album={data.album} nextPhotoId={data.nextPhotoId} photo={data.photo} previousPhotoId={data.previousPhotoId} />;
 }

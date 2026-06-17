@@ -15,7 +15,7 @@ vi.mock("@/lib/supabase/server", async () => {
 });
 
 import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
-import { createAlbumPhoto, getAlbumById, listAlbums } from "./service";
+import { createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, listAlbums } from "./service";
 
 describe("album service", () => {
   const fallbackAlbum = albumCollections[0]!;
@@ -97,5 +97,48 @@ describe("album service", () => {
         imageUrl: "/uploads/albums/unavailable.png",
       }),
     ).rejects.toThrow("相册数据源未配置");
+  });
+
+  it("returns unavailable album page data when album storage env is missing", async () => {
+    supabaseEnvState.enabled = false;
+
+    await expect(getAlbumPageData()).resolves.toEqual({
+      albums: [],
+      dataSource: "unavailable",
+      statusReason: "missing-env",
+    });
+  });
+
+  it("returns available detail page data when an album is missing", async () => {
+    await expect(getAlbumDetailPageData("missing-album")).resolves.toEqual({
+      album: null,
+      dataSource: "available",
+      photos: [],
+    });
+  });
+
+  it("returns available photo detail page data when a photo is missing", async () => {
+    const data = await getAlbumPhotoDetailPageData(fallbackAlbum.id, "missing-photo");
+
+    expect(data).toEqual({
+      album: expect.objectContaining({ id: fallbackAlbum.id }),
+      dataSource: "available",
+      nextPhotoId: null,
+      photo: null,
+      previousPhotoId: null,
+    });
+  });
+
+  it("returns unavailable photo detail page data when album storage env is missing", async () => {
+    supabaseEnvState.enabled = false;
+
+    await expect(getAlbumPhotoDetailPageData(fallbackAlbum.id, "photo-001")).resolves.toEqual({
+      album: null,
+      dataSource: "unavailable",
+      nextPhotoId: null,
+      photo: null,
+      previousPhotoId: null,
+      statusReason: "missing-env",
+    });
   });
 });

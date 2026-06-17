@@ -1,5 +1,6 @@
 import { AlbumPageView } from "@/features/album/AlbumPage";
-import { listAlbums } from "@/features/album/service";
+import { getAlbumPageData } from "@/features/album/service";
+import { MokugyoStateNotice } from "@/features/content-modules/components/MokugyoStateNotice";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 export default async function AlbumPage() {
@@ -12,5 +13,11 @@ export default async function AlbumPage() {
     );
   }
 
-  return <AlbumPageView initialAlbums={await listAlbums()} />;
+  const data = await getAlbumPageData();
+
+  if (data.dataSource === "unavailable") {
+    return <MokugyoStateNotice page="/album" reason={data.statusReason} />;
+  }
+
+  return <AlbumPageView initialAlbums={data.albums} />;
 }

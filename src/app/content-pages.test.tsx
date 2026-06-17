@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { albumCollections } from "@/data/album";
+import { getAlbumPhotosByAlbumId } from "@/data/albumPhotos";
 import type { Album } from "@/features/album/types";
 import AboutPage from "./about/page";
 import AlbumDetailPage from "./album/[albumId]/page";
@@ -21,6 +23,12 @@ const mockThoughtServiceState = vi.hoisted(() => ({
   getThoughtPageData: vi.fn(),
 }));
 
+const albumPageDataState = vi.hoisted(() => ({
+  getAlbumDetailPageData: vi.fn(),
+  getAlbumPageData: vi.fn(),
+  getAlbumPhotoDetailPageData: vi.fn(),
+}));
+
 vi.mock("@/features/thoughts/service", async () => {
   const actual = await vi.importActual<typeof import("@/features/thoughts/service")>("@/features/thoughts/service");
 
@@ -28,6 +36,17 @@ vi.mock("@/features/thoughts/service", async () => {
     ...actual,
     getThoughtBySlug: mockThoughtServiceState.getThoughtBySlug,
     getThoughtPageData: mockThoughtServiceState.getThoughtPageData,
+  };
+});
+
+vi.mock("@/features/album/service", async () => {
+  const actual = await vi.importActual<typeof import("@/features/album/service")>("@/features/album/service");
+
+  return {
+    ...actual,
+    getAlbumPageData: albumPageDataState.getAlbumPageData,
+    getAlbumDetailPageData: albumPageDataState.getAlbumDetailPageData,
+    getAlbumPhotoDetailPageData: albumPageDataState.getAlbumPhotoDetailPageData,
   };
 });
 
@@ -158,6 +177,32 @@ describe("content module pages", () => {
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
     mockTiptapState.useEditorOptions = undefined;
     vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-001" ? albumServiceFallbackAlbum : null));
+    albumPageDataState.getAlbumPageData.mockImplementation(async () => ({
+      albums: await albumService.listAlbums(),
+      dataSource: "available",
+    }));
+    albumPageDataState.getAlbumDetailPageData.mockImplementation(async (albumId: string) => {
+      const album = await albumService.getAlbumById(albumId);
+
+      return {
+        album,
+        dataSource: "available",
+        photos: album ? await albumService.listAlbumPhotos(albumId) : [],
+      };
+    });
+    albumPageDataState.getAlbumPhotoDetailPageData.mockImplementation(async (albumId: string, photoId: string) => {
+      const album = await albumService.getAlbumById(albumId);
+      const photo = album ? await albumService.getAlbumPhotoById(albumId, photoId) : null;
+      const adjacent = album && photo ? await albumService.getAdjacentAlbumPhotoIds(albumId, photoId) : { previousPhotoId: null, nextPhotoId: null };
+
+      return {
+        album,
+        dataSource: "available",
+        nextPhotoId: adjacent.nextPhotoId,
+        photo,
+        previousPhotoId: adjacent.previousPhotoId,
+      };
+    });
     mockThoughtServiceState.getThoughtPageData.mockResolvedValue({ dataSource: "supabase", thoughts: mockThoughts });
     mockThoughtServiceState.getThoughtBySlug.mockImplementation(async (slug) => mockThoughts.find((thought) => thought.slug === slug) ?? null);
     await resetDisplayModes();
@@ -195,6 +240,19 @@ describe("content module pages", () => {
     render(await AlbumPage());
 
     expect(screen.getByRole("heading", { level: 1, name: "个人相册" })).toBeInTheDocument();
+  });
+
+  it("renders a mokugyo notice when album page data is unavailable", async () => {
+    albumPageDataState.getAlbumPageData.mockResolvedValueOnce({
+      albums: [],
+      dataSource: "unavailable",
+      statusReason: "missing-env",
+    });
+
+    render(await AlbumPage());
+
+    expect(screen.getByTestId("mokugyo-state-notice")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "服务器还没摆好小碗" })).toBeInTheDocument();
   });
 
   it("opens the create album dialog from the header action", async () => {
@@ -429,6 +487,20 @@ describe("content module pages", () => {
     expect(photoDeleteButtons[0]?.querySelector("svg")).not.toBeNull();
   });
 
+  it("renders a mokugyo notice when album detail data is unavailable", async () => {
+    albumPageDataState.getAlbumDetailPageData.mockResolvedValueOnce({
+      album: null,
+      dataSource: "unavailable",
+      photos: [],
+      statusReason: "read-error",
+    });
+
+    render(await AlbumDetailPage({ params: Promise.resolve({ albumId: "album-001" }) }));
+
+    expect(screen.getByTestId("mokugyo-state-notice")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "服务器在打瞌睡" })).toBeInTheDocument();
+  });
+
   it("renders stored uploaded photos on the album detail page", async () => {
     const albumWithStoredPhotos: Album = {
       ...albumServiceFallbackAlbum,
@@ -462,6 +534,22 @@ describe("content module pages", () => {
     expect(screen.getByText("雨天窗口")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "查看照片详情" })).toHaveAttribute("href", "/album/album-created-001/album-created-001-photo-001");
     expect(detailPage.container.querySelectorAll("article img")).toHaveLength(1);
+  });
+
+  it("renders a mokugyo notice when album photo detail data is unavailable", async () => {
+    albumPageDataState.getAlbumPhotoDetailPageData.mockResolvedValueOnce({
+      album: null,
+      dataSource: "unavailable",
+      nextPhotoId: null,
+      photo: null,
+      previousPhotoId: null,
+      statusReason: "read-error",
+    });
+
+    render(await AlbumPhotoDetailPage({ params: Promise.resolve({ albumId: "album-001", photoId: "photo-001" }) }));
+
+    expect(screen.getByTestId("mokugyo-state-notice")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "服务器在打瞌睡" })).toBeInTheDocument();
   });
 
   it("renders the first album photo detail page with next navigation only", async () => {

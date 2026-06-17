@@ -21,6 +21,32 @@ import {
 } from "./repository";
 import type { Album, CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
 
+export type AlbumPageDataSource = "available" | "unavailable";
+
+export type AlbumPageStatusReason = "missing-env" | "read-error";
+
+export type AlbumPageData = {
+  albums: Album[];
+  dataSource: AlbumPageDataSource;
+  statusReason?: AlbumPageStatusReason;
+};
+
+export type AlbumDetailPageData = {
+  album: Album | null;
+  dataSource: AlbumPageDataSource;
+  photos: AlbumPhoto[];
+  statusReason?: AlbumPageStatusReason;
+};
+
+export type AlbumPhotoDetailPageData = {
+  album: Album | null;
+  dataSource: AlbumPageDataSource;
+  nextPhotoId: string | null;
+  photo: AlbumPhoto | null;
+  previousPhotoId: string | null;
+  statusReason?: AlbumPageStatusReason;
+};
+
 function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
   return {
     id: album.id,
@@ -45,8 +71,12 @@ function buildStoredAlbumPhotoId(albumId: string, index: number) {
   return `${albumId}-photo-${String(index).padStart(3, "0")}`;
 }
 
+function isAlbumStorageConfigured() {
+  return Boolean(hasSupabaseServiceRoleEnv() || (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY));
+}
+
 function assertAlbumStorageConfigured() {
-  if (hasSupabaseServiceRoleEnv() || (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  if (isAlbumStorageConfigured()) {
     return;
   }
 
@@ -291,4 +321,127 @@ export async function deleteAlbum(id: string): Promise<void> {
     ...currentAlbum,
     status: "draft",
   });
+}
+
+export async function getAlbumPageData(): Promise<AlbumPageData> {
+  if (!isAlbumStorageConfigured()) {
+    return {
+      albums: [],
+      dataSource: "unavailable",
+      statusReason: "missing-env",
+    };
+  }
+
+  try {
+    return {
+      albums: await listAlbums(),
+      dataSource: "available",
+    };
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : "读取相册列表失败");
+
+    return {
+      albums: [],
+      dataSource: "unavailable",
+      statusReason: "read-error",
+    };
+  }
+}
+
+export async function getAlbumDetailPageData(id: string): Promise<AlbumDetailPageData> {
+  if (!isAlbumStorageConfigured()) {
+    return {
+      album: null,
+      dataSource: "unavailable",
+      photos: [],
+      statusReason: "missing-env",
+    };
+  }
+
+  try {
+    const album = await getAlbumById(id);
+
+    if (!album) {
+      return {
+        album: null,
+        dataSource: "available",
+        photos: [],
+      };
+    }
+
+    return {
+      album,
+      dataSource: "available",
+      photos: await listAlbumPhotos(id),
+    };
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : "读取相册详情失败");
+
+    return {
+      album: null,
+      dataSource: "unavailable",
+      photos: [],
+      statusReason: "read-error",
+    };
+  }
+}
+
+export async function getAlbumPhotoDetailPageData(albumId: string, photoId: string): Promise<AlbumPhotoDetailPageData> {
+  if (!isAlbumStorageConfigured()) {
+    return {
+      album: null,
+      dataSource: "unavailable",
+      nextPhotoId: null,
+      photo: null,
+      previousPhotoId: null,
+      statusReason: "missing-env",
+    };
+  }
+
+  try {
+    const album = await getAlbumById(albumId);
+
+    if (!album) {
+      return {
+        album: null,
+        dataSource: "available",
+        nextPhotoId: null,
+        photo: null,
+        previousPhotoId: null,
+      };
+    }
+
+    const photo = await getAlbumPhotoById(albumId, photoId);
+
+    if (!photo) {
+      return {
+        album,
+        dataSource: "available",
+        nextPhotoId: null,
+        photo: null,
+        previousPhotoId: null,
+      };
+    }
+
+    const { previousPhotoId, nextPhotoId } = await getAdjacentAlbumPhotoIds(albumId, photoId);
+
+    return {
+      album,
+      dataSource: "available",
+      nextPhotoId,
+      photo,
+      previousPhotoId,
+    };
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : "读取照片详情失败");
+
+    return {
+      album: null,
+      dataSource: "unavailable",
+      nextPhotoId: null,
+      photo: null,
+      previousPhotoId: null,
+      statusReason: "read-error",
+    };
+  }
 }
