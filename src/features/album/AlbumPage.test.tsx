@@ -3,6 +3,33 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album } from "./types";
 import { AlbumPageView } from "./AlbumPage";
 
+function mockAlbumPageFetch(handler?: (input: RequestInfo | URL, init?: RequestInit) => unknown | Promise<unknown>, authenticated = true) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input) === "/api/admin/session") {
+      const method = init?.method ?? "GET";
+
+      if (method === "POST") {
+        return { ok: true, json: async () => ({ authenticated: true }) };
+      }
+
+      if (method === "DELETE") {
+        return { ok: true, json: async () => ({ authenticated: false }) };
+      }
+
+      return { ok: true, json: async () => ({ authenticated }) };
+    }
+
+    return (await handler?.(input, init)) ?? { ok: true, json: async () => ({}) };
+  });
+
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function findFetchCall(fetchMock: ReturnType<typeof vi.fn>, url: string, method?: string) {
+  return fetchMock.mock.calls.find(([input, init]) => String(input) === url && (!method || (init as RequestInit | undefined)?.method === method));
+}
+
 describe("AlbumPageView", () => {
   const album: Album = {
     id: "album-001",
@@ -19,7 +46,9 @@ describe("AlbumPageView", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the shared diary tabs header and album action bar", () => {
+  it("renders the shared diary tabs header and album action bar", async () => {
+    mockAlbumPageFetch();
+
     render(<AlbumPageView initialAlbums={[album]} />);
 
     const navigation = screen.getByRole("navigation", { name: "内容页导航" });
@@ -28,25 +57,60 @@ describe("AlbumPageView", () => {
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
     expect(within(navigation).getByText("个人相册")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
     expect(screen.getByRole("button", { name: "新建相册" })).toBeInTheDocument();
+    expect(await screen.findByText("已解锁")).toBeInTheDocument();
   });
 
-  it("edits an album from the more menu, uploads a new cover, and updates the card", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        album: {
-          ...album,
-          title: "编辑后的相册",
-          description: "新的相册描述",
-          coverImage: "/uploads/albums/album-001-replacement-cover.png",
-        },
-      }),
-    });
-
-    vi.stubGlobal("fetch", fetchMock);
+  it("shows locked management state before admin unlock", async () => {
+    mockAlbumPageFetch(undefined, false);
 
     render(<AlbumPageView initialAlbums={[album]} />);
 
+    expect(await screen.findByText("未解锁")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建相册" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /更多/i })).toBeDisabled();
+  });
+
+  it("unlocks admin management from the album page", async () => {
+    const fetchMock = mockAlbumPageFetch(undefined, false);
+
+    render(<AlbumPageView initialAlbums={[album]} />);
+
+    await screen.findByText("未解锁");
+    fireEvent.change(screen.getByLabelText("管理 Token"), { target: { value: "test-token" } });
+    fireEvent.click(screen.getByRole("button", { name: "解锁管理" }));
+
+    expect(await screen.findByText("已解锁")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建相册" })).not.toBeDisabled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/session",
+      expect.objectContaining({
+        body: JSON.stringify({ token: "test-token" }),
+        credentials: "same-origin",
+        method: "POST",
+      }),
+    );
+  });
+
+  it("edits an album from the more menu, uploads a new cover, and updates the card", async () => {
+    const fetchMock = mockAlbumPageFetch(async (input) => {
+      if (String(input) === "/api/albums/album-001") {
+        return {
+          ok: true,
+          json: async () => ({
+            album: {
+              ...album,
+              title: "编辑后的相册",
+              description: "新的相册描述",
+              coverImage: "/uploads/albums/album-001-replacement-cover.png",
+            },
+          }),
+        };
+      }
+    });
+
+    render(<AlbumPageView initialAlbums={[album]} />);
+
+    await screen.findByText("已解锁");
     fireEvent.click(screen.getByRole("button", { name: /更多/i }));
     fireEvent.click(screen.getByRole("button", { name: "编辑相册" }));
 
@@ -64,14 +128,16 @@ describe("AlbumPageView", () => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/albums/album-001",
         expect.objectContaining({
+          credentials: "same-origin",
           method: "PATCH",
           body: expect.any(FormData),
         }),
       );
     });
 
-    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
-    const formData = requestInit.body as FormData;
+    const requestCall = findFetchCall(fetchMock, "/api/albums/album-001", "PATCH");
+    const requestInit = requestCall?.[1] as RequestInit | undefined;
+    const formData = requestInit?.body as FormData;
 
     expect(formData.get("title")).toBe("编辑后的相册");
     expect(formData.get("description")).toBe("新的相册描述");
@@ -86,21 +152,21 @@ describe("AlbumPageView", () => {
   });
 
   it("deletes an album from the more menu after confirmation", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
+    const fetchMock = mockAlbumPageFetch(async (input) => {
+      if (String(input) === "/api/albums/album-001") {
+        return { ok: true, json: async () => ({ success: true }) };
+      }
     });
-
-    vi.stubGlobal("fetch", fetchMock);
 
     render(<AlbumPageView initialAlbums={[album]} />);
 
+    await screen.findByText("已解锁");
     fireEvent.click(screen.getByRole("button", { name: /更多/i }));
     fireEvent.click(screen.getByRole("button", { name: "删除相册" }));
     fireEvent.click(await screen.findByRole("button", { name: "确认删除" }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/albums/album-001", { method: "DELETE" });
+      expect(fetchMock).toHaveBeenCalledWith("/api/albums/album-001", { credentials: "same-origin", method: "DELETE" });
     });
 
     await waitFor(() => {
@@ -109,26 +175,47 @@ describe("AlbumPageView", () => {
   });
 
   it("keeps the delete dialog open and shows the API error when delete fails", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({ error: "删除失败，请稍后再试" }),
+    const fetchMock = mockAlbumPageFetch(async (input) => {
+      if (String(input) === "/api/albums/album-001") {
+        return { ok: false, json: async () => ({ error: "删除失败，请稍后再试" }) };
+      }
     });
-
-    vi.stubGlobal("fetch", fetchMock);
 
     render(<AlbumPageView initialAlbums={[album]} />);
 
+    await screen.findByText("已解锁");
     fireEvent.click(screen.getByRole("button", { name: /更多/i }));
     fireEvent.click(screen.getByRole("button", { name: "删除相册" }));
     fireEvent.click(await screen.findByRole("button", { name: "确认删除" }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/albums/album-001", { method: "DELETE" });
+      expect(fetchMock).toHaveBeenCalledWith("/api/albums/album-001", { credentials: "same-origin", method: "DELETE" });
     });
 
     expect(await screen.findByText("删除失败，请稍后再试")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "确认删除" })).toBeInTheDocument();
     expect(screen.getByText("我的相册")).toBeInTheDocument();
+  });
+
+  it("shows a clear message when album creation hits admin auth", async () => {
+    const fetchMock = mockAlbumPageFetch(async (input) => {
+      if (String(input) === "/api/albums") {
+        return { ok: false, json: async () => ({ error: "无权限新增相册" }) };
+      }
+    });
+
+    render(<AlbumPageView initialAlbums={[album]} />);
+
+    await screen.findByText("已解锁");
+    fireEvent.click(screen.getByRole("button", { name: "新建相册" }));
+    fireEvent.change(screen.getByLabelText("相册名称"), { target: { value: "夏日收藏夹" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(await screen.findByText("请先解锁管理")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/albums",
+      expect.objectContaining({ credentials: "same-origin", method: "POST" }),
+    );
   });
 
   it("positions the more menu above the trigger when there is not enough space below", async () => {
@@ -173,8 +260,10 @@ describe("AlbumPageView", () => {
         return originalGetBoundingClientRect.call(this);
       });
 
+      mockAlbumPageFetch();
       render(<AlbumPageView initialAlbums={[album]} />);
 
+      await screen.findByText("已解锁");
       fireEvent.click(screen.getByRole("button", { name: /更多/i }));
 
       const menu = screen.getByText("编辑相册").closest("div") as HTMLDivElement;
@@ -234,8 +323,10 @@ describe("AlbumPageView", () => {
         return originalGetBoundingClientRect.call(this);
       });
 
+      mockAlbumPageFetch();
       render(<AlbumPageView initialAlbums={[album]} />);
 
+      await screen.findByText("已解锁");
       fireEvent.click(screen.getByRole("button", { name: /更多/i }));
 
       const menu = screen.getByText("编辑相册").closest("div") as HTMLDivElement;

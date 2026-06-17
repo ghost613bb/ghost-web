@@ -125,6 +125,22 @@ type JsonResponse = {
   ok: boolean;
 };
 
+function mockAlbumAdminSessionFetch(handler?: (input: RequestInfo | URL, init?: RequestInit) => Promise<unknown> | unknown) {
+  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    if (String(input) === "/api/admin/session") {
+      return {
+        ok: true,
+        json: async () => ({ authenticated: true }),
+      } satisfies JsonResponse;
+    }
+
+    return ((await handler?.(input, init)) ?? {
+      ok: true,
+      json: async () => ({}),
+    }) as JsonResponse;
+  });
+}
+
 const albumServiceFallbackAlbum: Album = {
   id: "album-001",
   title: "我的相册",
@@ -182,8 +198,11 @@ describe("content module pages", () => {
   });
 
   it("opens the create album dialog from the header action", async () => {
+    vi.useRealTimers();
+    mockAlbumAdminSessionFetch();
     render(await AlbumPage());
 
+    await screen.findByText("已解锁");
     const backHomeLink = screen.getByRole("link", { name: "返回首页小镇" });
     const createAlbumButton = screen.getByRole("button", { name: "新建相册" });
 
@@ -248,25 +267,30 @@ describe("content module pages", () => {
   it("creates a stored album card with a selected local cover image", async () => {
     vi.useRealTimers();
 
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        album: {
-          id: "album-created-001",
-          title: "夏日收藏夹",
-          description: "把傍晚和风景先放进这里。",
-          coverImage: "/uploads/albums/summer-cover.png",
-          photoCount: 0,
-          visibility: "public",
-          status: "published",
-          createdAt: "2026-05-26",
-          sortOrder: 1,
-        },
-      }),
-    } satisfies JsonResponse);
+    const fetchMock = mockAlbumAdminSessionFetch(async (input) => {
+      if (String(input) === "/api/albums") {
+        return {
+          ok: true,
+          json: async () => ({
+            album: {
+              id: "album-created-001",
+              title: "夏日收藏夹",
+              description: "把傍晚和风景先放进这里。",
+              coverImage: "/uploads/albums/summer-cover.png",
+              photoCount: 0,
+              visibility: "public",
+              status: "published",
+              createdAt: "2026-05-26",
+              sortOrder: 1,
+            },
+          }),
+        } satisfies JsonResponse;
+      }
+    });
 
     render(await AlbumPage());
 
+    await screen.findByText("已解锁");
     fireEvent.click(screen.getByRole("button", { name: "新建相册" }));
 
     const coverFile = new File(["cover"], "summer-cover.png", { type: "image/png" });
@@ -293,7 +317,7 @@ describe("content module pages", () => {
       expect(screen.queryByRole("dialog", { name: "新建相册" })).not.toBeInTheDocument();
     });
 
-    const request = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    const request = fetchMock.mock.calls.find(([input]) => String(input) === "/api/albums")?.[1] as RequestInit | undefined;
     expect(request?.body).toBeInstanceOf(FormData);
 
     const formData = request?.body as FormData;
@@ -311,8 +335,11 @@ describe("content module pages", () => {
   });
 
   it("blocks submit when the album name is empty", async () => {
+    vi.useRealTimers();
+    mockAlbumAdminSessionFetch();
     render(await AlbumPage());
 
+    await screen.findByText("已解锁");
     fireEvent.click(screen.getByRole("button", { name: "新建相册" }));
     fireEvent.change(screen.getByRole("textbox", { name: "备注/留言" }), { target: { value: "只写备注不该创建成功。" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));

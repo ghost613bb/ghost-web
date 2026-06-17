@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { AlbumFormDialog, type AlbumFormPayload } from "./AlbumFormDialog";
 import type { Album } from "./types";
@@ -22,6 +22,11 @@ type AlbumCard = Album;
 
 type AlbumPageViewProps = {
   initialAlbums: Album[];
+};
+
+type AdminSessionResult = {
+  authenticated?: boolean;
+  error?: string;
 };
 
 function albumToCard(album: Album): AlbumCard {
@@ -57,6 +62,40 @@ function EditAlbumDialog({ album, onClose, onSave }: EditAlbumDialogProps) {
   );
 }
 
+function getManagementErrorMessage(error?: string) {
+  return error === "无权限新增相册" || error === "无权限编辑相册" || error === "无权限删除相册" ? "请先解锁管理" : error;
+}
+
+function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
+  return (
+    <form className="rounded-[1.15rem] border-2 border-stone-700/70 bg-white/65 p-3 shadow-[0_6px_0_rgba(91,58,48,0.08)]" onSubmit={onUnlock}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-black text-[#5a3a33]">Admin 管理</p>
+        <span className={`rounded-full px-2 py-0.5 text-[0.68rem] font-black ${isAdminUnlocked ? "bg-[#dff3cf] text-[#42672d]" : "bg-[#ffeef1] text-[#7a3d3f]"}`}>
+          {isAdminUnlocked ? "已解锁" : "未解锁"}
+        </span>
+      </div>
+      <p className="mb-2 text-xs font-semibold leading-5 text-stone-600">{isAdminUnlocked ? "管理会话已保存，后续操作无需重复输入 Token。" : "输入一次管理 Token，解锁相册管理。"}</p>
+      {isAdminUnlocked ? (
+        <button className="w-full rounded-[0.9rem] border-2 border-stone-700/60 bg-white px-3 py-1.5 text-xs font-black text-stone-900 transition hover:bg-[#fff5f6]" disabled={isAdminSubmitting} onClick={onLock} type="button">
+          退出管理模式
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <label className="sr-only" htmlFor="album-admin-token">
+            管理 Token
+          </label>
+          <input className="w-full rounded-[0.9rem] border-2 border-stone-700/50 bg-white/80 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isAdminSubmitting} id="album-admin-token" onChange={(event) => onAdminTokenChange(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
+          <button className="w-full rounded-[0.9rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-1.5 text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isAdminSubmitting} type="submit">
+            {isAdminSubmitting ? "解锁中..." : "解锁管理"}
+          </button>
+        </div>
+      )}
+      {adminError ? <p className="mt-2 rounded-[0.85rem] border border-[#b75d66] bg-[#ffeef1] px-2 py-1.5 text-xs font-black text-[#7a3d3f]">{adminError}</p> : null}
+    </form>
+  );
+}
+
 export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
   const [albums, setAlbums] = useState<AlbumCard[]>(initialAlbums.map(albumToCard));
   const [editingAlbumId, setEditingAlbumId] = useState<string | null>(null);
@@ -67,6 +106,10 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
   const [pendingDeleteAlbumId, setPendingDeleteAlbumId] = useState<string | null>(null);
   const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
@@ -74,6 +117,31 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
     "inline-flex items-center rounded-[1rem] border-2 border-stone-700/80 bg-[#f8cfd5] px-3.5 py-1 text-sm font-black text-stone-900 transition hover:-translate-y-0.5 hover:bg-[#fbe0e4] sm:px-4 sm:py-1.5";
   const editingAlbum = editingAlbumId ? albums.find((album) => album.id === editingAlbumId) ?? null : null;
   const pendingDeleteAlbum = pendingDeleteAlbumId ? albums.find((album) => album.id === pendingDeleteAlbumId) ?? null : null;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", { credentials: "same-origin" });
+        const data = (await response.json()) as AdminSessionResult;
+
+        if (isMounted) {
+          setIsAdminUnlocked(Boolean(response.ok && data.authenticated));
+        }
+      } catch {
+        if (isMounted) {
+          setIsAdminUnlocked(false);
+        }
+      }
+    };
+
+    void loadAdminSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -129,19 +197,79 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
     };
   }, [menuAlbumId]);
 
+  const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAdminError(null);
+
+    if (!adminToken.trim()) {
+      setAdminError("请输入管理 Token");
+      return;
+    }
+
+    setIsAdminSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/session", {
+        body: JSON.stringify({ token: adminToken }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as AdminSessionResult;
+
+      if (!response.ok || !data.authenticated) {
+        throw new Error(data.error ?? "管理解锁失败");
+      }
+
+      setIsAdminUnlocked(true);
+      setAdminToken("");
+    } catch (error) {
+      setIsAdminUnlocked(false);
+      setAdminError(error instanceof Error ? error.message : "管理解锁失败");
+    } finally {
+      setIsAdminSubmitting(false);
+    }
+  };
+
+  const handleAdminLock = async () => {
+    setAdminError(null);
+    setIsAdminSubmitting(true);
+
+    try {
+      await fetch("/api/admin/session", { credentials: "same-origin", method: "DELETE" });
+      setIsAdminUnlocked(false);
+      setMenuAlbumId(null);
+      setEditingAlbumId(null);
+      setIsCreateDialogOpen(false);
+      setPendingDeleteAlbumId(null);
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "退出管理模式失败");
+    } finally {
+      setIsAdminSubmitting(false);
+    }
+  };
+
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
       <ContentTabsHeader activeTab="album" />
 
       <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-6 sm:px-6">
-        <div className="mb-5 flex flex-col gap-3 rounded-[1.4rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/86 p-3 shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-black text-[#7a5147]">把想留下来的画面继续贴进这本小镇相册</p>
-            <h1 className="mt-1 text-[1.9rem] font-black tracking-tight text-[#4a2e28] sm:text-[2.2rem]">个人相册</h1>
+        <div className="mb-5 grid gap-3 rounded-[1.4rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/86 p-3 shadow-[6px_6px_0_rgba(91,58,48,0.1)] lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-black text-[#7a5147]">把想留下来的画面继续贴进这本小镇相册</p>
+              <h1 className="mt-1 text-[1.9rem] font-black tracking-tight text-[#4a2e28] sm:text-[2.2rem]">个人相册</h1>
+            </div>
+            <button className={topActionClass} disabled={!isAdminUnlocked} onClick={() => {
+              setAdminError(null);
+              setIsCreateDialogOpen(true);
+            }} type="button">
+              新建相册
+            </button>
           </div>
-          <button className={topActionClass} onClick={() => setIsCreateDialogOpen(true)} type="button">
-            新建相册
-          </button>
+          <AlbumAdminPanel adminError={adminError} adminToken={adminToken} isAdminSubmitting={isAdminSubmitting} isAdminUnlocked={isAdminUnlocked} onAdminTokenChange={setAdminToken} onLock={() => void handleAdminLock()} onUnlock={handleAdminUnlock} />
         </div>
         <section className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {albums.map((album, index) => (
@@ -174,10 +302,12 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
                 <button
                   aria-expanded={menuAlbumId === album.id}
                   aria-haspopup="menu"
-                  className="inline-flex items-center gap-1 rounded-[0.95rem] border-[2.5px] border-stone-700/80 bg-[#ee9eaa] px-2 py-1 text-right text-[10px] font-black leading-tight text-stone-900 shadow-[0_4px_0_rgba(109,76,76,0.18)] transition hover:-translate-y-0.5 hover:bg-[#f2abb5] sm:px-2.5"
+                  className="inline-flex items-center gap-1 rounded-[0.95rem] border-[2.5px] border-stone-700/80 bg-[#ee9eaa] px-2 py-1 text-right text-[10px] font-black leading-tight text-stone-900 shadow-[0_4px_0_rgba(109,76,76,0.18)] transition hover:-translate-y-0.5 hover:bg-[#f2abb5] disabled:cursor-not-allowed disabled:opacity-60 sm:px-2.5"
+                  disabled={!isAdminUnlocked}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
+                    setAdminError(null);
                     setMenuAlbumId((currentAlbumId) => (currentAlbumId === album.id ? null : album.id));
                   }}
                   ref={menuAlbumId === album.id ? menuButtonRef : null}
@@ -242,6 +372,7 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
             }
 
             const response = await fetch("/api/albums", {
+              credentials: "same-origin",
               method: "POST",
               body: formData,
             });
@@ -253,7 +384,13 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
             const createdAlbum = data.album;
 
             if (!response.ok || !createdAlbum) {
-              throw new Error(data.error ?? "新建相册失败");
+              const message = getManagementErrorMessage(data.error ?? "新建相册失败");
+
+              if (message === "请先解锁管理") {
+                setIsAdminUnlocked(false);
+              }
+
+              throw new Error(message);
             }
 
             setAlbums((currentAlbums) => [albumToCard(createdAlbum), ...currentAlbums]);
@@ -277,6 +414,7 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
             }
 
             const response = await fetch(`/api/albums/${editingAlbum.id}`, {
+              credentials: "same-origin",
               method: "PATCH",
               body: formData,
             });
@@ -286,7 +424,13 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
             };
 
             if (!response.ok || !data.album) {
-              throw new Error(data.error ?? "编辑相册失败");
+              const message = getManagementErrorMessage(data.error ?? "编辑相册失败");
+
+              if (message === "请先解锁管理") {
+                setIsAdminUnlocked(false);
+              }
+
+              throw new Error(message);
             }
 
             setAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? albumToCard(data.album) : album)));
@@ -333,12 +477,19 @@ export function AlbumPageView({ initialAlbums }: AlbumPageViewProps) {
 
                   try {
                     const response = await fetch(`/api/albums/${pendingDeleteAlbum.id}`, {
+                      credentials: "same-origin",
                       method: "DELETE",
                     });
                     const data = (await response.json()) as { error?: string };
 
                     if (!response.ok) {
-                      throw new Error(data.error ?? "删除相册失败");
+                      const message = getManagementErrorMessage(data.error ?? "删除相册失败");
+
+                      if (message === "请先解锁管理") {
+                        setIsAdminUnlocked(false);
+                      }
+
+                      throw new Error(message);
                     }
 
                     setAlbums((currentAlbums) => currentAlbums.filter((album) => album.id !== pendingDeleteAlbum.id));

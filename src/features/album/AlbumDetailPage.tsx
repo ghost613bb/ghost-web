@@ -3,7 +3,7 @@
 import { Camera, Pencil, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { AlbumPhoto } from "@/data/albumPhotos";
 import { AlbumFormDialog, type AlbumFormPayload } from "./AlbumFormDialog";
 import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
@@ -18,6 +18,45 @@ type AlbumDetailPageViewProps = {
   initialPhotos: AlbumPhoto[];
 };
 
+type AdminSessionResult = {
+  authenticated?: boolean;
+  error?: string;
+};
+
+function getManagementErrorMessage(error?: string) {
+  return error === "无权限上传照片" || error === "无权限编辑相册" || error === "无权限删除相册" || error === "无权限编辑照片" || error === "无权限删除照片" ? "请先解锁管理" : error;
+}
+
+function AlbumAdminBadge({ adminError, adminToken, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
+  return (
+    <form className="rounded-[1.2rem] border-[2px] border-[#e4d8cb] bg-white/80 p-3 shadow-[0_8px_16px_rgba(149,116,121,0.06)]" onSubmit={onUnlock}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-black text-[#4c2b2d]">Admin 管理</p>
+        <span className={`rounded-full px-2 py-0.5 text-[0.68rem] font-black ${isAdminUnlocked ? "bg-[#dff3cf] text-[#42672d]" : "bg-[#ffeef1] text-[#7a3d3f]"}`}>
+          {isAdminUnlocked ? "已解锁" : "未解锁"}
+        </span>
+      </div>
+      {isAdminUnlocked ? (
+        <button className="w-full rounded-[0.95rem] border-2 border-stone-700/60 bg-white px-3 py-2 text-xs font-black text-stone-900 transition hover:bg-[#fff5f6]" disabled={isAdminSubmitting} onClick={onLock} type="button">
+          退出管理模式
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <label className="sr-only" htmlFor="album-detail-admin-token">
+            管理 Token
+          </label>
+          <input className="w-full rounded-[0.95rem] border-2 border-stone-700/40 bg-white px-3 py-2 text-sm font-semibold text-stone-800" disabled={isAdminSubmitting} id="album-detail-admin-token" onChange={(event) => onAdminTokenChange(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
+          <button className="w-full rounded-[0.95rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-2 text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isAdminSubmitting} type="submit">
+            {isAdminSubmitting ? "解锁中..." : "解锁管理"}
+          </button>
+        </div>
+      )}
+      <p className="mt-2 text-xs font-semibold leading-5 text-[#7d5960]">{isAdminUnlocked ? "当前页面的上传、编辑、删除操作已解锁。" : "解锁后才可上传照片、编辑相册和删除内容。"}</p>
+      {adminError ? <p className="mt-2 rounded-[0.85rem] border border-[#b75d66] bg-[#ffeef1] px-2 py-1.5 text-xs font-black text-[#7a3d3f]">{adminError}</p> : null}
+    </form>
+  );
+}
+
 export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageViewProps) {
   const router = useRouter();
   const [currentAlbum, setCurrentAlbum] = useState(album);
@@ -31,6 +70,90 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
   const [pendingDeletePhotoError, setPendingDeletePhotoError] = useState("");
   const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", { credentials: "same-origin" });
+        const data = (await response.json()) as AdminSessionResult;
+
+        if (isMounted) {
+          setIsAdminUnlocked(Boolean(response.ok && data.authenticated));
+        }
+      } catch {
+        if (isMounted) {
+          setIsAdminUnlocked(false);
+        }
+      }
+    };
+
+    void loadAdminSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAdminError(null);
+
+    if (!adminToken.trim()) {
+      setAdminError("请输入管理 Token");
+      return;
+    }
+
+    setIsAdminSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/session", {
+        body: JSON.stringify({ token: adminToken }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as AdminSessionResult;
+
+      if (!response.ok || !data.authenticated) {
+        throw new Error(data.error ?? "管理解锁失败");
+      }
+
+      setIsAdminUnlocked(true);
+      setAdminToken("");
+    } catch (error) {
+      setIsAdminUnlocked(false);
+      setAdminError(error instanceof Error ? error.message : "管理解锁失败");
+    } finally {
+      setIsAdminSubmitting(false);
+    }
+  };
+
+  const handleAdminLock = async () => {
+    setAdminError(null);
+    setIsAdminSubmitting(true);
+
+    try {
+      await fetch("/api/admin/session", { credentials: "same-origin", method: "DELETE" });
+      setIsAdminUnlocked(false);
+      setIsUploadDialogOpen(false);
+      setEditingPhoto(null);
+      setDeletingPhoto(null);
+      setIsEditDialogOpen(false);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "退出管理模式失败");
+    } finally {
+      setIsAdminSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -66,25 +189,36 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
               </div>
 
               <div className="flex flex-col gap-3">
+                <AlbumAdminBadge adminError={adminError} adminToken={adminToken} isAdminSubmitting={isAdminSubmitting} isAdminUnlocked={isAdminUnlocked} onAdminTokenChange={setAdminToken} onLock={() => void handleAdminLock()} onUnlock={handleAdminUnlock} />
                 <button
-                  className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3]"
-                  onClick={() => setIsUploadDialogOpen(true)}
+                  className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!isAdminUnlocked}
+                  onClick={() => {
+                    setAdminError(null);
+                    setIsUploadDialogOpen(true);
+                  }}
                   type="button"
                 >
                   <Camera aria-hidden="true" className="mr-2 h-[1.05rem] w-[1.05rem] stroke-[1.9]" />
                   Upload Photos
                 </button>
                 <button
-                  className="inline-flex items-center rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4]"
-                  onClick={() => setIsEditDialogOpen(true)}
+                  className="inline-flex items-center rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!isAdminUnlocked}
+                  onClick={() => {
+                    setAdminError(null);
+                    setIsEditDialogOpen(true);
+                  }}
                   type="button"
                 >
                   <Pencil aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
                   Edit Album
                 </button>
                 <button
-                  className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa]"
+                  className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!isAdminUnlocked}
                   onClick={() => {
+                    setAdminError(null);
                     setPendingDeleteAlbumError("");
                     setIsDeleteDialogOpen(true);
                   }}
@@ -129,16 +263,22 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
                   <div className="mt-3 flex justify-end gap-2 text-[#4c2b2d]">
                     <button
                       aria-label="编辑照片"
-                      className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]"
-                      onClick={() => setEditingPhoto(photo)}
+                      className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8] disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!isAdminUnlocked}
+                      onClick={() => {
+                        setAdminError(null);
+                        setEditingPhoto(photo);
+                      }}
                       type="button"
                     >
                       <Pencil aria-hidden="true" className="h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                     </button>
                     <button
                       aria-label="删除照片"
-                      className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8]"
+                      className="rounded-full px-1 py-1 transition hover:bg-[#f7f1e8] disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!isAdminUnlocked}
                       onClick={() => {
+                        setAdminError(null);
                         setPendingDeletePhotoError("");
                         setDeletingPhoto(photo);
                       }}
@@ -169,6 +309,7 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
             formData.append("photoFile", photoFile, photoFile.name);
 
             const response = await fetch(`/api/albums/${currentAlbum.id}/photos`, {
+              credentials: "same-origin",
               method: "POST",
               body: formData,
             });
@@ -179,7 +320,13 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
             };
 
             if (!response.ok || !data.album || !data.photos) {
-              throw new Error(data.error ?? "上传照片失败");
+              const message = getManagementErrorMessage(data.error ?? "上传照片失败");
+
+              if (message === "请先解锁管理") {
+                setIsAdminUnlocked(false);
+              }
+
+              throw new Error(message);
             }
 
             setCurrentAlbum(data.album);
@@ -199,6 +346,7 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
           onClose={() => setEditingPhoto(null)}
           onSubmit={async ({ title, note }) => {
             const response = await fetch(`/api/albums/${currentAlbum.id}/photos/${editingPhoto.id}`, {
+              credentials: "same-origin",
               method: "PATCH",
               headers: {
                 "Content-Type": "application/json",
@@ -211,7 +359,13 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
             };
 
             if (!response.ok || !data.photo) {
-              throw new Error(data.error ?? "编辑照片失败");
+              const message = getManagementErrorMessage(data.error ?? "编辑照片失败");
+
+              if (message === "请先解锁管理") {
+                setIsAdminUnlocked(false);
+              }
+
+              throw new Error(message);
             }
 
             setPhotos((currentPhotos) => currentPhotos.map((photo) => (photo.id === data.photo?.id ? data.photo : photo)));
@@ -241,6 +395,7 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
             }
 
             const response = await fetch(`/api/albums/${currentAlbum.id}`, {
+              credentials: "same-origin",
               method: "PATCH",
               body: formData,
             });
@@ -250,7 +405,13 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
             };
 
             if (!response.ok || !data.album) {
-              throw new Error(data.error ?? "编辑相册失败");
+              const message = getManagementErrorMessage(data.error ?? "编辑相册失败");
+
+              if (message === "请先解锁管理") {
+                setIsAdminUnlocked(false);
+              }
+
+              throw new Error(message);
             }
 
             setCurrentAlbum(data.album);
@@ -297,12 +458,19 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
 
                   try {
                     const response = await fetch(`/api/albums/${currentAlbum.id}/photos/${deletingPhoto.id}`, {
+                      credentials: "same-origin",
                       method: "DELETE",
                     });
                     const data = (await response.json()) as { album?: Album; photos?: AlbumPhoto[]; error?: string };
 
                     if (!response.ok || !data.album || !data.photos) {
-                      throw new Error(data.error ?? "删除照片失败");
+                      const message = getManagementErrorMessage(data.error ?? "删除照片失败");
+
+                      if (message === "请先解锁管理") {
+                        setIsAdminUnlocked(false);
+                      }
+
+                      throw new Error(message);
                     }
 
                     setCurrentAlbum(data.album);
@@ -359,12 +527,19 @@ export function AlbumDetailPageView({ album, initialPhotos }: AlbumDetailPageVie
 
                   try {
                     const response = await fetch(`/api/albums/${currentAlbum.id}`, {
+                      credentials: "same-origin",
                       method: "DELETE",
                     });
                     const data = (await response.json()) as { error?: string };
 
                     if (!response.ok) {
-                      throw new Error(data.error ?? "删除相册失败");
+                      const message = getManagementErrorMessage(data.error ?? "删除相册失败");
+
+                      if (message === "请先解锁管理") {
+                        setIsAdminUnlocked(false);
+                      }
+
+                      throw new Error(message);
                     }
 
                     router.push("/album");
