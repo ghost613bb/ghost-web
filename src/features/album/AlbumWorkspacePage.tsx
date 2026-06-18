@@ -5,13 +5,15 @@ import { Camera, ChevronLeft, ChevronRight, ImageIcon, Pencil, Plus, Trash2 } fr
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
+import { AlbumCommentPanel } from "./AlbumCommentPanel";
 import { AlbumFormDialog, type AlbumFormPayload } from "./AlbumFormDialog";
 import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
-import type { Album } from "./types";
+import type { Album, AlbumComment } from "./types";
 
 type AlbumWorkspacePageViewProps = {
   initialActiveAlbum: Album | null;
   initialActivePhoto: AlbumPhoto | null;
+  initialAlbumComments: AlbumComment[];
   initialAlbums: Album[];
   initialNextPhotoId: string | null;
   initialPhotos: AlbumPhoto[];
@@ -76,11 +78,12 @@ function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnl
   );
 }
 
-export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialNextPhotoId, initialPhotos, initialPreviousPhotoId }: AlbumWorkspacePageViewProps) {
+export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbumComments, initialAlbums, initialNextPhotoId, initialPhotos, initialPreviousPhotoId }: AlbumWorkspacePageViewProps) {
   const router = useRouter();
   const [displayAlbums, setDisplayAlbums] = useState(initialAlbums);
   const [activeAlbum, setActiveAlbum] = useState(initialActiveAlbum);
   const [displayPhotos, setDisplayPhotos] = useState(initialPhotos);
+  const [displayAlbumComments, setDisplayAlbumComments] = useState(initialAlbumComments);
   const [activePhoto, setActivePhoto] = useState(initialActivePhoto);
   const [nextPhotoId, setNextPhotoId] = useState(initialNextPhotoId);
   const [previousPhotoId, setPreviousPhotoId] = useState(initialPreviousPhotoId);
@@ -103,10 +106,11 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     setDisplayAlbums(initialAlbums);
     setActiveAlbum(initialActiveAlbum);
     setDisplayPhotos(initialPhotos);
+    setDisplayAlbumComments(initialAlbumComments);
     setActivePhoto(initialActivePhoto);
     setNextPhotoId(initialNextPhotoId);
     setPreviousPhotoId(initialPreviousPhotoId);
-  }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialNextPhotoId, initialPhotos, initialPreviousPhotoId]);
+  }, [initialActiveAlbum, initialActivePhoto, initialAlbumComments, initialAlbums, initialNextPhotoId, initialPhotos, initialPreviousPhotoId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -205,11 +209,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       <ContentTabsHeader activeTab="album" />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-6 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">
-          <aside className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:self-start">
+          <aside className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:max-h-[calc(100dvh-3.25rem)] xl:self-start xl:overflow-hidden">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-black text-[#7a5147]">把想留下来的画面继续贴进这本小镇相册</p>
-                <h1 className="mt-1 text-[1.8rem] font-black tracking-tight text-[#4a2e28]">个人相册</h1>
+                <h1 className="text-[1.8rem] font-black tracking-tight text-[#4a2e28]">个人相册</h1>
               </div>
             </div>
             <AlbumAdminPanel adminError={adminError} adminToken={adminToken} isAdminSubmitting={isAdminSubmitting} isAdminUnlocked={isAdminUnlocked} onAdminTokenChange={setAdminToken} onLock={() => void handleAdminLock()} onUnlock={handleAdminUnlock} />
@@ -222,7 +225,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 新建相册
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="album-page-scrollbar space-y-3 xl:max-h-[calc(100dvh-19rem)] xl:overflow-y-auto xl:pr-1">
               {displayAlbums.map((album) => {
                 const isActive = activeAlbum?.id === album.id;
 
@@ -234,23 +237,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                       </div>
                       <div>
                         <h2 className="text-[1rem] font-black text-[#4f2525]">{album.title}</h2>
-                        <p className="mt-1 text-xs font-semibold leading-relaxed text-stone-700">{album.description || "先把喜欢的画面收进来。"}</p>
                       </div>
                       <p className="inline-flex w-fit rounded-full border border-stone-700/30 bg-white/55 px-2.5 py-1 text-[0.68rem] font-black text-[#6d3b39]">{album.photoCount} 张照片</p>
                     </button>
-                    {isAdminUnlocked && isActive ? (
-                      <div className="mt-2 flex justify-end gap-2">
-                        <button className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-black text-[#7a3d3f]" onClick={() => setEditingAlbum(album)} type="button">
-                          编辑
-                        </button>
-                        <button className="rounded-full bg-[#ffeef1] px-2.5 py-1 text-xs font-black text-[#9b4d57]" onClick={() => {
-                          setPendingDeleteAlbumError("");
-                          setPendingDeleteAlbum(album);
-                        }} type="button">
-                          删除
-                        </button>
-                      </div>
-                    ) : null}
                   </article>
                 );
               })}
@@ -280,10 +269,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                     <Pencil aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
                     编辑相册
                   </button>
-                  <div className="rounded-[1.2rem] border-[2px] border-[#ece3d7] bg-white/70 px-4 py-3 text-sm font-semibold text-[#6f4b4e]">
-                    <p>当前相册共有 {displayPhotos.length} 张照片。</p>
-                    <p className="mt-1">点击照片后，右侧会切换成照片上下文。</p>
-                  </div>
                 </div>
               </div>
             </section>
@@ -371,32 +356,14 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 </div>
               </div>
             ) : (
-              <div className="space-y-5">
-                <div className="space-y-2 border-b border-[#efe4d7] pb-4">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#9a7f74]">Album Context</p>
-                  <h3 className="text-[1.8rem] font-black tracking-tight text-[#4c2b2d]">{activeAlbum?.title ?? "还没有相册"}</h3>
-                  <p className="text-sm font-semibold text-[#6a4d50]">Created: {activeAlbum?.createdAt ?? "--"}</p>
-                </div>
-                <div className="rounded-[1.5rem] border border-[#eee3d6] bg-white p-4 shadow-[0_10px_24px_rgba(149,116,121,0.06)]">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#9a7f74]">相册手记</p>
-                  <div className="album-page-scrollbar mt-3 max-h-[220px] overflow-y-auto pr-2">
-                    <p className="whitespace-pre-line text-[1rem] leading-7 text-[#5b4347]">{activeAlbum?.description || "这一组照片还没有写下更多说明。"}</p>
-                  </div>
-                </div>
-                <div className="rounded-[1.5rem] border border-[#eee3d6] bg-[#fcf7f0] p-4">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#9a7f74]">当前工作区</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-[#5b4347]">左边挑选相册，中间浏览照片，点开某张后右边会切到照片上下文。这样你不用在多个页面来回跳，也能把整组照片看成一个连续空间。</p>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <button className="inline-flex items-center rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => activeAlbum && setEditingAlbum(activeAlbum)} type="button">
-                    <Pencil aria-hidden="true" className="mr-2 h-[1rem] w-[1rem] stroke-[1.9]" />
-                    编辑相册说明
-                  </button>
-                  <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => setIsUploadDialogOpen(true)} type="button">
-                    <Camera aria-hidden="true" className="mr-2 h-[1rem] w-[1rem] stroke-[1.9]" />
-                    为当前相册上传照片
-                  </button>
-                </div>
+              <div>
+                <AlbumCommentPanel
+                  albumId={activeAlbum?.id ?? ""}
+                  comments={displayAlbumComments}
+                  isAdminUnlocked={isAdminUnlocked}
+                  onCreatedComment={(comment) => setDisplayAlbumComments((currentComments) => [...currentComments, comment])}
+                  onDeletedComment={(commentId) => setDisplayAlbumComments((currentComments) => currentComments.filter((comment) => comment.id !== commentId))}
+                />
               </div>
             )}
           </aside>

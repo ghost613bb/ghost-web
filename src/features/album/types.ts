@@ -26,6 +26,21 @@ export type CreateAlbumPhotoInput = {
   title?: string;
 };
 
+export type AlbumComment = {
+  albumId: string;
+  author: string;
+  avatar: string;
+  content: string;
+  createdAt?: string;
+  id: string;
+  time: string;
+};
+
+export type CreateAlbumCommentInput = {
+  author?: string;
+  content: string;
+};
+
 export type UpdateAlbumPhotoInput = {
   note?: string;
   title: string;

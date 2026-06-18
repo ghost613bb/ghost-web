@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { albumCollections } from "@/data/album";
 import { getAlbumPhotosByAlbumId } from "@/data/albumPhotos";
-import type { Album } from "@/features/album/types";
+import type { Album, AlbumComment } from "@/features/album/types";
 import AboutPage from "./about/page";
 import AlbumPage from "./album/page";
 import CoffeePage from "./coffee/page";
@@ -165,6 +165,17 @@ const albumServiceFallbackAlbum: Album = {
   sortOrder: 1,
 };
 
+const albumFallbackComments: AlbumComment[] = [
+  {
+    id: "album-comment-001",
+    albumId: "album-001",
+    author: "Name",
+    avatar: "📷",
+    content: "这本相册像一页慢慢展开的夏天。",
+    time: "06/18 10:05",
+  },
+];
+
 describe("content module pages", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -181,6 +192,7 @@ describe("content module pages", () => {
       return {
         activeAlbum,
         activePhoto,
+        albumComments: activeAlbum ? albumFallbackComments.filter((comment) => comment.albumId === activeAlbum.id) : [],
         albums,
         dataSource: "available",
         nextPhotoId: adjacent.nextPhotoId,
@@ -231,6 +243,7 @@ describe("content module pages", () => {
     albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
       activeAlbum: null,
       activePhoto: null,
+      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,
@@ -259,7 +272,8 @@ describe("content module pages", () => {
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto");
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
-    expect(screen.getByText("Album Context")).toBeInTheDocument();
+    expect(screen.getByText("Album Comments")).toBeInTheDocument();
+    expect(screen.queryByText("Album Context")).not.toBeInTheDocument();
     expect(backHomeLink).toHaveTextContent("Home");
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("个人相册")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
@@ -313,6 +327,22 @@ describe("content module pages", () => {
               status: "published",
               createdAt: "2026-05-26",
               sortOrder: 1,
+            },
+          }),
+        } satisfies JsonResponse;
+      }
+
+      if (String(input) === "/api/albums/album-created-001/comments") {
+        return {
+          ok: true,
+          json: async () => ({
+            comment: {
+              id: "album-comment-002",
+              albumId: "album-created-001",
+              author: "Ranima",
+              avatar: "📷",
+              content: "把傍晚的风留在这里。",
+              time: "06/18 10:06",
             },
           }),
         } satisfies JsonResponse;
@@ -377,6 +407,46 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
   });
 
+  it("adds an album comment inside album context", async () => {
+    vi.useRealTimers();
+    const fetchMock = mockAlbumAdminSessionFetch(async (input) => {
+      if (String(input) === "/api/albums/album-001/comments") {
+        return {
+          ok: true,
+          json: async () => ({
+            comment: {
+              id: "album-comment-002",
+              albumId: "album-001",
+              author: "Ranima",
+              avatar: "📷",
+              content: "把傍晚的风留在这里。",
+              time: "06/18 10:06",
+            },
+          }),
+        } satisfies JsonResponse;
+      }
+    });
+
+    render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001" }) }));
+
+    await screen.findByText("已解锁");
+    fireEvent.change(screen.getByLabelText("评论昵称"), { target: { value: "Ranima" } });
+    fireEvent.change(screen.getByLabelText("添加相册评论"), { target: { value: "把傍晚的风留在这里。" } });
+    fireEvent.click(screen.getByRole("button", { name: "发表评论" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/albums/album-001/comments",
+        expect.objectContaining({
+          credentials: "same-origin",
+          method: "POST",
+        }),
+      );
+    });
+
+    expect(screen.getByText("把傍晚的风留在这里。")).toBeInTheDocument();
+  });
+
   it("renders stored albums before fallback cards", async () => {
     await upsertStoredAlbum({
       id: "album-db-001",
@@ -401,24 +471,25 @@ describe("content module pages", () => {
     const detailPage = render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001" }) }));
 
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Created: 2023-07-31").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("诗注：小妞写，图片，女孩子的碎片收藏。").length).toBeGreaterThan(0);
+    expect(screen.getByText("这本相册像一页慢慢展开的夏天。")).toBeInTheDocument();
+    expect(screen.getAllByText("Created: 2023-07-31")).toHaveLength(1);
     const detailCover = screen.getByRole("img", { name: "我的相册封面背景" });
     expect(detailCover).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
     expect(detailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-cover");
     expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThan(1);
     expect(screen.getByRole("button", { name: "上传照片" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "编辑相册" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "编辑相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
     expect(screen.getAllByText("Sleepy head...").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
-    expect(screen.getByText("Album Context")).toBeInTheDocument();
+    expect(screen.queryByText("Album Context")).not.toBeInTheDocument();
   });
 
   it("renders a mokugyo notice when album detail data is unavailable", async () => {
     albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
       activeAlbum: null,
       activePhoto: null,
+      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,
@@ -471,6 +542,7 @@ describe("content module pages", () => {
     albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
       activeAlbum: null,
       activePhoto: null,
+      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,

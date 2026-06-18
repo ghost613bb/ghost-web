@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { albumCollections as fallbackAlbums } from "@/data/album";
 import {
   getAlbumPhotoById as getFallbackAlbumPhotoById,
@@ -7,11 +8,14 @@ import {
 import { hasSupabaseServiceRoleEnv } from "@/lib/supabase/server";
 import {
   deleteStoredAlbum,
+  deleteStoredAlbumComment,
   deleteStoredAlbumPhoto,
   getStoredAlbumById,
   getStoredAlbumIds,
   getStoredAlbumPhotoById,
+  insertStoredAlbumComment,
   listDeletedAlbumPhotoIds,
+  listStoredAlbumCommentsByAlbumId,
   listStoredAlbumPhotosByAlbumId,
   listStoredAlbums,
   listVisibleStoredAlbums,
@@ -19,7 +23,7 @@ import {
   upsertStoredAlbum,
   upsertStoredAlbumPhoto,
 } from "./repository";
-import type { Album, CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
+import type { Album, AlbumComment, CreateAlbumCommentInput, CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
 
 export type AlbumPageDataSource = "available" | "unavailable";
 
@@ -50,6 +54,7 @@ export type AlbumPhotoDetailPageData = {
 export type AlbumWorkspaceData = {
   activeAlbum: Album | null;
   activePhoto: AlbumPhoto | null;
+  albumComments: AlbumComment[];
   albums: Album[];
   dataSource: AlbumPageDataSource;
   nextPhotoId: string | null;
@@ -334,6 +339,40 @@ export async function deleteAlbum(id: string): Promise<void> {
   });
 }
 
+export async function listAlbumComments(albumId: string): Promise<AlbumComment[]> {
+  return listStoredAlbumCommentsByAlbumId(albumId);
+}
+
+export async function createAlbumComment(albumId: string, input: CreateAlbumCommentInput) {
+  assertAlbumStorageConfigured();
+  const album = await getAlbumById(albumId);
+
+  if (!album) {
+    throw new Error("相册不存在");
+  }
+
+  const comment = await insertStoredAlbumComment({
+    id: `album-comment-${randomUUID()}`,
+    albumId,
+    author: input.author || "Name",
+    avatar: "📷",
+    content: input.content,
+  });
+
+  return comment;
+}
+
+export async function deleteAlbumComment(albumId: string, commentId: string) {
+  assertAlbumStorageConfigured();
+  const album = await getAlbumById(albumId);
+
+  if (!album) {
+    throw new Error("相册不存在");
+  }
+
+  await deleteStoredAlbumComment(albumId, commentId);
+}
+
 export async function getAlbumPageData(): Promise<AlbumPageData> {
   if (!isAlbumStorageConfigured()) {
     return {
@@ -462,6 +501,7 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
     return {
       activeAlbum: null,
       activePhoto: null,
+      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,
@@ -479,6 +519,7 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
       return {
         activeAlbum: null,
         activePhoto: null,
+        albumComments: [],
         albums,
         dataSource: "available",
         nextPhotoId: null,
@@ -487,13 +528,14 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
       };
     }
 
-    const photos = await listAlbumPhotos(activeAlbum.id);
+    const [photos, albumComments] = await Promise.all([listAlbumPhotos(activeAlbum.id), listAlbumComments(activeAlbum.id)]);
     const activePhoto = selectedPhotoId ? await getAlbumPhotoById(activeAlbum.id, selectedPhotoId) : null;
     const adjacentPhotoIds = activePhoto ? await getAdjacentAlbumPhotoIds(activeAlbum.id, activePhoto.id) : { previousPhotoId: null, nextPhotoId: null };
 
     return {
       activeAlbum,
       activePhoto,
+      albumComments,
       albums,
       dataSource: "available",
       nextPhotoId: adjacentPhotoIds.nextPhotoId,
@@ -506,6 +548,7 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
     return {
       activeAlbum: null,
       activePhoto: null,
+      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,

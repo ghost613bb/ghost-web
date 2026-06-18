@@ -1,6 +1,6 @@
 import type { AlbumPhoto } from "@/data/albumPhotos";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { Album } from "./types";
+import type { Album, AlbumComment } from "./types";
 
 type StoredAlbumRow = {
   cover_image: string | null;
@@ -25,12 +25,23 @@ type StoredAlbumPhotoRow = {
   uploaded_at: string;
 };
 
+type StoredAlbumCommentRow = {
+  album_id: string;
+  author: string;
+  avatar: string | null;
+  content: string;
+  created_at: string | null;
+  id: string;
+};
+
 const albumColumns = "id,title,description,cover_image,photo_count,visibility,status,created_at,sort_order";
 const albumPhotoColumns = "id,album_id,title,uploaded_at,note,image_url,image_position,sort_order";
+const albumCommentColumns = "id,album_id,author,content,avatar,created_at";
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const testAlbumStore = new Map<string, Album>();
 const testAlbumPhotoStore = new Map<string, StoredAlbumPhotoRow>();
 const testAlbumPhotoDeletionStore = new Map<string, Set<string>>();
+const testAlbumCommentStore = new Map<string, StoredAlbumCommentRow>();
 
 function toAlbum(row: StoredAlbumRow): Album {
   return {
@@ -85,6 +96,37 @@ function toStoredAlbumPhotoRow(photo: AlbumPhoto, sortOrder: number): StoredAlbu
   };
 }
 
+function formatCommentTime(createdAt: string | null) {
+  if (!createdAt) {
+    return "刚刚";
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "刚刚";
+  }
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
+
+function toAlbumComment(row: StoredAlbumCommentRow): AlbumComment {
+  return {
+    id: row.id,
+    albumId: row.album_id,
+    author: row.author,
+    avatar: row.avatar ?? "📷",
+    content: row.content,
+    createdAt: row.created_at ?? undefined,
+    time: formatCommentTime(row.created_at),
+  };
+}
+
 function sortAlbums(left: Album, right: Album) {
   const leftSortOrder = left.sortOrder ?? Number.MAX_SAFE_INTEGER;
   const rightSortOrder = right.sortOrder ?? Number.MAX_SAFE_INTEGER;
@@ -110,12 +152,20 @@ function throwSupabaseError(context: string, error: { message: string } | null) 
   }
 }
 
+function isMissingAlbumCommentsTableError(error: { message: string } | null) {
+  return error?.message.includes("album_comments") && error.message.includes("does not exist");
+}
+
 function listTestStoredAlbumRows() {
   return [...testAlbumStore.values()].sort(sortAlbums);
 }
 
 function listTestStoredAlbumPhotoRowsByAlbumId(albumId: string) {
   return [...testAlbumPhotoStore.values()].filter((photo) => photo.album_id === albumId).sort(sortAlbumPhotos);
+}
+
+function listTestStoredAlbumCommentRowsByAlbumId(albumId: string) {
+  return [...testAlbumCommentStore.values()].filter((comment) => comment.album_id === albumId).sort((left, right) => (left.created_at ?? "").localeCompare(right.created_at ?? ""));
 }
 
 export async function listStoredAlbums(): Promise<Album[]> {
@@ -249,11 +299,20 @@ export async function deleteStoredAlbum(id: string) {
       }
     }
 
+    for (const [commentId, comment] of testAlbumCommentStore.entries()) {
+      if (comment.album_id === id) {
+        testAlbumCommentStore.delete(commentId);
+      }
+    }
+
     testAlbumPhotoDeletionStore.delete(id);
     return;
   }
 
   const supabase = createSupabaseServiceRoleClient();
+  const deleteCommentsResult = await supabase.from("album_comments").delete().eq("album_id", id);
+  throwSupabaseError("删除 Supabase 相册评论失败", deleteCommentsResult.error);
+
   const deletePhotosResult = await supabase.from("album_photos").delete().eq("album_id", id);
   throwSupabaseError("删除 Supabase 相册照片失败", deletePhotosResult.error);
 
@@ -277,6 +336,68 @@ export async function getStoredAlbumIds(): Promise<Set<string>> {
   return new Set(((data ?? []) as { id: string }[]).map((row) => row.id));
 }
 
+export async function listStoredAlbumCommentsByAlbumId(albumId: string): Promise<AlbumComment[]> {
+  if (isTestEnvironment) {
+    return listTestStoredAlbumCommentRowsByAlbumId(albumId).map((row) => toAlbumComment(row));
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("album_comments").select(albumCommentColumns).eq("album_id", albumId).order("created_at", { ascending: true, nullsFirst: false });
+
+  if (isMissingAlbumCommentsTableError(error)) {
+    return [];
+  }
+
+  throwSupabaseError("读取 Supabase 相册评论失败", error);
+
+  return ((data ?? []) as StoredAlbumCommentRow[]).map((row) => toAlbumComment(row));
+}
+
+export async function insertStoredAlbumComment(comment: { albumId: string; author: string; avatar: string; content: string; createdAt?: string; id: string }) {
+  const row: StoredAlbumCommentRow = {
+    id: comment.id,
+    album_id: comment.albumId,
+    author: comment.author,
+    content: comment.content,
+    avatar: comment.avatar,
+    created_at: comment.createdAt ?? new Date().toISOString(),
+  };
+
+  if (isTestEnvironment) {
+    testAlbumCommentStore.set(comment.id, row);
+    return toAlbumComment(row);
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("album_comments").insert(row).select(albumCommentColumns).single();
+
+  throwSupabaseError("写入 Supabase 相册评论失败", error);
+
+  return toAlbumComment(data as StoredAlbumCommentRow);
+}
+
+export async function deleteStoredAlbumComment(albumId: string, commentId: string) {
+  if (isTestEnvironment) {
+    const row = testAlbumCommentStore.get(commentId);
+
+    if (row?.album_id === albumId) {
+      testAlbumCommentStore.delete(commentId);
+      return;
+    }
+
+    throw new Error("评论不存在");
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("album_comments").delete().eq("album_id", albumId).eq("id", commentId).select("id").maybeSingle();
+
+  throwSupabaseError("删除 Supabase 相册评论失败", error);
+
+  if (!data) {
+    throw new Error("评论不存在");
+  }
+}
+
 export async function listVisibleStoredAlbums(): Promise<Album[]> {
   if (isTestEnvironment) {
     return listTestStoredAlbumRows().filter((album) => album.status !== "draft");
@@ -298,4 +419,5 @@ export async function resetStoredAlbums() {
   testAlbumStore.clear();
   testAlbumPhotoStore.clear();
   testAlbumPhotoDeletionStore.clear();
+  testAlbumCommentStore.clear();
 }
