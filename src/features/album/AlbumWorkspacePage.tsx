@@ -235,10 +235,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                       <div className="overflow-hidden rounded-[0.95rem] bg-[#f4ebda]">
                         <img alt={`${album.title}封面`} className="h-24 w-full object-cover" src={coverImageFromAlbum(album)} />
                       </div>
-                      <div>
+                      <div className="flex items-center justify-between gap-3">
                         <h2 className="text-[1rem] font-black text-[#4f2525]">{album.title}</h2>
+                        <p className="inline-flex shrink-0 rounded-full border border-stone-700/30 bg-white/55 px-2.5 py-1 text-[0.68rem] font-black text-[#6d3b39]">数量：{album.photoCount}</p>
                       </div>
-                      <p className="inline-flex w-fit rounded-full border border-stone-700/30 bg-white/55 px-2.5 py-1 text-[0.68rem] font-black text-[#6d3b39]">{album.photoCount} 张照片</p>
                     </button>
                   </article>
                 );
