@@ -315,9 +315,32 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 <div className="overflow-hidden rounded-[1.6rem] border border-[#eadfce] bg-[#fcf7f0]">
                   <div aria-label={`${activePhoto.title}大图`} className="h-72 w-full bg-cover bg-center" role="img" style={{ backgroundImage: `url(${activePhoto.imageUrl})`, backgroundPosition: activePhoto.imagePosition }} />
                 </div>
-                <div className="space-y-1.5 border-b border-[#efe4d7] pb-3">
-                  <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#9a7f74]">Photo Context</p>
-                  <p className="text-xs font-semibold text-[#6a4d50]">所属相册：{activeAlbum?.title}</p>
+                <div className="flex items-start justify-between gap-3 border-b border-[#efe4d7] pb-3">
+                  <div className="space-y-1.5">
+                    <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#9a7f74]">Photo Context</p>
+                    <p className="text-base font-semibold text-[#6a4d50]">所属相册：{activeAlbum?.title}</p>
+                  </div>
+                  <div className="flex items-center gap-1 self-start">
+                    <div className="group relative">
+                      <button aria-label="编辑备注" className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] text-[#4c2b2d] shadow-[0_5px_12px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => setEditingPhoto(activePhoto)} type="button">
+                        <Pencil aria-hidden="true" className="h-[0.82rem] w-[0.82rem] stroke-[1.95]" />
+                      </button>
+                      <span className="pointer-events-none absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-full border border-[#ead7ce] bg-white px-2.5 py-1 text-[0.72rem] font-black text-[#6a4d50] opacity-0 shadow-[0_8px_18px_rgba(149,116,121,0.12)] transition group-hover:opacity-100 group-focus-within:opacity-100">
+                        编辑
+                      </span>
+                    </div>
+                    <div className="group relative">
+                      <button aria-label="删除照片" className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#d7cfc4] bg-white text-[#4c2b2d] shadow-[0_5px_12px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
+                        setPendingDeletePhotoError("");
+                        setPendingDeletePhoto(activePhoto);
+                      }} type="button">
+                        <Trash2 aria-hidden="true" className="h-[0.82rem] w-[0.82rem] stroke-[1.95]" />
+                      </button>
+                      <span className="pointer-events-none absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-full border border-[#ead7ce] bg-white px-2.5 py-1 text-[0.72rem] font-black text-[#6a4d50] opacity-0 shadow-[0_8px_18px_rgba(149,116,121,0.12)] transition group-hover:opacity-100 group-focus-within:opacity-100">
+                        删除
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div className="rounded-[1rem] border border-[#eee3d6] bg-[#fcf7f0] px-3.5 py-2.5">
                   <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#9a7f74]">Upload Time</p>
@@ -328,19 +351,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   <div className="album-page-scrollbar mt-1.5 max-h-[180px] overflow-y-auto pr-2">
                     <p className="whitespace-pre-line text-[0.9rem] leading-5.5 text-[#5b4347]">{activePhoto.note || "还没有备注。"}</p>
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-2.5">
-                  <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-4 py-2 text-[0.92rem] font-black text-[#4c2b2d] shadow-[0_5px_12px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => setEditingPhoto(activePhoto)} type="button">
-                    <Pencil aria-hidden="true" className="mr-1.5 h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
-                    编辑备注
-                  </button>
-                  <button className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-4 py-2 text-[0.92rem] font-black text-[#4c2b2d] shadow-[0_5px_12px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
-                    setPendingDeletePhotoError("");
-                    setPendingDeletePhoto(activePhoto);
-                  }} type="button">
-                    <Trash2 aria-hidden="true" className="mr-1.5 h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
-                    删除照片
-                  </button>
                 </div>
                 <div className="flex flex-wrap justify-center gap-3 border-t border-[#efe4d7] pt-5">
                   <button aria-label="上一张" className="inline-flex min-w-[112px] items-center justify-center gap-1 rounded-full border-2 border-[#caa8ad] bg-white px-4 py-2 text-sm font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-[#fff8fb] disabled:cursor-not-allowed disabled:border-[#ddd5ca] disabled:bg-[#f5f0e8] disabled:text-[#b7a9a3]" disabled={!previousPhotoId} onClick={() => activeAlbum && previousPhotoId && navigateToSelection(activeAlbum.id, previousPhotoId)} type="button">
