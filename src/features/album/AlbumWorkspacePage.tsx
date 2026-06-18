@@ -292,7 +292,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                           </div>
                           <div className="mt-3">
                             <p className="text-xs font-black uppercase tracking-[0.16em] text-[#9a7f74]">{photo.uploadedAt.split(" /")[0]}</p>
-                            <h4 className="mt-1 text-[1rem] font-black text-[#4c2b2d]">{photo.title}</h4>
                             <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5b4347]">{photo.note || "还没有备注。"}</p>
                           </div>
                         </button>
@@ -316,31 +315,30 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 <div className="overflow-hidden rounded-[1.6rem] border border-[#eadfce] bg-[#fcf7f0]">
                   <div aria-label={`${activePhoto.title}大图`} className="h-72 w-full bg-cover bg-center" role="img" style={{ backgroundImage: `url(${activePhoto.imageUrl})`, backgroundPosition: activePhoto.imagePosition }} />
                 </div>
-                <div className="space-y-2 border-b border-[#efe4d7] pb-4">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#9a7f74]">Photo Context</p>
-                  <p className="text-sm font-semibold text-[#6a4d50]">所属相册：{activeAlbum?.title}</p>
-                  <h3 className="text-[1.8rem] font-black tracking-tight text-[#4c2b2d]">{activePhoto.title}</h3>
+                <div className="space-y-1.5 border-b border-[#efe4d7] pb-3">
+                  <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#9a7f74]">Photo Context</p>
+                  <p className="text-xs font-semibold text-[#6a4d50]">所属相册：{activeAlbum?.title}</p>
                 </div>
-                <div className="rounded-[1.5rem] border border-[#eee3d6] bg-[#fcf7f0] p-4">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#9a7f74]">Upload Time</p>
-                  <p className="mt-2 text-base font-semibold text-[#4c2b2d]">{activePhoto.uploadedAt}</p>
+                <div className="rounded-[1rem] border border-[#eee3d6] bg-[#fcf7f0] px-3.5 py-2.5">
+                  <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#9a7f74]">Upload Time</p>
+                  <p className="mt-1 text-[0.84rem] font-semibold text-[#4c2b2d]">{activePhoto.uploadedAt}</p>
                 </div>
-                <div className="rounded-[1.5rem] border border-[#eee3d6] bg-white p-4 shadow-[0_10px_24px_rgba(149,116,121,0.06)]">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#9a7f74]">照片备注</p>
-                  <div className="album-page-scrollbar mt-3 max-h-[220px] overflow-y-auto pr-2">
-                    <p className="whitespace-pre-line text-[1rem] leading-7 text-[#5b4347]">{activePhoto.note || "还没有备注。"}</p>
+                <div className="rounded-[1.1rem] border border-[#eee3d6] bg-white px-3.5 py-2.5 shadow-[0_10px_24px_rgba(149,116,121,0.06)]">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#9a7f74]">照片备注</p>
+                  <div className="album-page-scrollbar mt-1.5 max-h-[180px] overflow-y-auto pr-2">
+                    <p className="whitespace-pre-line text-[0.9rem] leading-5.5 text-[#5b4347]">{activePhoto.note || "还没有备注。"}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-[1rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => setEditingPhoto(activePhoto)} type="button">
-                    <Pencil aria-hidden="true" className="mr-2 h-[1rem] w-[1rem] stroke-[1.9]" />
+                <div className="flex flex-wrap gap-2.5">
+                  <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-4 py-2 text-[0.92rem] font-black text-[#4c2b2d] shadow-[0_5px_12px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => setEditingPhoto(activePhoto)} type="button">
+                    <Pencil aria-hidden="true" className="mr-1.5 h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                     编辑备注
                   </button>
-                  <button className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-5 py-3 text-[1rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
+                  <button className="inline-flex items-center rounded-full border-2 border-[#d7cfc4] bg-white px-4 py-2 text-[0.92rem] font-black text-[#4c2b2d] shadow-[0_5px_12px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fffdfa] disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
                     setPendingDeletePhotoError("");
                     setPendingDeletePhoto(activePhoto);
                   }} type="button">
-                    <Trash2 aria-hidden="true" className="mr-2 h-[1rem] w-[1rem] stroke-[1.9]" />
+                    <Trash2 aria-hidden="true" className="mr-1.5 h-[0.92rem] w-[0.92rem] stroke-[1.9]" />
                     删除照片
                   </button>
                 </div>

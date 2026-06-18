@@ -480,7 +480,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "上传照片" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "编辑相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
-    expect(screen.getAllByText("Sleepy head...").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/和猫咪的下午茶时光/).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
     expect(screen.queryByText("Album Context")).not.toBeInTheDocument();
   });
@@ -534,7 +534,7 @@ describe("content module pages", () => {
 
     expect(screen.getAllByText("可上传相册").length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (1)")).toBeInTheDocument();
-    expect(screen.getByText("雨天窗口")).toBeInTheDocument();
+    expect(screen.getByText("刚上传到新相册的第一张。")).toBeInTheDocument();
     expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThanOrEqual(2);
   });
 
@@ -560,7 +560,7 @@ describe("content module pages", () => {
   it("renders the first album photo context inside the workspace", async () => {
     render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001", photoId: "photo-001" }) }));
 
-    expect(screen.getByRole("heading", { level: 3, name: "Sleepy head..." })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3, name: "Sleepy head..." })).not.toBeInTheDocument();
     expect(screen.getByText("Upload Time")).toBeInTheDocument();
     expect(screen.getByText("Oct 24, 2023 / 4:30")).toBeInTheDocument();
     expect(screen.getAllByText(/和猫咪的下午茶时光/).length).toBeGreaterThan(0);
