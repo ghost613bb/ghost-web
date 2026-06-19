@@ -107,10 +107,12 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
   return (
     <div className="fixed inset-0 z-40 bg-[#3f2629]/58 px-4 pb-6 pt-10 backdrop-blur-[6px] sm:px-6 sm:pt-14">
       <button aria-label="关闭照片详情弹窗" className="absolute inset-0" onClick={onClose} type="button" />
-      <div aria-label="照片详情弹窗" className="relative z-10 mx-auto w-full max-w-[760px] overflow-hidden rounded-[2rem] border-[2.5px] border-stone-700/75 bg-[#fffaf1] shadow-[0_24px_80px_rgba(78,49,50,0.28)]" role="dialog" aria-modal="true">
-        <div className="relative h-[420px] bg-[#f3eadf] sm:h-[520px]">
-          <div aria-label={`${activePhoto.title}大图`} className="h-full w-full bg-cover bg-center" role="img" style={{ backgroundImage: `url(${activePhoto.imageUrl})`, backgroundPosition: activePhoto.imagePosition }} />
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,rgba(26,16,18,0)_0%,rgba(26,16,18,0.72)_100%)]" />
+      <div aria-label="照片详情弹窗" className="relative z-10 mx-auto w-full max-w-[760px] overflow-hidden rounded-[2rem] border-[2.5px] border-stone-700/75 bg-black shadow-[0_24px_80px_rgba(78,49,50,0.28)]" role="dialog" aria-modal="true">
+        <div className="relative h-[460px] bg-black sm:h-[560px]">
+          <div aria-label={`${activePhoto.title}大图`} className="absolute inset-0 grid place-items-center overflow-hidden" role="img">
+            <img alt="" className="h-full w-full object-contain" src={activePhoto.imageUrl} style={{ objectPosition: activePhoto.imagePosition }} />
+          </div>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(39,27,28,0)_0%,rgba(39,27,28,0.72)_100%)]" />
           <div className="absolute right-4 top-4">
             <button aria-label="关闭弹窗" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-[rgba(33,20,24,0.56)] text-white shadow-[0_10px_22px_rgba(30,18,22,0.24)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[rgba(33,20,24,0.7)]" onClick={onClose} type="button">
               <X aria-hidden="true" className="h-4.5 w-4.5 stroke-[2.4]" />
@@ -127,18 +129,7 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
             </button>
           </div>
           <div className="absolute inset-x-4 bottom-4 rounded-[1.35rem] border border-white/20 bg-[rgba(34,22,25,0.38)] px-4 py-3 text-white shadow-[0_14px_28px_rgba(25,16,18,0.26)] backdrop-blur-md sm:inset-x-5 sm:px-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white/72">照片备注</p>
-              <div className="flex items-center gap-1.5">
-                <button aria-label="编辑备注" className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-45" disabled={!isAdminUnlocked} onClick={onEdit} type="button">
-                  <Pencil aria-hidden="true" className="h-[0.76rem] w-[0.76rem] stroke-[2.15]" />
-                </button>
-                <button aria-label="删除照片" className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-45" disabled={!isAdminUnlocked} onClick={onDelete} type="button">
-                  <Trash2 aria-hidden="true" className="h-[0.76rem] w-[0.76rem] stroke-[2.15]" />
-                </button>
-              </div>
-            </div>
-            <div className="album-page-scrollbar mt-2 max-h-[110px] overflow-y-auto pr-1 sm:max-h-[132px]">
+            <div className="album-page-scrollbar max-h-[124px] overflow-y-auto pr-1 sm:max-h-[146px]">
               <p className="whitespace-pre-line text-[0.95rem] leading-7 text-white">{activePhoto.note || "还没有备注。"}</p>
             </div>
           </div>
