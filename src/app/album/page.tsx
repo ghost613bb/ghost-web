@@ -46,7 +46,6 @@ export default async function AlbumPage({ searchParams }: AlbumPageProps = {}) {
     <AlbumWorkspacePageView
       initialActiveAlbum={data.activeAlbum}
       initialActivePhoto={data.activePhoto}
-      initialAlbumComments={data.albumComments}
       initialAlbums={data.albums}
       initialNextPhotoId={data.nextPhotoId}
       initialPhotos={data.photos}

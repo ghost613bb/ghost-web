@@ -170,7 +170,7 @@ const albumFallbackComments: AlbumComment[] = [
     id: "album-comment-001",
     albumId: "album-001",
     author: "Name",
-    avatar: "📷",
+    avatar: "/images/image.png",
     content: "这本相册像一页慢慢展开的夏天。",
     time: "06/18 10:05",
   },
@@ -233,10 +233,12 @@ describe("content module pages", () => {
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
   });
 
-  it("renders the album page heading", async () => {
+  it("renders the album page in gallery mode", async () => {
     render(await AlbumPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "个人相册" })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Photos (7)")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "照片详情弹窗" })).not.toBeInTheDocument();
   });
 
   it("renders a mokugyo notice when album workspace data is unavailable", async () => {
@@ -272,7 +274,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto");
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
-    expect(screen.getByText("Album Comments")).toBeInTheDocument();
+    expect(screen.queryByText("Album Comments")).not.toBeInTheDocument();
     expect(screen.queryByText("Album Context")).not.toBeInTheDocument();
     expect(backHomeLink).toHaveTextContent("Home");
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
@@ -340,7 +342,7 @@ describe("content module pages", () => {
               id: "album-comment-002",
               albumId: "album-created-001",
               author: "Ranima",
-              avatar: "📷",
+              avatar: "/images/image.png",
               content: "把傍晚的风留在这里。",
               time: "06/18 10:06",
             },
@@ -407,46 +409,6 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
   });
 
-  it("adds an album comment inside album context", async () => {
-    vi.useRealTimers();
-    const fetchMock = mockAlbumAdminSessionFetch(async (input) => {
-      if (String(input) === "/api/albums/album-001/comments") {
-        return {
-          ok: true,
-          json: async () => ({
-            comment: {
-              id: "album-comment-002",
-              albumId: "album-001",
-              author: "Ranima",
-              avatar: "📷",
-              content: "把傍晚的风留在这里。",
-              time: "06/18 10:06",
-            },
-          }),
-        } satisfies JsonResponse;
-      }
-    });
-
-    render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001" }) }));
-
-    await screen.findByText("已解锁");
-    fireEvent.change(screen.getByLabelText("评论昵称"), { target: { value: "Ranima" } });
-    fireEvent.change(screen.getByLabelText("添加相册评论"), { target: { value: "把傍晚的风留在这里。" } });
-    fireEvent.click(screen.getByRole("button", { name: "发表评论" }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/albums/album-001/comments",
-        expect.objectContaining({
-          credentials: "same-origin",
-          method: "POST",
-        }),
-      );
-    });
-
-    expect(screen.getByText("把傍晚的风留在这里。")).toBeInTheDocument();
-  });
-
   it("renders stored albums before fallback cards", async () => {
     await upsertStoredAlbum({
       id: "album-db-001",
@@ -471,7 +433,7 @@ describe("content module pages", () => {
     const detailPage = render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001" }) }));
 
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("这本相册像一页慢慢展开的夏天。")).toBeInTheDocument();
+    expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
     expect(screen.getAllByText("Created: 2023-07-31")).toHaveLength(1);
     const detailCover = screen.getByRole("img", { name: "我的相册封面背景" });
     expect(detailCover).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
@@ -480,9 +442,11 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "上传照片" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "编辑相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
+    expect(screen.getByText("点击一张照片放大浏览，左右切换会更像翻一本真正的相册。")).toBeInTheDocument();
     expect(screen.getAllByText(/和猫咪的下午茶时光/).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("article").length).toBeGreaterThan(7);
     expect(screen.queryByText("Album Context")).not.toBeInTheDocument();
+    expect(screen.queryByText("相册留言")).not.toBeInTheDocument();
   });
 
   it("renders a mokugyo notice when album detail data is unavailable", async () => {
@@ -557,11 +521,11 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 2, name: "服务器在打瞌睡" })).toBeInTheDocument();
   });
 
-  it("renders the first album photo context inside the workspace", async () => {
+  it("opens the album photo inside the lightbox", async () => {
     render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001", photoId: "photo-001" }) }));
 
-    expect(screen.queryByRole("heading", { level: 3, name: "Sleepy head..." })).not.toBeInTheDocument();
-    expect(screen.getByText("Upload Time")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
+    expect(screen.getByText("Photo View")).toBeInTheDocument();
     expect(screen.getByText("Oct 24, 2023 / 4:30")).toBeInTheDocument();
     expect(screen.getAllByText(/和猫咪的下午茶时光/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "编辑备注" })).toBeInTheDocument();
@@ -570,9 +534,10 @@ describe("content module pages", () => {
     expect(screen.getByRole("button", { name: "上一张" })).toBeDisabled();
   });
 
-  it("renders the last album photo context with previous navigation only", async () => {
+  it("renders the last album photo lightbox with previous navigation only", async () => {
     render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001", photoId: "photo-007" }) }));
 
+    expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "上一张" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "下一张" })).toBeDisabled();
   });

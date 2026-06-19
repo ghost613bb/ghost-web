@@ -92,6 +92,14 @@ export function parseCreateAlbumComment(body: unknown): CreateAlbumCommentInput 
   const author = typeof comment.author === "string" ? comment.author.trim() : "";
   const content = typeof comment.content === "string" ? comment.content.trim() : "";
 
+  if (!author) {
+    throw new Error("请先生成昵称");
+  }
+
+  if (author.length > 40) {
+    throw new Error("昵称不能超过 40 个字符");
+  }
+
   if (!content) {
     throw new Error("请输入评论内容");
   }
@@ -100,12 +108,8 @@ export function parseCreateAlbumComment(body: unknown): CreateAlbumCommentInput 
     throw new Error("评论内容不能超过 280 个字符");
   }
 
-  if (author.length > 40) {
-    throw new Error("昵称不能超过 40 个字符");
-  }
-
   return {
-    author: author || undefined,
+    author,
     content,
   };
 }

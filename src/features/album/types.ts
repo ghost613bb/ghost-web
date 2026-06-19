@@ -37,7 +37,7 @@ export type AlbumComment = {
 };
 
 export type CreateAlbumCommentInput = {
-  author?: string;
+  author: string;
   content: string;
 };
 

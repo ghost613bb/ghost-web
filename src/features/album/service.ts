@@ -354,8 +354,8 @@ export async function createAlbumComment(albumId: string, input: CreateAlbumComm
   const comment = await insertStoredAlbumComment({
     id: `album-comment-${randomUUID()}`,
     albumId,
-    author: input.author || "Name",
-    avatar: "📷",
+    author: input.author,
+    avatar: "/images/image.png",
     content: input.content,
   });
 

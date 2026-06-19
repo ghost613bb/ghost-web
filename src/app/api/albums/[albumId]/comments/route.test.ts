@@ -5,7 +5,7 @@ vi.mock("@/features/album/service", () => ({
   createAlbumComment: vi.fn(async (albumId, input) => ({
     albumId,
     author: input.author ?? "Name",
-    avatar: "📷",
+    avatar: "/images/image.png",
     content: input.content,
     id: "album-comment-001",
     time: "06/18 10:05",
@@ -14,7 +14,7 @@ vi.mock("@/features/album/service", () => ({
     {
       albumId,
       author: "Name",
-      avatar: "📷",
+      avatar: "/images/image.png",
       content: "第一条评论",
       id: "album-comment-001",
       time: "06/18 10:05",
@@ -53,7 +53,7 @@ describe("/api/albums/[albumId]/comments", () => {
         {
           albumId: "album-001",
           author: "Name",
-          avatar: "📷",
+          avatar: "/images/image.png",
           content: "第一条评论",
           id: "album-comment-001",
           time: "06/18 10:05",
@@ -71,11 +71,19 @@ describe("/api/albums/[albumId]/comments", () => {
   });
 
   it("rejects empty comments", async () => {
-    const response = await POST(buildPostRequest({ content: "   " }), buildGetContext());
+    const response = await POST(buildPostRequest({ author: "Ranima", content: "   " }), buildGetContext());
     const data = await response.json();
 
     expect(response.status).toBe(400);
     expect(data).toEqual({ error: "请输入评论内容" });
+  });
+
+  it("rejects missing author", async () => {
+    const response = await POST(buildPostRequest({ content: "把傍晚的风留在这里。" }), buildGetContext());
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toEqual({ error: "请先生成昵称" });
   });
 
   it("creates a comment for the route album id", async () => {
@@ -87,7 +95,7 @@ describe("/api/albums/[albumId]/comments", () => {
     expect(data.comment).toMatchObject({
       albumId: "album-007",
       author: "Ranima",
-      avatar: "📷",
+      avatar: "/images/image.png",
       content: "想把夏天留在这里。",
     });
     expect(service.createAlbumComment).toHaveBeenCalledWith("album-007", {
