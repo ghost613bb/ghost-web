@@ -262,6 +262,7 @@ describe("content module pages", () => {
   it("renders the about page with the shared diary tabs header", async () => {
     render(await AboutPage());
 
+    expect(screen.getByRole("heading", { level: 1, name: "Mood Journal" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "心情日记" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
@@ -283,6 +284,7 @@ describe("content module pages", () => {
   it("renders the album page in gallery mode", async () => {
     render(await AlbumPage());
 
+    expect(screen.getByRole("heading", { level: 1, name: "Photo Book" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "照片详情弹窗" })).not.toBeInTheDocument();
@@ -649,25 +651,28 @@ describe("content module pages", () => {
   it("renders the play page with imported collection content", async () => {
     render(await PlaylistsPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "一起听歌吧" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Soundtrack" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
   });
 
   it("renders the coffee page", async () => {
     render(await CoffeePage());
 
+    expect(screen.getByRole("heading", { level: 1, name: "Coffee Notes" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐" })).toBeInTheDocument();
   });
 
   it("renders the message page", async () => {
     render(await MessagePage());
 
+    expect(screen.getByRole("heading", { level: 1, name: "Study Notes" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "学习笔记" })).toBeInTheDocument();
   });
 
   it("renders the todo page", async () => {
     render(await TodoPage());
 
+    expect(screen.getByRole("heading", { level: 1, name: "Life List" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
   });
 

@@ -6,17 +6,21 @@ type ContentTabsHeaderProps = {
   title?: string;
 };
 
-export function ContentTabsHeader({ activeTab, title = "Pocket Diary" }: ContentTabsHeaderProps) {
+export function ContentTabsHeader({ activeTab, title }: ContentTabsHeaderProps) {
+  const activeContentTab = contentTabs.find((tab) => tab.id === activeTab);
+  const displayTitle = title ?? activeContentTab?.headerTitle ?? "Pocket Diary";
+  const avatarAlt = activeContentTab ? `${activeContentTab.label}头像` : "内容页头像";
+
   return (
     <header className="relative overflow-hidden border-b-[2px] border-[#5b3a30] bg-[#ffe8a8] shadow-[0_8px_0_rgba(91,58,48,0.06)]">
       <div aria-hidden="true" className="absolute inset-0 opacity-45 [background-image:radial-gradient(circle,rgba(255,255,255,0.55)_0_2px,transparent_3px)] [background-size:34px_24px]" />
       <div className="relative mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pb-11 pt-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <span className="grid h-13 w-13 place-items-center overflow-hidden rounded-full border-[2px] border-[#5b3a30] bg-[#fff8ed] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
-            <img alt="碎碎念头像" className="h-full w-full object-cover" src="/images/daily-thoughts-avatar.jpeg" />
+            <img alt={avatarAlt} className="h-full w-full object-cover" src="/images/daily-thoughts-avatar.jpeg" />
           </span>
           <h1 className="text-[2.55rem] font-semibold leading-none tracking-[0.02em] text-[#6a3c34] [text-shadow:2px_2px_0_#fff7df,0_1px_0_rgba(91,58,48,0.18)] sm:text-[3.1rem]" style={{ fontFamily: '"Snell Roundhand", "Apple Chancery", "Bradley Hand", cursive' }}>
-            {title}
+            {displayTitle}
           </h1>
         </div>
         <nav aria-label="内容页导航" className="flex flex-wrap items-center gap-3 text-base font-black text-[#4a2e28]">
