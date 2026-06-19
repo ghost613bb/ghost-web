@@ -209,7 +209,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       <ContentTabsHeader activeTab="album" />
       <div className="mx-auto max-w-[1480px] px-4 pb-6 pt-6 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">
-          <aside className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:max-h-[calc(100dvh-3.25rem)] xl:self-start xl:overflow-hidden">
+          <aside className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:h-[calc(100dvh-3.25rem)] xl:self-start xl:overflow-hidden xl:flex xl:flex-col">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-[1.8rem] font-black tracking-tight text-[#4a2e28]">个人相册</h1>
@@ -225,7 +225,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 新建相册
               </button>
             </div>
-            <div className="album-page-scrollbar space-y-3 xl:max-h-[calc(100dvh-19rem)] xl:overflow-y-auto xl:pr-1">
+            <div className="album-page-scrollbar min-h-0 space-y-3 xl:flex-1 xl:overflow-y-auto xl:px-1 xl:py-2">
               {displayAlbums.map((album) => {
                 const isActive = activeAlbum?.id === album.id;
 
