@@ -167,7 +167,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-001",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 24, 2023 / 4:30",
     note: "和猫咪的下午茶时光 ☕🐾\n\n真的好乖好可爱！超级治愈的一天~\n下次还来！",
     imageUrl: "",
@@ -176,7 +175,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-002",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 25, 2023 / 10:18",
     note: "阳光照进来的时候，整张桌子都变软了。",
     imageUrl: "",
@@ -185,7 +183,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-003",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 25, 2023 / 11:42",
     note: "把最安静的那一刻留给自己。",
     imageUrl: "",
@@ -194,7 +191,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-004",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 9:05",
     note: "杯子冒热气的时候，猫咪也刚好看过来。",
     imageUrl: "",
@@ -203,7 +199,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-005",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 12:30",
     note: "今天这张很像一页被折起来的日记。",
     imageUrl: "",
@@ -212,7 +207,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-006",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 15:06",
     note: "小小的点心和一点点偷来的午后。",
     imageUrl: "",
@@ -221,7 +215,6 @@ const storedAlbumPhotos: AlbumPhoto[] = [
   {
     id: "photo-007",
     albumId: "album-001",
-    title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 18:20",
     note: "收尾的时候再看一眼，还是很喜欢。",
     imageUrl: "",
@@ -345,7 +338,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("textbox", { name: "备注/留言" })).toBeInTheDocument();
     expect(screen.getByText("封面上传")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "点击上传" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "封面预览占位" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "封面预览占位" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
@@ -357,7 +350,7 @@ describe("content module pages", () => {
     render(await AlbumPage());
 
     const firstAlbumTitle = screen.getAllByRole("heading", { level: 2, name: "我的相册" })[0];
-    const firstAlbumCover = screen.getAllByAltText("我的相册封面")[0];
+    const firstAlbumCover = screen.getAllByRole("img", { name: "我的相册封面" })[0];
     const firstAlbumCard = firstAlbumTitle.closest("article");
 
     expect(firstAlbumCard).toContainElement(firstAlbumTitle);
@@ -462,7 +455,7 @@ describe("content module pages", () => {
     render(await AlbumPage());
 
     expect(screen.getAllByText("数据库相册").length).toBeGreaterThan(0);
-    expect(screen.getByAltText("数据库相册封面")).toHaveAttribute("src", "/uploads/albums/db-cover.png");
+    expect(screen.getByRole("img", { name: "数据库相册封面" })).toHaveAttribute("src", "/uploads/albums/db-cover.png");
     expect(screen.getAllByRole("article")).toHaveLength(2);
   });
 
@@ -519,7 +512,6 @@ describe("content module pages", () => {
       {
         id: "album-created-001-photo-001",
         albumId: "album-created-001",
-        title: "雨天窗口",
         uploadedAt: "2026-05-28 / 10:00",
         note: "刚上传到新相册的第一张。",
         imageUrl: "/uploads/albums/album-created-001-photo-001-window.png",

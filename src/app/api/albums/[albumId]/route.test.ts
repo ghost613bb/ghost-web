@@ -72,7 +72,6 @@ describe("/api/albums/[albumId]", () => {
 
   it("uploads a photo for a stored album and saves the image file", async () => {
     const formData = new FormData();
-    formData.set("title", "雨天小猫");
     formData.set("note", "窗边打盹的照片");
     formData.set("photoFileName", "cat-window.png");
     formData.append("photoFile", new Blob(["photo-binary"], { type: "image/png" }), "cat-window.png");
@@ -101,7 +100,6 @@ describe("/api/albums/[albumId]", () => {
     });
     expect(data.photos.at(-1)).toMatchObject({
       albumId: "album-001",
-      title: "雨天小猫",
       note: "窗边打盹的照片",
       imageUrl: "/uploads/albums/album-001-photo-001-cat-window.png",
     });
@@ -113,7 +111,6 @@ describe("/api/albums/[albumId]", () => {
 
   it("updates a stored photo through patch json", async () => {
     const formData = new FormData();
-    formData.set("title", "雨天小猫");
     formData.set("note", "窗边打盹的照片");
     formData.append("photoFile", new Blob(["photo-binary"], { type: "image/png" }), "cat-window.png");
 
@@ -142,7 +139,6 @@ describe("/api/albums/[albumId]", () => {
           "x-playlist-import-token": "test-token",
         },
         body: JSON.stringify({
-          title: "改名后的照片",
           note: "更新后的备注",
         }),
       }),
@@ -159,7 +155,6 @@ describe("/api/albums/[albumId]", () => {
     expect(response.status).toBe(200);
     expect(data.photo).toMatchObject({
       id: createdPhoto.id,
-      title: "改名后的照片",
       note: "更新后的备注",
       imageUrl: createdPhoto.imageUrl,
     });
@@ -167,7 +162,6 @@ describe("/api/albums/[albumId]", () => {
 
   it("deletes a stored photo through delete and returns the updated list", async () => {
     const formData = new FormData();
-    formData.set("title", "雨天小猫");
     formData.append("photoFile", new Blob(["photo-binary"], { type: "image/png" }), "cat-window.png");
 
     const createResponse = await POST(

@@ -53,6 +53,10 @@ function getManagementErrorMessage(error?: string) {
   return error === "无权限新增相册" || error === "无权限编辑相册" || error === "无权限删除相册" || error === "无权限上传照片" || error === "无权限编辑照片" || error === "无权限删除照片" ? "请先解锁管理" : error;
 }
 
+function getPhotoAriaLabel(uploadedAt: string, variant: "preview" | "detail") {
+  return variant === "detail" ? `照片大图，上传于 ${uploadedAt}` : `照片预览，上传于 ${uploadedAt}`;
+}
+
 function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
     <form className="rounded-[1.15rem] border-2 border-stone-700/70 bg-white/65 p-3 shadow-[0_6px_0_rgba(91,58,48,0.08)]" onSubmit={onUnlock}>
@@ -116,7 +120,7 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
       <button aria-label="关闭照片详情弹窗" className="absolute inset-0" onClick={onClose} type="button" />
       <div aria-label="照片详情弹窗" className="relative z-10 mx-auto w-full max-w-[760px] overflow-hidden rounded-[2rem] border-[2.5px] border-stone-700/75 bg-black shadow-[0_24px_80px_rgba(78,49,50,0.28)]" role="dialog" aria-modal="true">
         <div className="relative h-[460px] bg-black sm:h-[560px]">
-          <div aria-label={`${activePhoto.title}大图`} className="absolute inset-0 grid place-items-center overflow-hidden" role="img">
+          <div aria-label={getPhotoAriaLabel(activePhoto.uploadedAt, "detail")} className="absolute inset-0 grid place-items-center overflow-hidden" role="img">
             <img alt="" className="h-full w-full object-contain" src={activePhoto.imageUrl} style={{ objectPosition: activePhoto.imagePosition }} />
           </div>
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(39,27,28,0)_0%,rgba(39,27,28,0.72)_100%)]" />
@@ -364,7 +368,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                         <div aria-hidden="true" className={`absolute ${index % 2 === 0 ? "right-5 top-[-0.35rem] rotate-[7deg]" : "left-6 top-[-0.25rem] -rotate-[6deg]"} h-4 w-14 rounded-sm bg-[#e9dec9]/85`} />
                         <button className="w-full text-left" onClick={() => activeAlbum && navigateToSelection(activeAlbum.id, photo.id)} type="button">
                           <div className="overflow-hidden rounded-[1.2rem] bg-[#f4ebda]">
-                            <div aria-label={`${photo.title}预览`} className="h-56 w-full bg-cover bg-center transition duration-300 hover:scale-[1.02]" role="img" style={{ backgroundImage: `url(${photo.imageUrl})`, backgroundPosition: photo.imagePosition }} />
+                            <div aria-label={getPhotoAriaLabel(photo.uploadedAt, "preview")} className="h-56 w-full bg-cover bg-center transition duration-300 hover:scale-[1.02]" role="img" style={{ backgroundImage: `url(${photo.imageUrl})`, backgroundPosition: photo.imagePosition }} />
                           </div>
                           <div className="mt-3">
                             <div className="flex items-center justify-between gap-3">
@@ -495,13 +499,12 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       {isUploadDialogOpen && activeAlbum ? (
         <AlbumPhotoUploadDialog
           onClose={() => setIsUploadDialogOpen(false)}
-          onSubmit={async ({ title, note, photoFile }) => {
+          onSubmit={async ({ note, photoFile }) => {
             if (!photoFile) {
               throw new Error("请先选择照片");
             }
 
             const formData = new FormData();
-            formData.set("title", title);
             formData.set("note", note);
             formData.set("photoFileName", photoFile.name);
             formData.append("photoFile", photoFile, photoFile.name);
@@ -539,16 +542,15 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       {editingPhoto && activeAlbum ? (
         <AlbumPhotoUploadDialog
           initialNote={editingPhoto.note}
-          initialTitle={editingPhoto.title}
           onClose={() => setEditingPhoto(null)}
-          onSubmit={async ({ title, note }) => {
+          onSubmit={async ({ note }) => {
             const response = await fetch(`/api/albums/${activeAlbum.id}/photos/${editingPhoto.id}`, {
               credentials: "same-origin",
               method: "PATCH",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ title, note }),
+              body: JSON.stringify({ note }),
             });
             const data = (await response.json()) as { photo?: AlbumPhoto; error?: string };
 
@@ -637,7 +639,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
           }} type="button" />
           <div className="relative z-10 w-full max-w-[420px] rounded-[2rem] border-[3px] border-[#6f343b] bg-[#fcf8ef] px-6 py-6 text-[#6f343b] shadow-[0_24px_60px_rgba(111,52,59,0.16)]">
             <h2 className="text-[1.7rem] font-black tracking-tight">删除照片</h2>
-            <p className="mt-3 text-sm font-semibold leading-6 text-[#7d5960]">确认删除“{pendingDeletePhoto.title}”吗？删除后会从当前相册中移除。</p>
+            <p className="mt-3 text-sm font-semibold leading-6 text-[#7d5960]">确认删除这张照片吗？删除后会从当前相册中移除。</p>
             {pendingDeletePhotoError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{pendingDeletePhotoError}</p> : null}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button className="rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-2 text-[1rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] disabled:cursor-not-allowed disabled:opacity-70" disabled={isDeletingPhoto} onClick={() => {

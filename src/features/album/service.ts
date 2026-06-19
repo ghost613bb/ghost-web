@@ -176,7 +176,6 @@ export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoI
   const nextPhoto = {
     id: buildStoredAlbumPhotoId(albumId, nextIndex),
     albumId,
-    title: input.title || "还没有标题",
     uploadedAt: formatUploadedAt(new Date()),
     note: input.note || "先记下这一刻。",
     imageUrl: input.imageUrl,
@@ -210,7 +209,6 @@ export async function updateAlbumPhoto(albumId: string, photoId: string, input: 
 
   const updatedPhoto = {
     ...currentPhoto,
-    title: input.title,
     note: input.note ?? "",
   } satisfies AlbumPhoto;
   const photos = await listAlbumPhotos(albumId);

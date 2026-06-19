@@ -1,5 +1,6 @@
 "use client";
 
+import { ImageIcon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import type { Album } from "./types";
 

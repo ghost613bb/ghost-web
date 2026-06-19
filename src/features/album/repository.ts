@@ -62,7 +62,6 @@ function toAlbumPhoto(row: StoredAlbumPhotoRow): AlbumPhoto {
   return {
     id: row.id,
     albumId: row.album_id,
-    title: row.title,
     uploadedAt: row.uploaded_at,
     note: row.note ?? "",
     imageUrl: row.image_url,
@@ -74,7 +73,7 @@ function toStoredAlbumPhotoRow(photo: AlbumPhoto, sortOrder: number): StoredAlbu
   return {
     id: photo.id,
     album_id: photo.albumId,
-    title: photo.title,
+    title: "照片",
     uploaded_at: photo.uploadedAt,
     note: photo.note,
     image_url: photo.imageUrl,

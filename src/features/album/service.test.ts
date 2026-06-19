@@ -45,7 +45,6 @@ describe("album service", () => {
     await upsertStoredAlbum(storedAlbum);
 
     const result = await createAlbumPhoto(storedAlbum.id, {
-      title: "本地时间照片",
       note: "小时和分钟应跟随本地时间",
       imageUrl: "/uploads/albums/local-time.png",
     });
@@ -82,7 +81,6 @@ describe("album service", () => {
 
     await expect(
       createAlbumPhoto(storedAlbum.id, {
-        title: "未配置数据源的照片",
         imageUrl: "/uploads/albums/unavailable.png",
       }),
     ).rejects.toThrow("相册数据源未配置");
@@ -150,7 +148,6 @@ describe("album service", () => {
   it("returns workspace data for a stored selected photo", async () => {
     await upsertStoredAlbum(storedAlbum);
     const created = await createAlbumPhoto(storedAlbum.id, {
-      title: "首张照片",
       note: "数据库里的照片。",
       imageUrl: "/uploads/albums/first-photo.png",
     });

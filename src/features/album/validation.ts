@@ -38,10 +38,6 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
 
   const photo = body as Partial<CreateAlbumPhotoInput>;
 
-  if (photo.title !== undefined && photo.title !== null && typeof photo.title !== "string") {
-    throw new Error("photo 参数不合法");
-  }
-
   if (photo.note !== undefined && photo.note !== null && typeof photo.note !== "string") {
     throw new Error("photo 参数不合法");
   }
@@ -55,7 +51,6 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
   }
 
   return {
-    title: photo.title?.trim() || undefined,
     note: photo.note?.trim() || undefined,
     imageUrl: photo.imageUrl.trim(),
     imagePosition: photo.imagePosition?.trim() || undefined,
@@ -69,16 +64,11 @@ export function parseUpdateAlbumPhoto(body: unknown): UpdateAlbumPhotoInput {
 
   const photo = body as Partial<UpdateAlbumPhotoInput>;
 
-  if (typeof photo.title !== "string" || photo.title.trim().length === 0) {
-    throw new Error("请先填写照片标题");
-  }
-
   if (photo.note !== undefined && photo.note !== null && typeof photo.note !== "string") {
     throw new Error("photo 参数不合法");
   }
 
   return {
-    title: photo.title.trim(),
     note: photo.note?.trim() || undefined,
   };
 }

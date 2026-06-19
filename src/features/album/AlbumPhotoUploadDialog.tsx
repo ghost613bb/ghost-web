@@ -5,12 +5,10 @@ import { useEffect, useId, useState } from "react";
 export type AlbumPhotoUploadPayload = {
   note: string;
   photoFile?: File;
-  title: string;
 };
 
 type AlbumPhotoUploadDialogProps = {
   initialNote?: string;
-  initialTitle?: string;
   onClose: () => void;
   onSubmit: (payload: AlbumPhotoUploadPayload) => Promise<void>;
   requireFile?: boolean;
@@ -20,13 +18,8 @@ type AlbumPhotoUploadDialogProps = {
   title: string;
 };
 
-function fileNameToTitle(fileName: string) {
-  return fileName.replace(/\.[^.]+$/, "");
-}
-
 export function AlbumPhotoUploadDialog({
   initialNote = "",
-  initialTitle = "",
   onClose,
   onSubmit,
   requireFile = true,
@@ -36,10 +29,8 @@ export function AlbumPhotoUploadDialog({
   title,
 }: AlbumPhotoUploadDialogProps) {
   const titleId = useId();
-  const nameId = useId();
   const noteId = useId();
   const uploadId = useId();
-  const [photoTitle, setPhotoTitle] = useState(initialTitle);
   const [photoNote, setPhotoNote] = useState(initialNote);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
@@ -80,7 +71,6 @@ export function AlbumPhotoUploadDialog({
 
           try {
             await onSubmit({
-              title: photoTitle.trim() || (photoFile ? fileNameToTitle(photoFile.name) : "") || "还没有标题",
               note: photoNote.trim(),
               photoFile: photoFile ?? undefined,
             });
@@ -99,22 +89,6 @@ export function AlbumPhotoUploadDialog({
         </div>
 
         <div className="space-y-4 text-[#6f343b]">
-          <div>
-            <label className="block text-[1.05rem] font-black sm:text-[1.15rem]" htmlFor={nameId}>
-              照片标题
-            </label>
-            <div className="relative mt-2">
-              <input
-                className="h-14 w-full rounded-full border-[3px] border-[#6f343b] bg-[linear-gradient(90deg,#fff5f6_0%,#fdecef_100%)] px-5 text-base text-[#6f343b] outline-none placeholder:text-[#c7a9af] focus:bg-white"
-                id={nameId}
-                onChange={(event) => setPhotoTitle(event.target.value)}
-                placeholder="默认会使用文件名"
-                type="text"
-                value={photoTitle}
-              />
-            </div>
-          </div>
-
           <div>
             <label className="block text-[1.05rem] font-black sm:text-[1.15rem]" htmlFor={noteId}>
               照片备注
@@ -143,9 +117,6 @@ export function AlbumPhotoUploadDialog({
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
                     setPhotoFile(file);
-                    if (file && !photoTitle.trim()) {
-                      setPhotoTitle(fileNameToTitle(file.name));
-                    }
                   }}
                   type="file"
                 />

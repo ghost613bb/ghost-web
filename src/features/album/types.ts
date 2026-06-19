@@ -23,7 +23,6 @@ export type CreateAlbumPhotoInput = {
   imagePosition?: string;
   imageUrl: string;
   note?: string;
-  title?: string;
 };
 
 export type AlbumPhoto = {
@@ -32,11 +31,9 @@ export type AlbumPhoto = {
   imagePosition: string;
   imageUrl: string;
   note: string;
-  title: string;
   uploadedAt: string;
 };
 
 export type UpdateAlbumPhotoInput = {
   note?: string;
-  title: string;
 };

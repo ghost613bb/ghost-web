@@ -43,7 +43,6 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
     }
 
     const formData = await request.formData();
-    const rawTitle = formData.get("title");
     const rawNote = formData.get("note");
     const rawPhotoFile = formData.get("photoFile");
     const rawPhotoFileName = formData.get("photoFileName");
@@ -65,7 +64,6 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
     await writeFile(outputPath, Buffer.from(await rawPhotoFile.arrayBuffer()));
 
     const photoDraft = parseCreateAlbumPhoto({
-      title: typeof rawTitle === "string" ? rawTitle : undefined,
       note: typeof rawNote === "string" ? rawNote : undefined,
       imageUrl: `/uploads/albums/${finalFileName}`,
     });
