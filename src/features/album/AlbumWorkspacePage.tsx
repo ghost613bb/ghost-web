@@ -23,7 +23,7 @@ type AdminSessionResult = {
 };
 
 function coverImageFromAlbum(album: Album | null) {
-  return album?.coverImage ?? "/album-cover-placeholder.jpeg";
+  return album?.coverImage ?? "/album-cover-placeholder.svg";
 }
 
 function buildWorkspaceHref(albumId?: string | null, photoId?: string | null) {
@@ -315,10 +315,8 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
           </aside>
 
           <div className="min-w-0 space-y-5">
-            <section className="relative overflow-hidden rounded-[2rem] border-[2.5px] border-[#d8cec0] bg-[#fcf8ef] shadow-[0_20px_42px_rgba(145,118,118,0.12)]">
-              <img alt={`${activeAlbum?.title ?? "相册"}封面背景`} className="absolute inset-0 h-full w-full object-cover" src={coverImageFromAlbum(activeAlbum)} />
-              <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(252,248,239,0.95)_0%,rgba(252,248,239,0.88)_28%,rgba(252,248,239,0.56)_60%,rgba(252,248,239,0.18)_100%)]" />
-              <div className="relative grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_224px] lg:items-start lg:gap-8">
+            <section className="relative overflow-hidden rounded-[2rem] border-[2.5px] border-[#d8cec0] bg-[linear-gradient(135deg,#fcf8ef_0%,#fffdf8_62%,#f8efe2_100%)] shadow-[0_20px_42px_rgba(145,118,118,0.12)]">
+              <div className="grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_224px] lg:items-start lg:gap-8">
                 <div className="max-w-2xl">
                   <p className="text-sm font-black uppercase tracking-[0.18em] text-[#7a5147]">Album Gallery</p>
                   <h2 className="mt-2 text-[2rem] font-black tracking-tight text-[#4c2b2d] sm:text-[2.35rem]">{activeAlbum?.title ?? "还没有相册"}</h2>
