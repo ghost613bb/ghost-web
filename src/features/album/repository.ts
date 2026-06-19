@@ -120,7 +120,7 @@ function toAlbumComment(row: StoredAlbumCommentRow): AlbumComment {
     id: row.id,
     albumId: row.album_id,
     author: row.author,
-    avatar: row.avatar ?? "/images/image.png",
+    avatar: row.avatar ?? "",
     content: row.content,
     createdAt: row.created_at ?? undefined,
     time: formatCommentTime(row.created_at),

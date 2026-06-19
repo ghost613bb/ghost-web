@@ -5,7 +5,7 @@ vi.mock("@/features/album/service", () => ({
   createAlbumComment: vi.fn(async (albumId, input) => ({
     albumId,
     author: input.author ?? "Name",
-    avatar: "/images/image.png",
+    avatar: "",
     content: input.content,
     id: "album-comment-001",
     time: "06/18 10:05",
@@ -14,7 +14,7 @@ vi.mock("@/features/album/service", () => ({
     {
       albumId,
       author: "Name",
-      avatar: "/images/image.png",
+      avatar: "",
       content: "第一条评论",
       id: "album-comment-001",
       time: "06/18 10:05",
@@ -53,7 +53,7 @@ describe("/api/albums/[albumId]/comments", () => {
         {
           albumId: "album-001",
           author: "Name",
-          avatar: "/images/image.png",
+          avatar: "",
           content: "第一条评论",
           id: "album-comment-001",
           time: "06/18 10:05",
@@ -95,7 +95,7 @@ describe("/api/albums/[albumId]/comments", () => {
     expect(data.comment).toMatchObject({
       albumId: "album-007",
       author: "Ranima",
-      avatar: "/images/image.png",
+      avatar: "",
       content: "想把夏天留在这里。",
     });
     expect(service.createAlbumComment).toHaveBeenCalledWith("album-007", {

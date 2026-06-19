@@ -170,7 +170,7 @@ const albumFallbackComments: AlbumComment[] = [
     id: "album-comment-001",
     albumId: "album-001",
     author: "Name",
-    avatar: "/images/image.png",
+    avatar: "",
     content: "这本相册像一页慢慢展开的夏天。",
     time: "06/18 10:05",
   },
@@ -342,7 +342,7 @@ describe("content module pages", () => {
               id: "album-comment-002",
               albumId: "album-created-001",
               author: "Ranima",
-              avatar: "/images/image.png",
+              avatar: "",
               content: "把傍晚的风留在这里。",
               time: "06/18 10:06",
             },
@@ -525,8 +525,9 @@ describe("content module pages", () => {
     render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001", photoId: "photo-001" }) }));
 
     expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
-    expect(screen.getByText("Photo View")).toBeInTheDocument();
-    expect(screen.getByText("Oct 24, 2023 / 4:30")).toBeInTheDocument();
+    expect(screen.queryByText("Photo View")).not.toBeInTheDocument();
+    expect(screen.queryByText("Oct 24, 2023 / 4:30")).not.toBeInTheDocument();
+    expect(screen.getByText("照片备注")).toBeInTheDocument();
     expect(screen.getAllByText(/和猫咪的下午茶时光/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "编辑备注" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "删除照片" })).toBeInTheDocument();

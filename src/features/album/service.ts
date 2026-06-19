@@ -355,7 +355,7 @@ export async function createAlbumComment(albumId: string, input: CreateAlbumComm
     id: `album-comment-${randomUUID()}`,
     albumId,
     author: input.author,
-    avatar: "/images/image.png",
+    avatar: "",
     content: input.content,
   });
 

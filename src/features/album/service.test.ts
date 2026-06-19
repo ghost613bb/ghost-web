@@ -181,7 +181,7 @@ describe("album service", () => {
     expect(createdComment).toMatchObject({
       albumId: fallbackAlbum.id,
       author: "Ranima",
-      avatar: "/images/image.png",
+      avatar: "",
       content: "想把今天的阳光贴进来。",
     });
     expect(comments).toHaveLength(1);
