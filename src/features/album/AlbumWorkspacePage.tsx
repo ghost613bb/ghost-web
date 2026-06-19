@@ -22,8 +22,16 @@ type AdminSessionResult = {
   error?: string;
 };
 
+function AlbumPlaceholder({ className = "", label }: { className?: string; label: string }) {
+  return (
+    <div aria-label={label} className={`grid place-items-center bg-[#f4ebda] text-[#b58d86] ${className}`} role="img">
+      <ImageIcon aria-hidden="true" className="h-14 w-14 stroke-[1.8]" />
+    </div>
+  );
+}
+
 function coverImageFromAlbum(album: Album | null) {
-  return album?.coverImage ?? "/album-cover-placeholder.svg";
+  return album?.coverImage ?? null;
 }
 
 function buildWorkspaceHref(albumId?: string | null, photoId?: string | null) {
@@ -301,7 +309,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   <article className={`rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 ${isActive ? "bg-[#fff4cf] outline outline-2 outline-offset-2 outline-[#c65f70]" : "bg-white/75"}`} key={album.id}>
                     <button aria-pressed={isActive} className="flex w-full flex-col gap-2 text-left" onClick={() => navigateToSelection(album.id)} type="button">
                       <div className="overflow-hidden rounded-[0.95rem] bg-[#f4ebda]">
-                        <img alt={`${album.title}封面`} className="h-24 w-full object-cover" src={coverImageFromAlbum(album)} />
+                        {coverImageFromAlbum(album) ? <img alt={`${album.title}封面`} className="h-24 w-full object-cover" src={coverImageFromAlbum(album) ?? undefined} /> : <AlbumPlaceholder className="h-24 w-full" label={`${album.title}封面`} />}
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <h2 className="text-[1rem] font-black text-[#4f2525]">{album.title}</h2>
@@ -316,7 +324,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
           <div className="min-w-0 space-y-5">
             <section className="relative overflow-hidden rounded-[2rem] border-[2.5px] border-[#d8cec0] bg-[linear-gradient(135deg,#fcf8ef_0%,#fffdf8_62%,#f8efe2_100%)] shadow-[0_20px_42px_rgba(145,118,118,0.12)]">
-              <div className="grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_224px] lg:items-start lg:gap-8">
+              {coverImageFromAlbum(activeAlbum) ? <img alt={`${activeAlbum?.title ?? "相册"}封面背景`} className="absolute inset-0 h-full w-full object-cover" src={coverImageFromAlbum(activeAlbum) ?? undefined} /> : <AlbumPlaceholder className="absolute inset-0 h-full w-full" label={`${activeAlbum?.title ?? "相册"}封面背景`} />}
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(252,248,239,0.92)_0%,rgba(255,253,248,0.9)_48%,rgba(248,239,226,0.84)_100%)]" />
+              <div className="relative grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_224px] lg:items-start lg:gap-8">
                 <div className="max-w-2xl">
                   <p className="text-sm font-black uppercase tracking-[0.18em] text-[#7a5147]">Album Gallery</p>
                   <h2 className="mt-2 text-[2rem] font-black tracking-tight text-[#4c2b2d] sm:text-[2.35rem]">{activeAlbum?.title ?? "还没有相册"}</h2>

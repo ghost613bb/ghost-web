@@ -170,7 +170,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 24, 2023 / 4:30",
     note: "和猫咪的下午茶时光 ☕🐾\n\n真的好乖好可爱！超级治愈的一天~\n下次还来！",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "center 18%",
   },
   {
@@ -179,7 +179,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 25, 2023 / 10:18",
     note: "阳光照进来的时候，整张桌子都变软了。",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "36% center",
   },
   {
@@ -188,7 +188,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 25, 2023 / 11:42",
     note: "把最安静的那一刻留给自己。",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "60% center",
   },
   {
@@ -197,7 +197,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 9:05",
     note: "杯子冒热气的时候，猫咪也刚好看过来。",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "80% center",
   },
   {
@@ -206,7 +206,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 12:30",
     note: "今天这张很像一页被折起来的日记。",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "22% 70%",
   },
   {
@@ -215,7 +215,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 15:06",
     note: "小小的点心和一点点偷来的午后。",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "50% 76%",
   },
   {
@@ -224,7 +224,7 @@ const storedAlbumPhotos: AlbumPhoto[] = [
     title: "Sleepy head...",
     uploadedAt: "Oct 26, 2023 / 18:20",
     note: "收尾的时候再看一眼，还是很喜欢。",
-    imageUrl: "/album-cover-placeholder.jpeg",
+    imageUrl: "",
     imagePosition: "74% 26%",
   },
 ];
@@ -472,10 +472,9 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
     expect(screen.getAllByText("Created: 2023-07-31")).toHaveLength(1);
-    const detailCover = screen.getByRole("img", { name: "我的相册封面背景" });
-    expect(detailCover).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
-    expect(detailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-cover");
-    expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThanOrEqual(1);
+    const detailCover = screen.getAllByRole("img", { name: "我的相册封面背景" })[0];
+    expect(detailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "bg-[#f4ebda]", "text-[#b58d86]");
+    expect(detailPage.container.querySelectorAll("article").length).toBeGreaterThan(7);
     expect(screen.getByRole("button", { name: "上传照片" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "编辑相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
@@ -534,7 +533,7 @@ describe("content module pages", () => {
     expect(screen.getAllByText("可上传相册").length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (1)")).toBeInTheDocument();
     expect(screen.getByText("刚上传到新相册的第一张。")).toBeInTheDocument();
-    expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThanOrEqual(2);
+    expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders a mokugyo notice when album photo detail data is unavailable", async () => {

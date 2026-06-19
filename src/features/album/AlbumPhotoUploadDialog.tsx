@@ -150,12 +150,8 @@ export function AlbumPhotoUploadDialog({
                   type="file"
                 />
                 <div className="relative min-h-40 overflow-hidden rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] transition hover:-translate-y-0.5 hover:bg-white">
-                  {photoPreviewUrl ? (
-                    <img alt="照片本地预览" className="absolute inset-0 h-full w-full object-cover" src={photoPreviewUrl} />
-                  ) : (
-                    <img alt="照片预览占位" className="absolute inset-0 h-full w-full object-cover opacity-55" src="/album-cover-placeholder.jpeg" />
-                  )}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.18)_0%,rgba(255,253,247,0.74)_68%,rgba(255,253,247,0.96)_100%)]" />
+                  {photoPreviewUrl ? <img alt="照片本地预览" className="absolute inset-0 h-full w-full object-cover" src={photoPreviewUrl} /> : null}
+                  {photoPreviewUrl ? <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.18)_0%,rgba(255,253,247,0.74)_68%,rgba(255,253,247,0.96)_100%)]" /> : null}
                   <div className="relative flex min-h-40 flex-col items-center justify-center px-4 py-5 text-center text-[#6f343b]">
                     <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{photoFile ? "重新选择" : "点击上传"}</span>
                     <span className="mt-2 text-sm font-medium text-[#8d6368]">{photoFile ? photoFile.name : "选择本地图片添加到相册。"}</span>

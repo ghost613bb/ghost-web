@@ -164,12 +164,8 @@ export function AlbumFormDialog({ album, heading, onClose, onSubmit, submitError
                 type="file"
               />
               <div className="relative min-h-30 overflow-hidden rounded-[1.6rem] border-[3px] border-dashed border-[#6f343b] bg-[#fffdf7] transition hover:-translate-y-0.5 hover:bg-white">
-                {coverPreviewUrl ? (
-                  <img alt="封面本地预览" className="absolute inset-0 h-full w-full object-cover" src={coverPreviewUrl} />
-                ) : (
-                  <img alt="封面预览占位" className="absolute inset-0 h-full w-full object-cover opacity-55" src="/album-cover-placeholder.jpeg" />
-                )}
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.12)_0%,rgba(255,253,247,0.72)_68%,rgba(255,253,247,0.96)_100%)]" />
+                {coverPreviewUrl ? <img alt="封面本地预览" className="absolute inset-0 h-full w-full object-cover" src={coverPreviewUrl} /> : null}
+                {coverPreviewUrl ? <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,253,247,0.12)_0%,rgba(255,253,247,0.72)_68%,rgba(255,253,247,0.96)_100%)]" /> : null}
                 <div className="relative flex min-h-30 flex-col items-center justify-center px-4 py-5 text-center text-[#6f343b]">
                   <span className="mt-2 text-[1.35rem] font-black leading-none sm:text-[1.25rem]">{coverFile ? "重新选择" : "点击上传"}</span>
                   <span className="mt-2 text-sm font-medium text-[#8d6368]">{coverFile ? coverFile.name : "选择本地图片作为相册封面。"}</span>
