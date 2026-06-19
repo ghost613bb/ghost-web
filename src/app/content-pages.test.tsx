@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { albumCollections } from "@/data/album";
 import { getAlbumPhotosByAlbumId } from "@/data/albumPhotos";
-import type { Album, AlbumComment } from "@/features/album/types";
+import type { Album } from "@/features/album/types";
 import AboutPage from "./about/page";
 import AlbumPage from "./album/page";
 import CoffeePage from "./coffee/page";
@@ -165,17 +165,6 @@ const albumServiceFallbackAlbum: Album = {
   sortOrder: 1,
 };
 
-const albumFallbackComments: AlbumComment[] = [
-  {
-    id: "album-comment-001",
-    albumId: "album-001",
-    author: "Name",
-    avatar: "",
-    content: "这本相册像一页慢慢展开的夏天。",
-    time: "06/18 10:05",
-  },
-];
-
 describe("content module pages", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -192,7 +181,6 @@ describe("content module pages", () => {
       return {
         activeAlbum,
         activePhoto,
-        albumComments: activeAlbum ? albumFallbackComments.filter((comment) => comment.albumId === activeAlbum.id) : [],
         albums,
         dataSource: "available",
         nextPhotoId: adjacent.nextPhotoId,
@@ -245,7 +233,6 @@ describe("content module pages", () => {
     albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
       activeAlbum: null,
       activePhoto: null,
-      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,
@@ -329,22 +316,6 @@ describe("content module pages", () => {
               status: "published",
               createdAt: "2026-05-26",
               sortOrder: 1,
-            },
-          }),
-        } satisfies JsonResponse;
-      }
-
-      if (String(input) === "/api/albums/album-created-001/comments") {
-        return {
-          ok: true,
-          json: async () => ({
-            comment: {
-              id: "album-comment-002",
-              albumId: "album-created-001",
-              author: "Ranima",
-              avatar: "",
-              content: "把傍晚的风留在这里。",
-              time: "06/18 10:06",
             },
           }),
         } satisfies JsonResponse;
@@ -453,7 +424,6 @@ describe("content module pages", () => {
     albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
       activeAlbum: null,
       activePhoto: null,
-      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,
@@ -506,7 +476,6 @@ describe("content module pages", () => {
     albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
       activeAlbum: null,
       activePhoto: null,
-      albumComments: [],
       albums: [],
       dataSource: "unavailable",
       nextPhotoId: null,

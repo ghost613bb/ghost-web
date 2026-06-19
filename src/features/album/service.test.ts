@@ -15,7 +15,7 @@ vi.mock("@/lib/supabase/server", async () => {
 });
 
 import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
-import { createAlbumComment, createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, getAlbumWorkspaceData, listAlbumComments, listAlbums } from "./service";
+import { createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, getAlbumWorkspaceData, listAlbums } from "./service";
 
 describe("album service", () => {
   const fallbackAlbum = albumCollections[0]!;
@@ -149,7 +149,6 @@ describe("album service", () => {
       expect.objectContaining({
         activeAlbum: expect.objectContaining({ id: fallbackAlbum.id }),
         activePhoto: null,
-        albumComments: expect.any(Array),
         albums: expect.any(Array),
         dataSource: "available",
         photos: expect.any(Array),
@@ -164,32 +163,8 @@ describe("album service", () => {
       expect.objectContaining({
         activeAlbum: expect.objectContaining({ id: fallbackAlbum.id }),
         activePhoto: expect.objectContaining({ id: "photo-001" }),
-        albumComments: expect.any(Array),
         dataSource: "available",
       }),
     );
-  });
-
-  it("creates and lists album comments for a fallback album", async () => {
-    const createdComment = await createAlbumComment(fallbackAlbum.id, {
-      author: "Ranima",
-      content: "想把今天的阳光贴进来。",
-    });
-    const comments = await listAlbumComments(fallbackAlbum.id);
-    const data = await getAlbumWorkspaceData(fallbackAlbum.id);
-
-    expect(createdComment).toMatchObject({
-      albumId: fallbackAlbum.id,
-      author: "Ranima",
-      avatar: "",
-      content: "想把今天的阳光贴进来。",
-    });
-    expect(comments).toHaveLength(1);
-    expect(data.albumComments).toEqual([
-      expect.objectContaining({
-        id: createdComment.id,
-        content: "想把今天的阳光贴进来。",
-      }),
-    ]);
   });
 });
