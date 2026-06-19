@@ -1,25 +1,15 @@
-import { albumCollections as fallbackAlbums } from "@/data/album";
-import {
-  getAlbumPhotoById as getFallbackAlbumPhotoById,
-  getAlbumPhotosByAlbumId as getFallbackAlbumPhotosByAlbumId,
-  type AlbumPhoto,
-} from "@/data/albumPhotos";
 import { hasSupabaseServiceRoleEnv } from "@/lib/supabase/server";
 import {
   deleteStoredAlbum,
   deleteStoredAlbumPhoto,
   getStoredAlbumById,
-  getStoredAlbumIds,
   getStoredAlbumPhotoById,
-  listDeletedAlbumPhotoIds,
   listStoredAlbumPhotosByAlbumId,
   listStoredAlbums,
-  listVisibleStoredAlbums,
-  markFallbackAlbumPhotoDeleted,
   upsertStoredAlbum,
   upsertStoredAlbumPhoto,
 } from "./repository";
-import type { Album, CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
+import type { Album, AlbumPhoto, CreateAlbumInput, CreateAlbumPhotoInput, UpdateAlbumPhotoInput } from "./types";
 
 export type AlbumPageDataSource = "available" | "unavailable";
 
@@ -57,20 +47,6 @@ export type AlbumWorkspaceData = {
   previousPhotoId: string | null;
   statusReason?: AlbumPageStatusReason;
 };
-
-function normalizeFallbackAlbum(album: (typeof fallbackAlbums)[number]): Album {
-  return {
-    id: album.id,
-    title: album.title,
-    description: album.description,
-    coverImage: album.coverImage,
-    photoCount: album.photoCount,
-    visibility: album.visibility,
-    status: album.status,
-    createdAt: album.createdAt,
-    sortOrder: album.sortOrder,
-  };
-}
 
 function formatUploadedAt(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -115,28 +91,18 @@ async function withActualPhotoCount(album: Album): Promise<Album> {
 }
 
 export async function listAlbums(): Promise<Album[]> {
-  const [storedAlbumIds, storedAlbums] = await Promise.all([getStoredAlbumIds(), listVisibleStoredAlbums()]);
-  const visibleFallbackAlbums = fallbackAlbums
-    .filter((album) => !storedAlbumIds.has(album.id))
-    .map(normalizeFallbackAlbum);
-
-  return Promise.all([...storedAlbums, ...visibleFallbackAlbums].map(withActualPhotoCount));
+  const storedAlbums = await listStoredAlbums();
+  return Promise.all(storedAlbums.map(withActualPhotoCount));
 }
 
 export async function getAlbumById(id: string): Promise<Album | null> {
   const storedAlbum = await getStoredAlbumById(id);
-
-  if (storedAlbum) {
-    return storedAlbum.status === "draft" ? null : storedAlbum;
-  }
-
-  const fallbackAlbum = fallbackAlbums.find((album) => album.id === id);
-  return fallbackAlbum ? normalizeFallbackAlbum(fallbackAlbum) : null;
+  return storedAlbum ?? null;
 }
 
 export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
   assertAlbumStorageConfigured();
-  const storedAlbums = await listVisibleStoredAlbums();
+  const storedAlbums = await listStoredAlbums();
   const nextAlbumIndex = storedAlbums.length + 1;
   const albumId = input.id ?? (await getNextCreatedAlbumId());
   const album: Album = {
@@ -176,30 +142,11 @@ export async function updateAlbum(id: string, input: CreateAlbumInput): Promise<
 }
 
 export async function listAlbumPhotos(albumId: string): Promise<AlbumPhoto[]> {
-  const [storedPhotos, fallbackPhotos, deletedFallbackPhotoIds] = await Promise.all([
-    listStoredAlbumPhotosByAlbumId(albumId),
-    Promise.resolve(getFallbackAlbumPhotosByAlbumId(albumId)),
-    listDeletedAlbumPhotoIds(albumId),
-  ]);
-
-  const storedPhotoIds = new Set(storedPhotos.map((photo) => photo.id));
-  return [...fallbackPhotos.filter((photo) => !deletedFallbackPhotoIds.has(photo.id) && !storedPhotoIds.has(photo.id)), ...storedPhotos];
+  return listStoredAlbumPhotosByAlbumId(albumId);
 }
 
 export async function getAlbumPhotoById(albumId: string, photoId: string): Promise<AlbumPhoto | null> {
-  const storedPhoto = await getStoredAlbumPhotoById(albumId, photoId);
-
-  if (storedPhoto) {
-    return storedPhoto;
-  }
-
-  const deletedFallbackPhotoIds = await listDeletedAlbumPhotoIds(albumId);
-
-  if (deletedFallbackPhotoIds.has(photoId)) {
-    return null;
-  }
-
-  return getFallbackAlbumPhotoById(albumId, photoId);
+  return getStoredAlbumPhotoById(albumId, photoId);
 }
 
 export async function getAdjacentAlbumPhotoIds(albumId: string, photoId: string) {
@@ -240,7 +187,7 @@ export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoI
 
   const updatedAlbum: Album = {
     ...currentAlbum,
-    photoCount: currentAlbum.photoCount + 1,
+    photoCount: currentPhotos.length + 1,
     status: "published",
   };
 
@@ -290,15 +237,7 @@ export async function deleteAlbumPhoto(albumId: string, photoId: string) {
     throw new Error("照片不存在");
   }
 
-  const [fallbackPhoto, storedPhoto] = await Promise.all([Promise.resolve(getFallbackAlbumPhotoById(albumId, photoId)), getStoredAlbumPhotoById(albumId, photoId)]);
-
-  if (storedPhoto) {
-    await deleteStoredAlbumPhoto(albumId, photoId);
-  }
-
-  if (fallbackPhoto) {
-    await markFallbackAlbumPhotoDeleted(albumId, photoId);
-  }
+  await deleteStoredAlbumPhoto(albumId, photoId);
 
   const photos = await listAlbumPhotos(albumId);
   const updatedAlbum: Album = {
@@ -323,15 +262,7 @@ export async function deleteAlbum(id: string): Promise<void> {
     return;
   }
 
-  if (id.startsWith("album-created-")) {
-    await deleteStoredAlbum(id);
-    return;
-  }
-
-  await upsertStoredAlbum({
-    ...currentAlbum,
-    status: "draft",
-  });
+  await deleteStoredAlbum(id);
 }
 
 export async function getAlbumPageData(): Promise<AlbumPageData> {
@@ -479,7 +410,7 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
       return {
         activeAlbum: null,
         activePhoto: null,
-          albums,
+        albums,
         dataSource: "available",
         nextPhotoId: null,
         photos: [],

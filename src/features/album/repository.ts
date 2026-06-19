@@ -1,6 +1,5 @@
-import type { AlbumPhoto } from "@/data/albumPhotos";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import type { Album } from "./types";
+import type { Album, AlbumPhoto } from "./types";
 
 type StoredAlbumRow = {
   cover_image: string | null;
@@ -30,7 +29,6 @@ const albumPhotoColumns = "id,album_id,title,uploaded_at,note,image_url,image_po
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const testAlbumStore = new Map<string, Album>();
 const testAlbumPhotoStore = new Map<string, StoredAlbumPhotoRow>();
-const testAlbumPhotoDeletionStore = new Map<string, Set<string>>();
 
 function toAlbum(row: StoredAlbumRow): Album {
   return {
@@ -143,19 +141,6 @@ export async function upsertStoredAlbum(album: Album) {
   throwSupabaseError("写入 Supabase 相册失败", error);
 }
 
-export async function listDeletedAlbumPhotoIds(albumId: string): Promise<Set<string>> {
-  if (isTestEnvironment) {
-    return new Set(testAlbumPhotoDeletionStore.get(albumId) ?? []);
-  }
-
-  const supabase = createSupabaseServiceRoleClient();
-  const { data, error } = await supabase.from("album_photo_deletions").select("photo_id").eq("album_id", albumId);
-
-  throwSupabaseError("读取 Supabase 已删除相册照片失败", error);
-
-  return new Set(((data ?? []) as { photo_id: string }[]).map((row) => row.photo_id));
-}
-
 export async function listStoredAlbumPhotosByAlbumId(albumId: string): Promise<AlbumPhoto[]> {
   if (isTestEnvironment) {
     return listTestStoredAlbumPhotoRowsByAlbumId(albumId).map((row) => toAlbumPhoto(row));
@@ -225,20 +210,6 @@ export async function deleteStoredAlbumPhoto(albumId: string, photoId: string) {
   throwSupabaseError("删除 Supabase 相册照片失败", error);
 }
 
-export async function markFallbackAlbumPhotoDeleted(albumId: string, photoId: string) {
-  if (isTestEnvironment) {
-    const deletedPhotoIds = testAlbumPhotoDeletionStore.get(albumId) ?? new Set<string>();
-    deletedPhotoIds.add(photoId);
-    testAlbumPhotoDeletionStore.set(albumId, deletedPhotoIds);
-    return;
-  }
-
-  const supabase = createSupabaseServiceRoleClient();
-  const { error } = await supabase.from("album_photo_deletions").upsert({ album_id: albumId, photo_id: photoId }, { onConflict: "photo_id" });
-
-  throwSupabaseError("写入 Supabase 相册照片删除记录失败", error);
-}
-
 export async function deleteStoredAlbum(id: string) {
   if (isTestEnvironment) {
     testAlbumStore.delete(id);
@@ -249,7 +220,6 @@ export async function deleteStoredAlbum(id: string) {
       }
     }
 
-    testAlbumPhotoDeletionStore.delete(id);
     return;
   }
 
@@ -257,37 +227,8 @@ export async function deleteStoredAlbum(id: string) {
   const deletePhotosResult = await supabase.from("album_photos").delete().eq("album_id", id);
   throwSupabaseError("删除 Supabase 相册照片失败", deletePhotosResult.error);
 
-  const deletePhotoDeletionsResult = await supabase.from("album_photo_deletions").delete().eq("album_id", id);
-  throwSupabaseError("删除 Supabase 相册照片删除记录失败", deletePhotoDeletionsResult.error);
-
   const deleteAlbumResult = await supabase.from("albums").delete().eq("id", id);
   throwSupabaseError("删除 Supabase 相册失败", deleteAlbumResult.error);
-}
-
-export async function getStoredAlbumIds(): Promise<Set<string>> {
-  if (isTestEnvironment) {
-    return new Set(testAlbumStore.keys());
-  }
-
-  const supabase = createSupabaseServiceRoleClient();
-  const { data, error } = await supabase.from("albums").select("id");
-
-  throwSupabaseError("读取 Supabase 相册 ID 失败", error);
-
-  return new Set(((data ?? []) as { id: string }[]).map((row) => row.id));
-}
-
-export async function listVisibleStoredAlbums(): Promise<Album[]> {
-  if (isTestEnvironment) {
-    return listTestStoredAlbumRows().filter((album) => album.status !== "draft");
-  }
-
-  const supabase = createSupabaseServiceRoleClient();
-  const { data, error } = await supabase.from("albums").select(albumColumns).neq("status", "draft").order("sort_order", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false, nullsFirst: false });
-
-  throwSupabaseError("读取 Supabase 可见相册失败", error);
-
-  return ((data ?? []) as StoredAlbumRow[]).map((row) => toAlbum(row));
 }
 
 export async function resetStoredAlbums() {
@@ -297,5 +238,4 @@ export async function resetStoredAlbums() {
 
   testAlbumStore.clear();
   testAlbumPhotoStore.clear();
-  testAlbumPhotoDeletionStore.clear();
 }

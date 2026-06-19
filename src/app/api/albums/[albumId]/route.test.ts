@@ -1,11 +1,21 @@
 import { access, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetStoredAlbums } from "@/features/album/repository";
-import { POST } from "./photos/route";
+import { resetStoredAlbums, upsertStoredAlbum } from "@/features/album/repository";
 import { DELETE, PATCH } from "./route";
+import { POST } from "./photos/route";
 
 const albumUploadDir = path.join(process.cwd(), ".tmp/vitest/album-detail-route-uploads");
+const storedAlbum = {
+  id: "album-001",
+  title: "我的相册",
+  description: "已经迁移到数据库里的相册。",
+  photoCount: 0,
+  visibility: "public" as const,
+  status: "published" as const,
+  createdAt: "2023-07-31",
+  sortOrder: 1,
+};
 
 describe("/api/albums/[albumId]", () => {
   beforeEach(async () => {
@@ -16,6 +26,7 @@ describe("/api/albums/[albumId]", () => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
     process.env.ALBUM_UPLOAD_DIR = albumUploadDir;
     await resetStoredAlbums();
+    await upsertStoredAlbum(storedAlbum);
     await rm(albumUploadDir, { force: true, recursive: true });
   });
 
@@ -26,7 +37,7 @@ describe("/api/albums/[albumId]", () => {
     await rm(albumUploadDir, { force: true, recursive: true });
   });
 
-  it("updates fallback album fields and cover through patch multipart form data", async () => {
+  it("updates a stored album through patch multipart form data", async () => {
     const formData = new FormData();
     formData.set("title", "编辑后的相册");
     formData.set("description", "更新后的备注");
@@ -59,7 +70,7 @@ describe("/api/albums/[albumId]", () => {
     });
   });
 
-  it("uploads a photo for an album and saves the image file", async () => {
+  it("uploads a photo for a stored album and saves the image file", async () => {
     const formData = new FormData();
     formData.set("title", "雨天小猫");
     formData.set("note", "窗边打盹的照片");
@@ -86,16 +97,16 @@ describe("/api/albums/[albumId]", () => {
     expect(response.status).toBe(200);
     expect(data.album).toMatchObject({
       id: "album-001",
-      photoCount: 23,
+      photoCount: 1,
     });
     expect(data.photos.at(-1)).toMatchObject({
       albumId: "album-001",
       title: "雨天小猫",
       note: "窗边打盹的照片",
-      imageUrl: "/uploads/albums/album-001-photo-008-cat-window.png",
+      imageUrl: "/uploads/albums/album-001-photo-001-cat-window.png",
     });
 
-    const storedPhotoPath = path.join(albumUploadDir, "album-001-photo-008-cat-window.png");
+    const storedPhotoPath = path.join(albumUploadDir, "album-001-photo-001-cat-window.png");
     await expect(access(storedPhotoPath)).resolves.toBeUndefined();
     await expect(stat(storedPhotoPath)).resolves.toMatchObject({ size: 9 });
   });
@@ -196,13 +207,13 @@ describe("/api/albums/[albumId]", () => {
     expect(response.status).toBe(200);
     expect(data.album).toMatchObject({
       id: "album-001",
-      photoCount: 7,
+      photoCount: 0,
     });
-    expect(data.photos).toHaveLength(7);
+    expect(data.photos).toHaveLength(0);
     expect(data.photos.some((photo: { id: string }) => photo.id === createdPhoto.id)).toBe(false);
   });
 
-  it("hides a fallback album through delete", async () => {
+  it("deletes a stored album through delete", async () => {
     const response = await DELETE(
       new Request("http://localhost/api/albums/album-001", {
         method: "DELETE",

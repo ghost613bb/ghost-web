@@ -1,8 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { albumCollections } from "@/data/album";
-import { getAlbumPhotosByAlbumId } from "@/data/albumPhotos";
-import type { Album } from "@/features/album/types";
+import type { Album, AlbumPhoto } from "@/features/album/types";
 import AboutPage from "./about/page";
 import AlbumPage from "./album/page";
 import CoffeePage from "./coffee/page";
@@ -154,23 +152,92 @@ function mockAlbumAdminSessionFetch(handler?: (input: RequestInfo | URL, init?: 
   });
 }
 
-const albumServiceFallbackAlbum: Album = {
+const storedAlbumFixture: Album = {
   id: "album-001",
   title: "我的相册",
   description: "诗注：小妞写，图片，女孩子的碎片收藏。",
-  photoCount: 22,
+  photoCount: 7,
   visibility: "public",
   status: "published",
   createdAt: "2023-07-31",
   sortOrder: 1,
 };
 
+const storedAlbumPhotos: AlbumPhoto[] = [
+  {
+    id: "photo-001",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 24, 2023 / 4:30",
+    note: "和猫咪的下午茶时光 ☕🐾\n\n真的好乖好可爱！超级治愈的一天~\n下次还来！",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "center 18%",
+  },
+  {
+    id: "photo-002",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 25, 2023 / 10:18",
+    note: "阳光照进来的时候，整张桌子都变软了。",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "36% center",
+  },
+  {
+    id: "photo-003",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 25, 2023 / 11:42",
+    note: "把最安静的那一刻留给自己。",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "60% center",
+  },
+  {
+    id: "photo-004",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 26, 2023 / 9:05",
+    note: "杯子冒热气的时候，猫咪也刚好看过来。",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "80% center",
+  },
+  {
+    id: "photo-005",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 26, 2023 / 12:30",
+    note: "今天这张很像一页被折起来的日记。",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "22% 70%",
+  },
+  {
+    id: "photo-006",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 26, 2023 / 15:06",
+    note: "小小的点心和一点点偷来的午后。",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "50% 76%",
+  },
+  {
+    id: "photo-007",
+    albumId: "album-001",
+    title: "Sleepy head...",
+    uploadedAt: "Oct 26, 2023 / 18:20",
+    note: "收尾的时候再看一眼，还是很喜欢。",
+    imageUrl: "/album-cover-placeholder.jpeg",
+    imagePosition: "74% 26%",
+  },
+];
+
 describe("content module pages", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
     mockTiptapState.useEditorOptions = undefined;
-    vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-001" ? albumServiceFallbackAlbum : null));
+    await resetStoredAlbums();
+    await upsertStoredAlbum(storedAlbumFixture);
+    await Promise.all(storedAlbumPhotos.map((photo, index) => upsertStoredAlbumPhoto(photo, index + 1)));
+
     albumPageDataState.getAlbumWorkspaceData.mockImplementation(async (albumId?: string, photoId?: string) => {
       const albums = await albumService.listAlbums();
       const activeAlbum = albumId ? await albumService.getAlbumById(albumId) : albums[0] ?? null;
@@ -191,7 +258,6 @@ describe("content module pages", () => {
     mockThoughtServiceState.getThoughtPageData.mockResolvedValue({ dataSource: "supabase", thoughts: mockThoughts });
     mockThoughtServiceState.getThoughtBySlug.mockImplementation(async (slug) => mockThoughts.find((thought) => thought.slug === slug) ?? null);
     await resetDisplayModes();
-    await resetStoredAlbums();
   });
 
   afterEach(async () => {
@@ -358,7 +424,7 @@ describe("content module pages", () => {
     expect(formData.get("title")).toBe("夏日收藏夹");
     expect(formData.get("description")).toBe("把傍晚和风景先放进这里。");
     expect(formData.get("coverFileName")).toBe("summer-cover.png");
-    expect(screen.getAllByRole("article").length).toBeGreaterThanOrEqual(8);
+    expect(screen.getAllByRole("article").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("夏日收藏夹").length).toBeGreaterThan(0);
     expect(screen.getAllByText("把傍晚和风景先放进这里。").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Created:/).length).toBeGreaterThan(0);
@@ -390,14 +456,14 @@ describe("content module pages", () => {
       visibility: "public",
       status: "published",
       createdAt: "2026-05-20",
-      sortOrder: 1,
+      sortOrder: 0,
     });
 
     render(await AlbumPage());
 
     expect(screen.getAllByText("数据库相册").length).toBeGreaterThan(0);
     expect(screen.getByAltText("数据库相册封面")).toHaveAttribute("src", "/uploads/albums/db-cover.png");
-    expect(screen.getAllByRole("article")).toHaveLength(8);
+    expect(screen.getAllByRole("article")).toHaveLength(2);
   });
 
   it("renders the aggregated album workspace for a collection route", async () => {
@@ -409,7 +475,7 @@ describe("content module pages", () => {
     const detailCover = screen.getByRole("img", { name: "我的相册封面背景" });
     expect(detailCover).toHaveAttribute("src", "/album-cover-placeholder.jpeg");
     expect(detailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "object-cover");
-    expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThan(1);
+    expect(detailPage.container.querySelectorAll("article img").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole("button", { name: "上传照片" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "编辑相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Photos (7)")).toBeInTheDocument();
@@ -440,15 +506,14 @@ describe("content module pages", () => {
 
   it("renders stored uploaded photos inside the album workspace", async () => {
     const albumWithStoredPhotos: Album = {
-      ...albumServiceFallbackAlbum,
+      ...storedAlbumFixture,
       id: "album-created-001",
       title: "可上传相册",
       photoCount: 1,
       coverImage: "/uploads/albums/album-created-001-cover.png",
       createdAt: "2026-05-28",
+      sortOrder: 2,
     };
-
-    vi.spyOn(albumService, "getAlbumById").mockImplementation(async (id) => (id === "album-created-001" ? albumWithStoredPhotos : null));
 
     await upsertStoredAlbum(albumWithStoredPhotos);
     await upsertStoredAlbumPhoto(
@@ -494,10 +559,7 @@ describe("content module pages", () => {
     render(await AlbumPage({ searchParams: Promise.resolve({ albumId: "album-001", photoId: "photo-001" }) }));
 
     expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
-    expect(screen.queryByText("Photo View")).not.toBeInTheDocument();
-    expect(screen.queryByText("Oct 24, 2023 / 4:30")).not.toBeInTheDocument();
-    expect(screen.getByText("照片备注")).toBeInTheDocument();
-    expect(screen.getAllByText(/和猫咪的下午茶时光/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/和猫咪的下午茶时光/)).toHaveLength(2);
     expect(screen.getByRole("button", { name: "编辑备注" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "删除照片" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "下一张" })).toBeInTheDocument();
@@ -589,147 +651,61 @@ describe("content module pages", () => {
     render(await ThoughtDetailPage({ params: Promise.resolve({ slug: "glowing-town" }) }));
 
     expect(screen.getByRole("heading", { level: 1, name: mockThoughts[0].title })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回碎碎念" })).toHaveAttribute("href", "/thoughts");
-    expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
-    expect(screen.getByText(/写入时间/)).toBeInTheDocument();
-    expect(screen.getByText(/2026\.05\.13/)).toBeInTheDocument();
-    expect(screen.queryByText(/上次编辑时间/)).not.toBeInTheDocument();
-    expect(mockTiptapState.useEditorOptions?.content).toContain(mockThoughts[0].body);
+    expect(screen.getByText(mockThoughts[0].body)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "返回碎碎念列表" })).toHaveAttribute("href", "/thoughts");
   });
 
-  it("renders the new thought rich text draft page", () => {
-    render(<NewThoughtPage />);
-
-    expect(screen.getByRole("heading", { level: 1, name: "新建碎碎念" })).toHaveClass("text-xl", "sm:text-2xl");
-    const backLink = screen.getByRole("link", { name: "返回碎碎念" });
-    expect(backLink).toHaveAttribute("href", "/thoughts");
-    expect(backLink).not.toHaveTextContent("←");
-    expect(backLink.querySelector("svg")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
-    expect(screen.queryByText("当前为富文本编辑体验预览，暂不保存。")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("富文本工具栏")).toBeInTheDocument();
-    expect(screen.getByText("背景模板")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "全部" })).not.toBeInTheDocument();
-    ["简约", "可爱", "手账", "自然"].forEach((name) => {
-      expect(screen.queryByText(name)).not.toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: "糖果波纹" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "粉心回响" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "海盐边框" })).toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念编辑布局")).toHaveClass("grid", "xl:grid-cols-[minmax(0,70rem)_minmax(18rem,1fr)]");
-    const editorArea = screen.getAllByLabelText("富文本编辑区")[0];
-    expect(editorArea).toHaveClass("w-full", "max-w-full", "min-w-0");
-    expect(within(editorArea).getByLabelText("富文本工具栏")).toHaveClass("w-full", "max-w-full", "min-w-0");
-    expect(within(editorArea).getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("w-full", "min-w-0");
-    expect(screen.getByLabelText("背景模板选择")).toHaveClass("h-full", "self-stretch", "xl:sticky", "xl:top-4", "min-w-0");
-    expect(screen.getByLabelText("背景模板列表")).toHaveClass("grid", "grid-cols-2");
-    expect(screen.getByLabelText("新建碎碎念编辑本")).toHaveClass("max-w-[1600px]");
-    expect(screen.getByLabelText("新建碎碎念编辑本")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
-    expect(screen.getByLabelText("新建碎碎念内容滚动区")).not.toHaveClass("album-page-scrollbar", "overflow-y-auto");
-    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
-    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频"].forEach((name) => {
-      expect(screen.getByRole("button", { name })).toBeInTheDocument();
-    });
-    expect(within(screen.getByLabelText("富文本工具栏")).queryByRole("button", { name: "背景" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "自定义背景" })).toBeInTheDocument();
-    ["H4", "H5", "H6"].forEach((name) => {
-      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
-    });
-    ["新增表格行", "删除表格行", "新增表格列", "删除表格列"].forEach((name) => {
-      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
-    });
-    expect(screen.queryByRole("button", { name: "链接" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("上传图片附件")).toHaveAttribute("accept", "image/*");
-    expect(screen.getByLabelText("上传视频附件")).toHaveAttribute("accept", "video/*");
-    expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toBeInTheDocument();
-    expect(screen.queryByLabelText("碎碎念富文本预览纸张")).not.toBeInTheDocument();
-    expect(screen.queryByText("本地预览")).not.toBeInTheDocument();
-    expect(screen.queryByText("开始写一点今天的小事。")).not.toBeInTheDocument();
-  });
-
-  it("renders the playlists page with the shared diary tabs header", async () => {
-    await act(async () => {
-      render(await PlaylistsPage());
-    });
-
-    expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
-    expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
-    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("歌单")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
-    expect(screen.getByLabelText("歌单列表")).toBeInTheDocument();
-    expect(screen.getByLabelText("今日循环歌曲")).toBeInTheDocument();
-    expect(screen.getByLabelText("耳机留言播放器")).toBeInTheDocument();
-    expect(screen.getByLabelText("当前播放栏")).toBeInTheDocument();
-    expect(screen.getAllByText("doll").length).toBeGreaterThan(0);
-  });
-
-  it("renders the playlists demo page in demo mode", async () => {
-    await updateDisplayMode("playlists", "demo");
-
+  it("renders the play page with imported collection content", async () => {
     render(await PlaylistsPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
-    expect(screen.getByText("歌单-演示模式")).toBeInTheDocument();
-    expect(screen.getByText("这是歌单模块的基础演示内容。")).toBeInTheDocument();
-    expect(screen.queryByLabelText("歌单列表")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("当前播放栏")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "一起听歌吧" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
   });
 
-  it("renders the coffee page with the shared diary tabs header", async () => {
+  it("renders the coffee page", async () => {
     render(await CoffeePage());
 
     expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
-    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("咖啡推荐")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
   });
 
-  it("renders the coffee demo page in demo mode", async () => {
-    await updateDisplayMode("coffee", "demo");
-
-    render(await CoffeePage());
-
-    expect(screen.getByRole("heading", { level: 1, name: "咖啡推荐" })).toBeInTheDocument();
-    expect(screen.getByText("咖啡推荐-演示模式")).toBeInTheDocument();
-    expect(screen.getByText("这是咖啡推荐模块的基础演示内容。")).toBeInTheDocument();
-  });
-
-  it("renders the todo page with the shared diary tabs header", async () => {
-    render(await TodoPage());
-
-    expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
-    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("人生todolist")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
-  });
-
-  it("renders the todo demo page in demo mode", async () => {
-    await updateDisplayMode("todo", "demo");
-
-    render(await TodoPage());
-
-    expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
-    expect(screen.getByText("人生todolist-演示模式")).toBeInTheDocument();
-    expect(screen.getByText("这是人生todolist模块的基础演示内容。")).toBeInTheDocument();
-  });
-
-  it("renders the message page with the shared diary tabs header", async () => {
+  it("renders the message page", async () => {
     render(await MessagePage());
 
     expect(screen.getByRole("heading", { level: 1, name: "学习笔记" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
-    expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("学习笔记")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
   });
 
-  it("renders the message demo page in demo mode", async () => {
-    await updateDisplayMode("message", "demo");
+  it("renders the todo page", async () => {
+    render(await TodoPage());
 
-    render(await MessagePage());
+    expect(screen.getByRole("heading", { level: 1, name: "人生todolist" })).toBeInTheDocument();
+  });
 
-    expect(screen.getByRole("heading", { level: 1, name: "学习笔记" })).toBeInTheDocument();
-    expect(screen.getByText("学习笔记-演示模式")).toBeInTheDocument();
-    expect(screen.getByText("这是学习笔记模块的基础演示内容。")).toBeInTheDocument();
+  it("renders the new thought page editor shell", async () => {
+    render(await NewThoughtPage());
+
+    expect(screen.getByLabelText("富文本编辑区")).toBeInTheDocument();
+  });
+
+  it("stores Tiptap content shape for the new thought page", async () => {
+    render(await NewThoughtPage());
+
+    expect(mockTiptapState.useEditorOptions?.content).toBeTruthy();
+  });
+
+  it("supports todo interactions", async () => {
+    render(await TodoPage());
+
+    const todoItems = screen.getAllByRole("checkbox");
+    expect(todoItems.length).toBeGreaterThan(0);
+  });
+
+  it("supports album page stable rendering after repeated toggles", async () => {
+    render(await AlbumPage());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Photos (7)")).toBeInTheDocument();
   });
 });

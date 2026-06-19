@@ -1,13 +1,12 @@
 "use client";
 
-import type { AlbumPhoto } from "@/data/albumPhotos";
 import { Camera, ChevronLeft, ChevronRight, ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { AlbumFormDialog } from "./AlbumFormDialog";
 import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
-import type { Album } from "./types";
+import type { Album, AlbumPhoto } from "./types";
 
 type AlbumWorkspacePageViewProps = {
   initialActiveAlbum: Album | null;
@@ -129,6 +128,17 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
             </button>
           </div>
           <div className="absolute inset-x-4 bottom-4 rounded-[1.35rem] border border-white/20 bg-[rgba(34,22,25,0.38)] px-4 py-3 text-white shadow-[0_14px_28px_rgba(25,16,18,0.26)] backdrop-blur-md sm:inset-x-5 sm:px-5">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-white/72">照片备注</p>
+              <div className="flex items-center gap-1.5">
+                <button aria-label="编辑备注" className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-45" disabled={!isAdminUnlocked} onClick={onEdit} type="button">
+                  <Pencil aria-hidden="true" className="h-[0.76rem] w-[0.76rem] stroke-[2.15]" />
+                </button>
+                <button aria-label="删除照片" className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-45" disabled={!isAdminUnlocked} onClick={onDelete} type="button">
+                  <Trash2 aria-hidden="true" className="h-[0.76rem] w-[0.76rem] stroke-[2.15]" />
+                </button>
+              </div>
+            </div>
             <div className="album-page-scrollbar max-h-[124px] overflow-y-auto pr-1 sm:max-h-[146px]">
               <p className="whitespace-pre-line text-[0.95rem] leading-7 text-white">{activePhoto.note || "还没有备注。"}</p>
             </div>
@@ -262,7 +272,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     }
   };
 
-  const chooseFallbackAlbumId = (nextAlbums: Album[]) => {
+  const chooseNextAlbumId = (nextAlbums: Album[]) => {
     const nextAlbum = nextAlbums[activeAlbumIndex] ?? nextAlbums[Math.max(0, activeAlbumIndex - 1)] ?? nextAlbums[0] ?? null;
     return nextAlbum?.id ?? null;
   };
@@ -597,7 +607,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   const nextAlbums = displayAlbums.filter((album) => album.id !== pendingDeleteAlbum.id);
                   setDisplayAlbums(nextAlbums);
                   setPendingDeleteAlbum(null);
-                  navigateToSelection(chooseFallbackAlbumId(nextAlbums));
+                  navigateToSelection(chooseNextAlbumId(nextAlbums));
                 } catch (error) {
                   setPendingDeleteAlbumError(error instanceof Error ? error.message : "删除相册失败");
                 } finally {
@@ -634,7 +644,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
                 try {
                   const deletingPhotoIndex = displayPhotos.findIndex((photo) => photo.id === pendingDeletePhoto.id);
-                  const fallbackPhotoId = displayPhotos[deletingPhotoIndex + 1]?.id ?? displayPhotos[deletingPhotoIndex - 1]?.id ?? null;
+                  const nextSelectedPhotoId = displayPhotos[deletingPhotoIndex + 1]?.id ?? displayPhotos[deletingPhotoIndex - 1]?.id ?? null;
                   const response = await fetch(`/api/albums/${activeAlbum.id}/photos/${pendingDeletePhoto.id}`, {
                     credentials: "same-origin",
                     method: "DELETE",
@@ -655,7 +665,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   setActiveAlbum(data.album);
                   setDisplayPhotos(data.photos);
                   setPendingDeletePhoto(null);
-                  navigateToSelection(activeAlbum.id, fallbackPhotoId);
+                  navigateToSelection(activeAlbum.id, nextSelectedPhotoId);
                 } catch (error) {
                   setPendingDeletePhotoError(error instanceof Error ? error.message : "删除照片失败");
                 } finally {

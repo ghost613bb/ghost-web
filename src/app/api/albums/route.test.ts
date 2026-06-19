@@ -1,7 +1,6 @@
 import { access, rm } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { albumCollections } from "@/data/album";
 import { resetStoredAlbums } from "@/features/album/repository";
 import { deleteAlbum } from "@/features/album/service";
 import { GET, POST } from "./route";
@@ -27,16 +26,12 @@ describe("/api/albums", () => {
     await rm(albumUploadDir, { force: true, recursive: true });
   });
 
-  it("returns fallback album data when storage is empty", async () => {
+  it("returns an empty album list when storage is empty", async () => {
     const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.albums).toHaveLength(albumCollections.length);
-    expect(data.albums[0]).toMatchObject({
-      id: albumCollections[0]?.id,
-      title: albumCollections[0]?.title,
-    });
+    expect(data).toEqual({ albums: [] });
   });
 
   it("creates a stored album from multipart form data and saves the cover file", async () => {

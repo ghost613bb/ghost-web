@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { albumCollections } from "@/data/album";
 
 const supabaseEnvState = vi.hoisted(() => ({
   enabled: true,
@@ -17,9 +16,18 @@ vi.mock("@/lib/supabase/server", async () => {
 import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
 import { createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, getAlbumWorkspaceData, listAlbums } from "./service";
 
-describe("album service", () => {
-  const fallbackAlbum = albumCollections[0]!;
+const storedAlbum = {
+  id: "album-001",
+  title: "我的相册",
+  description: "已经迁移到数据库里的相册。",
+  photoCount: 0,
+  visibility: "public" as const,
+  status: "published" as const,
+  createdAt: "2023-07-31",
+  sortOrder: 1,
+};
 
+describe("album service", () => {
   beforeEach(async () => {
     vi.useRealTimers();
     process.env.TZ = "America/Los_Angeles";
@@ -34,8 +42,9 @@ describe("album service", () => {
 
   it("uses local clock hours and minutes for uploaded photo time", async () => {
     vi.setSystemTime(new Date(2026, 4, 28, 10, 5));
+    await upsertStoredAlbum(storedAlbum);
 
-    const result = await createAlbumPhoto(fallbackAlbum.id, {
+    const result = await createAlbumPhoto(storedAlbum.id, {
       title: "本地时间照片",
       note: "小时和分钟应跟随本地时间",
       imageUrl: "/uploads/albums/local-time.png",
@@ -44,55 +53,35 @@ describe("album service", () => {
     expect(result.photo.uploadedAt).toBe("2026-05-28 / 10:05");
   });
 
-  it("uses a stored album to override fallback album content without duplicating the card", async () => {
+  it("lists stored albums without local fallback data", async () => {
     await upsertStoredAlbum({
-      id: fallbackAlbum.id,
+      ...storedAlbum,
       title: "编辑后的相册标题",
-      description: "把静态相册覆盖成新的内容。",
+      description: "把数据库相册展示出来。",
       coverImage: "/uploads/albums/edited-cover.png",
-      photoCount: fallbackAlbum.photoCount,
-      visibility: fallbackAlbum.visibility,
-      status: "published",
-      createdAt: fallbackAlbum.createdAt,
-      sortOrder: fallbackAlbum.sortOrder,
     });
 
     const albums = await listAlbums();
-    const matchedAlbums = albums.filter((album) => album.id === fallbackAlbum.id);
 
-    expect(matchedAlbums).toHaveLength(1);
-    expect(matchedAlbums[0]).toMatchObject({
-      id: fallbackAlbum.id,
-      title: "编辑后的相册标题",
-      description: "把静态相册覆盖成新的内容。",
-      coverImage: "/uploads/albums/edited-cover.png",
-    });
+    expect(albums).toEqual([
+      expect.objectContaining({
+        id: storedAlbum.id,
+        title: "编辑后的相册标题",
+        description: "把数据库相册展示出来。",
+        coverImage: "/uploads/albums/edited-cover.png",
+      }),
+    ]);
   });
 
-  it("treats a stored draft shadow as a deleted fallback album", async () => {
-    await upsertStoredAlbum({
-      id: fallbackAlbum.id,
-      title: fallbackAlbum.title,
-      description: fallbackAlbum.description,
-      coverImage: fallbackAlbum.coverImage,
-      photoCount: fallbackAlbum.photoCount,
-      visibility: fallbackAlbum.visibility,
-      status: "draft",
-      createdAt: fallbackAlbum.createdAt,
-      sortOrder: fallbackAlbum.sortOrder,
-    });
-
-    const albums = await listAlbums();
-
-    expect(albums.some((album) => album.id === fallbackAlbum.id)).toBe(false);
-    await expect(getAlbumById(fallbackAlbum.id)).resolves.toBeNull();
+  it("returns null when an album is missing", async () => {
+    await expect(getAlbumById("missing-album")).resolves.toBeNull();
   });
 
   it("throws a clear error when album storage is not configured", async () => {
     supabaseEnvState.enabled = false;
 
     await expect(
-      createAlbumPhoto(fallbackAlbum.id, {
+      createAlbumPhoto(storedAlbum.id, {
         title: "未配置数据源的照片",
         imageUrl: "/uploads/albums/unavailable.png",
       }),
@@ -118,10 +107,12 @@ describe("album service", () => {
   });
 
   it("returns available photo detail page data when a photo is missing", async () => {
-    const data = await getAlbumPhotoDetailPageData(fallbackAlbum.id, "missing-photo");
+    await upsertStoredAlbum(storedAlbum);
+
+    const data = await getAlbumPhotoDetailPageData(storedAlbum.id, "missing-photo");
 
     expect(data).toEqual({
-      album: expect.objectContaining({ id: fallbackAlbum.id }),
+      album: expect.objectContaining({ id: storedAlbum.id }),
       dataSource: "available",
       nextPhotoId: null,
       photo: null,
@@ -132,7 +123,7 @@ describe("album service", () => {
   it("returns unavailable photo detail page data when album storage env is missing", async () => {
     supabaseEnvState.enabled = false;
 
-    await expect(getAlbumPhotoDetailPageData(fallbackAlbum.id, "photo-001")).resolves.toEqual({
+    await expect(getAlbumPhotoDetailPageData(storedAlbum.id, "photo-001")).resolves.toEqual({
       album: null,
       dataSource: "unavailable",
       nextPhotoId: null,
@@ -142,27 +133,34 @@ describe("album service", () => {
     });
   });
 
-  it("returns workspace data with the first album selected by default", async () => {
+  it("returns an empty workspace when there are no stored albums", async () => {
     const data = await getAlbumWorkspaceData();
 
     expect(data).toEqual(
       expect.objectContaining({
-        activeAlbum: expect.objectContaining({ id: fallbackAlbum.id }),
+        activeAlbum: null,
         activePhoto: null,
-        albums: expect.any(Array),
+        albums: [],
         dataSource: "available",
-        photos: expect.any(Array),
+        photos: [],
       }),
     );
   });
 
-  it("returns workspace data for a selected photo", async () => {
-    const data = await getAlbumWorkspaceData(fallbackAlbum.id, "photo-001");
+  it("returns workspace data for a stored selected photo", async () => {
+    await upsertStoredAlbum(storedAlbum);
+    const created = await createAlbumPhoto(storedAlbum.id, {
+      title: "首张照片",
+      note: "数据库里的照片。",
+      imageUrl: "/uploads/albums/first-photo.png",
+    });
+
+    const data = await getAlbumWorkspaceData(storedAlbum.id, created.photo.id);
 
     expect(data).toEqual(
       expect.objectContaining({
-        activeAlbum: expect.objectContaining({ id: fallbackAlbum.id }),
-        activePhoto: expect.objectContaining({ id: "photo-001" }),
+        activeAlbum: expect.objectContaining({ id: storedAlbum.id }),
+        activePhoto: expect.objectContaining({ id: created.photo.id }),
         dataSource: "available",
       }),
     );

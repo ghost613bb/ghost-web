@@ -26,6 +26,16 @@ export type CreateAlbumPhotoInput = {
   title?: string;
 };
 
+export type AlbumPhoto = {
+  albumId: string;
+  id: string;
+  imagePosition: string;
+  imageUrl: string;
+  note: string;
+  title: string;
+  uploadedAt: string;
+};
+
 export type UpdateAlbumPhotoInput = {
   note?: string;
   title: string;
