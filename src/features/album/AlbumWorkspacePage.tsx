@@ -927,11 +927,26 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 取消
               </button>
               <button className="rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-5 py-2 text-[1rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] disabled:cursor-not-allowed disabled:opacity-70" disabled={isDeletingPhoto} onClick={async () => {
+                const deletingPhoto = pendingDeletePhoto;
+                const albumBeforeDelete = activeAlbum;
+                const albumsBeforeDelete = displayAlbums;
+                const photosBeforeDelete = photosByAlbumId[albumBeforeDelete.id] ?? displayPhotos;
+                const nextPhotos = photosBeforeDelete.filter((photo) => photo.id !== deletingPhoto.id);
+                const nextAlbum: Album = {
+                  ...albumBeforeDelete,
+                  photoCount: Math.max(0, albumBeforeDelete.photoCount - 1),
+                  status: "published",
+                };
+
                 setPendingDeletePhotoError("");
-                setIsDeletingPhoto(true);
+                setPendingDeletePhoto(null);
+                setActivePhotoId(null);
+                setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === albumBeforeDelete.id ? nextAlbum : album)));
+                setPhotosByAlbumId((current) => ({ ...current, [albumBeforeDelete.id]: nextPhotos }));
+                updateWorkspaceHistory(albumBeforeDelete.id, null, "replace");
 
                 try {
-                  const response = await fetch(`/api/albums/${activeAlbum.id}/photos/${pendingDeletePhoto.id}`, {
+                  const response = await fetch(`/api/albums/${albumBeforeDelete.id}/photos/${deletingPhoto.id}`, {
                     credentials: "same-origin",
                     method: "DELETE",
                   });
@@ -948,14 +963,12 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   }
 
                   setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-                  setPhotosByAlbumId((current) => ({ ...current, [activeAlbum.id]: data.photos! }));
-                  setActivePhotoId(null);
-                  setPendingDeletePhoto(null);
-                  updateWorkspaceHistory(activeAlbum.id, null, "replace");
+                  setPhotosByAlbumId((current) => ({ ...current, [albumBeforeDelete.id]: data.photos! }));
                 } catch (error) {
+                  setDisplayAlbums(albumsBeforeDelete);
+                  setPhotosByAlbumId((current) => ({ ...current, [albumBeforeDelete.id]: photosBeforeDelete }));
+                  setPendingDeletePhoto(deletingPhoto);
                   setPendingDeletePhotoError(error instanceof Error ? error.message : "删除照片失败");
-                } finally {
-                  setIsDeletingPhoto(false);
                 }
               }} type="button">
                 {isDeletingPhoto ? "删除中" : "确认删除照片"}
