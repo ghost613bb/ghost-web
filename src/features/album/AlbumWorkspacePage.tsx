@@ -143,16 +143,23 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-[#3f2629]/58 px-4 pb-6 pt-10 backdrop-blur-[6px] sm:px-6 sm:pt-14">
-      <button aria-label="关闭照片详情弹窗" className="absolute inset-0" onClick={onClose} type="button" />
-      <div aria-label="照片详情弹窗" className="relative z-10 mx-auto w-full max-w-[760px] overflow-hidden rounded-[2rem] border-[2.5px] border-stone-700/75 bg-black shadow-[0_24px_80px_rgba(78,49,50,0.28)]" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-40 bg-[#3f2629]/58 px-4 pb-6 pt-10 backdrop-blur-[6px] sm:px-6 sm:pt-14" onClick={onClose}>
+      <div aria-label="照片详情弹窗" className="relative z-10 mx-auto w-full max-w-[760px] overflow-hidden rounded-[2rem] border-[2.5px] border-stone-700/75 bg-black shadow-[0_24px_80px_rgba(78,49,50,0.28)]" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
         <div className="relative h-[460px] bg-black sm:h-[560px]">
           <div aria-label={getPhotoAriaLabel(activePhoto.uploadedAt, "detail")} className="absolute inset-0 grid place-items-center overflow-hidden" role="img">
             <img alt="" className="h-full w-full object-contain" src={activePhoto.imageUrl} style={{ objectPosition: activePhoto.imagePosition }} />
           </div>
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(39,27,28,0)_0%,rgba(39,27,28,0.72)_100%)]" />
-          <div className="absolute right-4 top-4">
-            <button aria-label="关闭弹窗" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-[rgba(33,20,24,0.56)] text-white shadow-[0_10px_22px_rgba(30,18,22,0.24)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[rgba(33,20,24,0.7)]" onClick={onClose} type="button">
+          <div className="absolute right-4 top-4 z-20">
+            <button
+              aria-label="关闭弹窗"
+              className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-[rgba(33,20,24,0.56)] text-white shadow-[0_10px_22px_rgba(30,18,22,0.24)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[rgba(33,20,24,0.7)]"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose();
+              }}
+              type="button"
+            >
               <X aria-hidden="true" className="h-4.5 w-4.5 stroke-[2.4]" />
             </button>
           </div>
