@@ -217,6 +217,7 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
 export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialDeleteAlbumCandidate = null, initialPhotos }: AlbumWorkspacePageViewProps) {
   const router = useRouter();
   const albumSelectionRequestRef = useRef(0);
+  const deletedPhotoIdsRef = useRef(new Set<string>());
   const [displayAlbums, setDisplayAlbums] = useState(initialAlbums);
   const [activeAlbumId, setActiveAlbumId] = useState(initialActiveAlbum?.id ?? null);
   const [photosByAlbumId, setPhotosByAlbumId] = useState<AlbumPhotosByAlbumId>(() => buildInitialAlbumPhotosMap(initialActiveAlbum, initialPhotos));
@@ -237,6 +238,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
   useEffect(() => {
     albumSelectionRequestRef.current += 1;
+    deletedPhotoIdsRef.current.clear();
     setDisplayAlbums(initialAlbums);
     setActiveAlbumId(initialActiveAlbum?.id ?? null);
     setPhotosByAlbumId(buildInitialAlbumPhotosMap(initialActiveAlbum, initialPhotos));
@@ -270,7 +272,14 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   }, []);
 
   const activeAlbum = useMemo(() => (activeAlbumId ? displayAlbums.find((album) => album.id === activeAlbumId) ?? null : null), [activeAlbumId, displayAlbums]);
-  const displayPhotos = useMemo(() => (activeAlbum ? photosByAlbumId[activeAlbum.id] ?? [] : []), [activeAlbum, photosByAlbumId]);
+  const visiblePhotosByAlbumId = useMemo(() => {
+    if (deletedPhotoIdsRef.current.size === 0) {
+      return photosByAlbumId;
+    }
+
+    return Object.fromEntries(Object.entries(photosByAlbumId).map(([albumId, photos]) => [albumId, photos.filter((photo) => !deletedPhotoIdsRef.current.has(photo.id))]));
+  }, [photosByAlbumId]);
+  const displayPhotos = useMemo(() => (activeAlbum ? visiblePhotosByAlbumId[activeAlbum.id] ?? [] : []), [activeAlbum, visiblePhotosByAlbumId]);
   const activeAlbumIndex = useMemo(() => (activeAlbum ? displayAlbums.findIndex((album) => album.id === activeAlbum.id) : -1), [activeAlbum, displayAlbums]);
   const activePhoto = useMemo(() => displayPhotos.find((photo) => photo.id === activePhotoId) ?? null, [activePhotoId, displayPhotos]);
   const { previousPhotoId, nextPhotoId } = useMemo(() => getAdjacentPhotoIds(displayPhotos, activePhotoId), [activePhotoId, displayPhotos]);
@@ -292,8 +301,8 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   }, [router]);
 
   const fetchAlbumPhotos = useCallback(async (albumId: string) => {
-    if (albumId in photosByAlbumId) {
-      return photosByAlbumId[albumId];
+    if (albumId in visiblePhotosByAlbumId) {
+      return visiblePhotosByAlbumId[albumId];
     }
 
     setLoadingAlbumId(albumId);
@@ -315,7 +324,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     } finally {
       setLoadingAlbumId((current) => (current === albumId ? null : current));
     }
-  }, [photosByAlbumId]);
+  }, [visiblePhotosByAlbumId]);
 
   const applyAlbumSelectionLocally = useCallback(async (nextAlbums: Album[], nextAlbumId: string | null, options: ApplyAlbumSelectionOptions = {}) => {
     const { fallbackToRouter = true, historyMode = "replace", photoId = null } = options;
@@ -347,7 +356,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     setActiveAlbumId(nextActiveAlbum.id);
     setActivePhotoId(null);
 
-    let nextPhotos = nextActiveAlbum.id in photosByAlbumId ? photosByAlbumId[nextActiveAlbum.id] : null;
+    let nextPhotos = nextActiveAlbum.id in visiblePhotosByAlbumId ? visiblePhotosByAlbumId[nextActiveAlbum.id] : null;
 
     if (!nextPhotos) {
       const loadedPhotos = await fetchAlbumPhotos(nextActiveAlbum.id);
@@ -396,7 +405,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     }
 
     return true;
-  }, [fetchAlbumPhotos, navigateToSelection, photosByAlbumId, updateWorkspaceHistory]);
+  }, [fetchAlbumPhotos, navigateToSelection, visiblePhotosByAlbumId, updateWorkspaceHistory]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -963,6 +972,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 };
 
                 setPendingDeletePhotoError("");
+                deletedPhotoIdsRef.current.add(deletingPhoto.id);
                 setPendingDeletePhoto(null);
                 setActivePhotoId(null);
                 setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === albumBeforeDelete.id ? nextAlbum : album)));
@@ -987,8 +997,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   }
 
                   setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-                  setPhotosByAlbumId((current) => ({ ...current, [albumBeforeDelete.id]: data.photos! }));
+                  setPhotosByAlbumId((current) => ({ ...current, [albumBeforeDelete.id]: data.photos!.filter((photo) => photo.id !== deletingPhoto.id) }));
                 } catch (error) {
+                  deletedPhotoIdsRef.current.delete(deletingPhoto.id);
                   setDisplayAlbums(albumsBeforeDelete);
                   setPhotosByAlbumId((current) => ({ ...current, [albumBeforeDelete.id]: photosBeforeDelete }));
                   setPendingDeletePhoto(deletingPhoto);
