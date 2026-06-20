@@ -272,6 +272,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const activeAlbumIndex = useMemo(() => (activeAlbum ? displayAlbums.findIndex((album) => album.id === activeAlbum.id) : -1), [activeAlbum, displayAlbums]);
   const activePhoto = useMemo(() => displayPhotos.find((photo) => photo.id === activePhotoId) ?? null, [activePhotoId, displayPhotos]);
   const { previousPhotoId, nextPhotoId } = useMemo(() => getAdjacentPhotoIds(displayPhotos, activePhotoId), [activePhotoId, displayPhotos]);
+  const shouldHidePhotoLightbox = Boolean(isCreateDialogOpen || editingAlbum || isUploadDialogOpen || editingPhoto || pendingDeleteAlbum || pendingDeletePhoto);
 
   const updateWorkspaceHistory = (albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
     if (typeof window === "undefined") {
@@ -397,6 +398,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             <div className="mb-4 mt-4">
               <button className="flex w-full items-center justify-center gap-2 rounded-[1.15rem] border-[2.5px] border-stone-700/80 bg-[#ffe6ad] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_5px_0_rgba(112,84,84,0.16)] transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
                 setAdminError(null);
+                setActivePhotoId(null);
                 setIsCreateDialogOpen(true);
               }} type="button">
                 <Plus aria-hidden="true" className="h-4 w-4" />
@@ -438,12 +440,20 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 <div className="flex flex-col gap-3">
                   <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => {
                     setAdminError(null);
+                    setActivePhotoId(null);
                     setIsUploadDialogOpen(true);
                   }} type="button">
                     <Camera aria-hidden="true" className="mr-2 h-[1.05rem] w-[1.05rem] stroke-[1.9]" />
                     上传照片
                   </button>
-                  <button className="inline-flex items-center rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => activeAlbum && setEditingAlbum(activeAlbum)} type="button">
+                  <button className="inline-flex items-center rounded-full border-2 border-[#c7bda4] bg-[#f8f2da] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.08)] transition hover:-translate-y-0.5 hover:bg-[#fbf6e4] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => {
+                    if (!activeAlbum) {
+                      return;
+                    }
+
+                    setActivePhotoId(null);
+                    setEditingAlbum(activeAlbum);
+                  }} type="button">
                     <Pencil aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
                     编辑相册
                   </button>
@@ -494,15 +504,23 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
       <AlbumPhotoLightbox
         activeAlbum={activeAlbum}
-        activePhoto={activePhoto}
+        activePhoto={shouldHidePhotoLightbox ? null : activePhoto}
         isAdminUnlocked={isAdminUnlocked}
         nextPhotoId={nextPhotoId}
         onClose={() => closeLightbox()}
         onDelete={() => {
           setPendingDeletePhotoError("");
+          setActivePhotoId(null);
           setPendingDeletePhoto(activePhoto);
         }}
-        onEdit={() => activePhoto && setEditingPhoto(activePhoto)}
+        onEdit={() => {
+          if (!activePhoto) {
+            return;
+          }
+
+          setActivePhotoId(null);
+          setEditingPhoto(activePhoto);
+        }}
         onNavigate={(photoId) => selectPhotoLocally(photoId)}
         previousPhotoId={previousPhotoId}
       />
