@@ -98,13 +98,15 @@ describe("/api/albums/[albumId]", () => {
       id: "album-001",
       photoCount: 1,
     });
-    expect(data.photos.at(-1)).toMatchObject({
+    const createdPhoto = data.photos.at(-1);
+    expect(createdPhoto).toMatchObject({
       albumId: "album-001",
       note: "窗边打盹的照片",
-      imageUrl: "/uploads/albums/album-001-photo-001-cat-window.png",
     });
+    expect(createdPhoto.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(createdPhoto.imageUrl).toBe(`/uploads/albums/${createdPhoto.id}-cat-window.png`);
 
-    const storedPhotoPath = path.join(albumUploadDir, "album-001-photo-001-cat-window.png");
+    const storedPhotoPath = path.join(albumUploadDir, `${createdPhoto.id}-cat-window.png`);
     await expect(access(storedPhotoPath)).resolves.toBeUndefined();
     await expect(stat(storedPhotoPath)).resolves.toMatchObject({ size: 9 });
   });

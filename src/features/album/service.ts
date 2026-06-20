@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { hasSupabaseServiceRoleEnv } from "@/lib/supabase/server";
 import {
   deleteStoredAlbum,
@@ -52,10 +53,6 @@ function formatUploadedAt(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} / ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function buildStoredAlbumPhotoId(albumId: string, index: number) {
-  return `${albumId}-photo-${String(index).padStart(3, "0")}`;
 }
 
 function isAlbumStorageConfigured() {
@@ -169,7 +166,7 @@ export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoI
   const currentPhotos = await listAlbumPhotos(albumId);
   const nextIndex = currentPhotos.length + 1;
   const nextPhoto = {
-    id: buildStoredAlbumPhotoId(albumId, nextIndex),
+    id: input.id ?? randomUUID(),
     albumId,
     uploadedAt: formatUploadedAt(new Date()),
     note: input.note || "先记下这一刻。",

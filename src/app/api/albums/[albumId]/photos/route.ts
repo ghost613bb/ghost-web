@@ -66,9 +66,7 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
 
     const requestedFileName = typeof rawPhotoFileName === "string" && rawPhotoFileName.trim().length > 0 ? rawPhotoFileName.trim() : rawPhotoFile.name;
     const safeFileName = sanitizeFileName(requestedFileName || "photo");
-    const currentPhotos = await listAlbumPhotos(albumId);
-    const currentPhotoIndex = currentPhotos.length + 1;
-    const photoId = `${albumId}-photo-${String(currentPhotoIndex).padStart(3, "0")}`;
+    const photoId = crypto.randomUUID();
     const finalFileName = `${photoId}-${safeFileName}`;
     const uploadDir = process.env.ALBUM_UPLOAD_DIR ?? path.join(process.cwd(), "public/uploads/albums");
     const outputPath = path.join(uploadDir, finalFileName);
@@ -77,6 +75,7 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
     await writeFile(outputPath, Buffer.from(await rawPhotoFile.arrayBuffer()));
 
     const photoDraft = parseCreateAlbumPhoto({
+      id: photoId,
       note: typeof rawNote === "string" ? rawNote : undefined,
       imageUrl: `/uploads/albums/${finalFileName}`,
     });

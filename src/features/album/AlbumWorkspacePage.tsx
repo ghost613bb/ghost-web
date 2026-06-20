@@ -729,6 +729,19 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             setPendingDeleteAlbum(editingAlbum);
           }}
           onSubmit={async ({ title, description, coverFile }) => {
+            const editingAlbumSnapshot = editingAlbum;
+            const albumsBeforeEdit = displayAlbums;
+            const optimisticAlbum: Album = {
+              ...editingAlbumSnapshot,
+              title,
+              description: description || "先留一个新的相册位置。",
+              coverImage: coverFile ? editingAlbumSnapshot.coverImage : editingAlbumSnapshot.coverImage,
+              status: "published",
+            };
+
+            setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === editingAlbumSnapshot.id ? optimisticAlbum : album)));
+            setEditingAlbum(null);
+
             const formData = new FormData();
             formData.set("title", title);
             formData.set("description", description);
@@ -738,25 +751,30 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
               formData.append("coverFile", coverFile, coverFile.name);
             }
 
-            const response = await fetch(`/api/albums/${editingAlbum.id}`, {
-              credentials: "same-origin",
-              method: "PATCH",
-              body: formData,
-            });
-            const data = (await response.json()) as { album?: Album; error?: string };
+            try {
+              const response = await fetch(`/api/albums/${editingAlbumSnapshot.id}`, {
+                credentials: "same-origin",
+                method: "PATCH",
+                body: formData,
+              });
+              const data = (await response.json()) as { album?: Album; error?: string };
 
-            if (!response.ok || !data.album) {
-              const message = getManagementErrorMessage(data.error ?? "编辑相册失败");
+              if (!response.ok || !data.album) {
+                const message = getManagementErrorMessage(data.error ?? "编辑相册失败");
 
-              if (message === "请先解锁管理") {
-                setIsAdminUnlocked(false);
+                if (message === "请先解锁管理") {
+                  setIsAdminUnlocked(false);
+                }
+
+                throw new Error(message);
               }
 
-              throw new Error(message);
+              setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
+            } catch (error) {
+              setDisplayAlbums(albumsBeforeEdit);
+              setEditingAlbum(editingAlbumSnapshot);
+              throw error;
             }
-
-            setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-            setEditingAlbum(null);
           }}
           submitErrorMessage="编辑相册失败"
           submitLabel="保存修改"

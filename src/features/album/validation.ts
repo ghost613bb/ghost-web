@@ -38,6 +38,10 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
 
   const photo = body as Partial<CreateAlbumPhotoInput>;
 
+  if (photo.id !== undefined && photo.id !== null && typeof photo.id !== "string") {
+    throw new Error("photo 参数不合法");
+  }
+
   if (photo.note !== undefined && photo.note !== null && typeof photo.note !== "string") {
     throw new Error("photo 参数不合法");
   }
@@ -51,6 +55,7 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
   }
 
   return {
+    id: photo.id?.trim() || undefined,
     note: photo.note?.trim() || undefined,
     imageUrl: photo.imageUrl.trim(),
     imagePosition: photo.imagePosition?.trim() || undefined,

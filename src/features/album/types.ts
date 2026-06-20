@@ -20,6 +20,7 @@ export type CreateAlbumInput = {
 };
 
 export type CreateAlbumPhotoInput = {
+  id?: string;
   imagePosition?: string;
   imageUrl: string;
   note?: string;
