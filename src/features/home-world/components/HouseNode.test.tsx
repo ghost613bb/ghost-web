@@ -1,6 +1,6 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HomeModule } from "@/features/home-world/types";
 import { HouseNode } from "./HouseNode";
 
@@ -49,6 +49,31 @@ const moduleWithRaisedAsset = {
 } satisfies HomeModule;
 
 describe("HouseNode", () => {
+  beforeEach(() => {
+    pushMock.mockClear();
+  });
+
+  it("disables pointer navigation when first-person controls own entry", () => {
+    const onActiveChange = vi.fn();
+    const { container } = render(
+      <HouseNode
+        module={moduleWithOffsetAsset}
+        active={false}
+        onActiveChange={onActiveChange}
+        pointerNavigationEnabled={false}
+      />,
+    );
+    const group = container.querySelector("group");
+
+    expect(group).toBeTruthy();
+
+    fireEvent.pointerEnter(group!);
+    fireEvent.click(group!);
+
+    expect(onActiveChange).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
   it("positions the hover ring under the tuned model xz offset", () => {
     const { container } = render(<HouseNode module={moduleWithOffsetAsset} active={false} onActiveChange={vi.fn()} />);
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { Float, OrbitControls } from "@react-three/drei";
+import { Float } from "@react-three/drei";
+import { townSceneTransform } from "@/features/home-world/config/townNavigation";
 import type { HomeModule } from "@/features/home-world/types";
 import { CenterAvatar } from "./CenterAvatar";
+import { FirstPersonController } from "./FirstPersonController";
 import { HouseNode } from "./HouseNode";
 import { ParallelogramTownGround } from "./ParallelogramTownGround";
 import { LowPolyCloud } from "./LowPolyCloud";
@@ -10,19 +12,19 @@ import { LowPolySun } from "./LowPolySun";
 
 type WorldSceneProps = {
   activeModuleId: string | null;
+  isExploring: boolean;
   modules: HomeModule[];
   onActiveModuleChange: (id: string | null) => void;
+  onExploringChange: (value: boolean) => void;
+  onPointerLockChange: (value: boolean) => void;
 };
 
-const sceneGroupPosition: [number, number, number] = [0, -0.24, 0];
-const sceneGroupScale = 1.04;
-
-export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: WorldSceneProps) {
+export function WorldScene({ activeModuleId, isExploring, modules, onActiveModuleChange, onExploringChange, onPointerLockChange }: WorldSceneProps) {
   return (
     <>
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 7, 3]} intensity={2.2} castShadow />
-      <group position={sceneGroupPosition} scale={sceneGroupScale}>
+      <group position={townSceneTransform.position} scale={townSceneTransform.scale}>
         <LowPolyCloud position={[-6.25, 1.12, -0.35]} rotation={[0, -0.18, 0]} scale={0.026} />
         <LowPolyCloud position={[-4.55, 1.35, -2.0]} rotation={[0, 0.28, 0]} scale={0.022} />
         <LowPolySun position={[-4.95, 1.58, -3.7]} rotation={[0, 0, 0]} scale={0.0034} />
@@ -44,11 +46,19 @@ export function WorldScene({ activeModuleId, modules, onActiveModuleChange }: Wo
             module={module}
             active={activeModuleId === module.id}
             onActiveChange={onActiveModuleChange}
+            pointerNavigationEnabled={false}
           />
         ))}
       </group>
 
-      <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2.15} minDistance={4.2} maxDistance={7.2} />
+      <FirstPersonController
+        activeModuleId={activeModuleId}
+        isExploring={isExploring}
+        modules={modules}
+        onActiveModuleChange={onActiveModuleChange}
+        onExploringChange={onExploringChange}
+        onPointerLockChange={onPointerLockChange}
+      />
     </>
   );
 }

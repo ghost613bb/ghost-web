@@ -42,8 +42,9 @@ function collectElementTypes(node: ReactNode, types: string[] = []) {
   }
 
   const elementType = node.type;
+  const props = node.props as { children?: ReactNode };
   types.push(typeof elementType === "string" ? elementType : elementType.name ?? "anonymous");
-  collectElementTypes(node.props.children, types);
+  collectElementTypes(props.children, types);
   return types;
 }
 
@@ -83,24 +84,24 @@ describe("WorldScene", () => {
 
   it("moves and scales visible scene content through a shared framing group", () => {
     const source = readFileSync(path.join(process.cwd(), "src/features/home-world/components/WorldScene.tsx"), "utf8");
-    const groupStart = "<group position={sceneGroupPosition} scale={sceneGroupScale}>";
+    const groupStart = "<group position={townSceneTransform.position} scale={townSceneTransform.scale}>";
     const firstCloud = "<LowPolyCloud position={[-6.25, 1.12, -0.35]}";
     const sun = "<LowPolySun position={[-4.95, 1.58, -3.7]}";
-    const orbitControls = "<OrbitControls";
+    const firstPersonController = "<FirstPersonController";
 
-    expect(source).toContain("const sceneGroupPosition: [number, number, number] = [0, -0.24, 0];");
-    expect(source).toContain("const sceneGroupScale = 1.04;");
+    expect(source).toContain("townSceneTransform");
     expect(source).toContain(groupStart);
     expect(source).toContain(firstCloud);
     expect(source).toContain(sun);
-    expect(source).toContain(orbitControls);
+    expect(source).toContain(firstPersonController);
+    expect(source).not.toContain("OrbitControls");
 
     const groupStartIndex = source.indexOf(groupStart);
-    const orbitControlsIndex = source.indexOf(orbitControls);
+    const firstPersonControllerIndex = source.indexOf(firstPersonController);
 
     expect(groupStartIndex).toBeGreaterThanOrEqual(0);
-    expect(orbitControlsIndex).toBeGreaterThanOrEqual(0);
-    expect(groupStartIndex).toBeLessThan(orbitControlsIndex);
+    expect(firstPersonControllerIndex).toBeGreaterThanOrEqual(0);
+    expect(groupStartIndex).toBeLessThan(firstPersonControllerIndex);
 
     const framedSceneSource = extractGroupSource(source, groupStart);
 
@@ -114,8 +115,11 @@ describe("WorldScene", () => {
   it("does not render the deprecated pale blue ground ring", () => {
     const tree = WorldScene({
       activeModuleId: null,
+      isExploring: false,
       modules: [],
       onActiveModuleChange: () => {},
+      onExploringChange: () => {},
+      onPointerLockChange: () => {},
     });
 
     const elementTypes = collectElementTypes(tree);

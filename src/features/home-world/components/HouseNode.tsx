@@ -11,6 +11,7 @@ type HouseNodeProps = {
   module: HomeModule;
   active: boolean;
   onActiveChange: (id: string | null) => void;
+  pointerNavigationEnabled?: boolean;
 };
 
 const grassSurfaceY = 0.17;
@@ -25,12 +26,12 @@ function getHoverRingPosition(module: HomeModule): [number, number, number] {
   return [asset.position[0], hoverRingElevation, asset.position[2]];
 }
 
-export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
+export function HouseNode({ module, active, onActiveChange, pointerNavigationEnabled = true }: HouseNodeProps) {
   const router = useRouter();
   const [pressedOnce, setPressedOnce] = useState(false);
   const emissiveIntensity = active ? 1.2 : 0.25;
   const scale = active ? 1.08 : 1;
-  const y = grassSurfaceY + (active ? 0.14 : 0);
+  const y = grassSurfaceY;
   const rotationY = module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
   const hoverRingPosition = getHoverRingPosition(module);
 
@@ -50,15 +51,27 @@ export function HouseNode({ module, active, onActiveChange }: HouseNodeProps) {
       rotation={[0, rotationY, 0]}
       scale={scale}
       onPointerEnter={(event) => {
+        if (!pointerNavigationEnabled) {
+          return;
+        }
+
         event.stopPropagation();
         onActiveChange(module.id);
       }}
       onPointerLeave={(event) => {
+        if (!pointerNavigationEnabled) {
+          return;
+        }
+
         event.stopPropagation();
         setPressedOnce(false);
         onActiveChange(null);
       }}
       onClick={(event) => {
+        if (!pointerNavigationEnabled) {
+          return;
+        }
+
         event.stopPropagation();
         handleClick();
       }}

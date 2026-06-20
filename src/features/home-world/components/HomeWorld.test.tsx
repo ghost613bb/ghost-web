@@ -6,12 +6,17 @@ vi.mock("./HomeWorldCanvas", () => ({
   HomeWorldCanvas: () => <div data-testid="home-world-canvas" />,
 }));
 
+vi.mock("./HomeWorldHud", () => ({
+  HomeWorldHud: () => <div data-testid="home-world-hud" />,
+}));
+
 describe("HomeWorld", () => {
   it("renders the canvas mount and accessible module navigation", () => {
     render(<HomeWorld />);
 
     expect(screen.getByRole("heading", { name: "Ghostspace" })).toBeInTheDocument();
     expect(screen.getByTestId("home-world-canvas")).toBeInTheDocument();
+    expect(screen.getByTestId("home-world-hud")).toBeInTheDocument();
     expect(screen.getByText("Home")).toHaveClass("bg-[#ffb9c8]");
     expect(screen.getByRole("link", { name: "个人相册" })).toHaveAttribute("href", "/album");
     expect(screen.getByRole("link", { name: "歌单" })).toHaveAttribute("href", "/playlists");
