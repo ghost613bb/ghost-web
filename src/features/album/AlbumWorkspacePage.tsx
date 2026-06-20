@@ -12,9 +12,7 @@ type AlbumWorkspacePageViewProps = {
   initialActiveAlbum: Album | null;
   initialActivePhoto: AlbumPhoto | null;
   initialAlbums: Album[];
-  initialNextPhotoId: string | null;
   initialPhotos: AlbumPhoto[];
-  initialPreviousPhotoId: string | null;
 };
 
 type AdminSessionResult = {
@@ -47,6 +45,35 @@ function buildWorkspaceHref(albumId?: string | null, photoId?: string | null) {
 
   const queryString = searchParams.toString();
   return queryString ? `/album?${queryString}` : "/album";
+}
+
+function getAdjacentPhotoIds(photos: AlbumPhoto[], activePhotoId?: string | null) {
+  if (!activePhotoId) {
+    return { previousPhotoId: null, nextPhotoId: null };
+  }
+
+  const index = photos.findIndex((photo) => photo.id === activePhotoId);
+
+  if (index === -1) {
+    return { previousPhotoId: null, nextPhotoId: null };
+  }
+
+  return {
+    previousPhotoId: photos[index - 1]?.id ?? null,
+    nextPhotoId: photos[index + 1]?.id ?? null,
+  };
+}
+
+function readWorkspaceLocation() {
+  if (typeof window === "undefined") {
+    return { albumId: null, photoId: null };
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  return {
+    albumId: searchParams.get("albumId"),
+    photoId: searchParams.get("photoId"),
+  };
 }
 
 function getManagementErrorMessage(error?: string) {
@@ -161,14 +188,12 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
   );
 }
 
-export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialNextPhotoId, initialPhotos, initialPreviousPhotoId }: AlbumWorkspacePageViewProps) {
+export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos }: AlbumWorkspacePageViewProps) {
   const router = useRouter();
   const [displayAlbums, setDisplayAlbums] = useState(initialAlbums);
   const [activeAlbum, setActiveAlbum] = useState(initialActiveAlbum);
   const [displayPhotos, setDisplayPhotos] = useState(initialPhotos);
-  const [activePhoto, setActivePhoto] = useState(initialActivePhoto);
-  const [nextPhotoId, setNextPhotoId] = useState(initialNextPhotoId);
-  const [previousPhotoId, setPreviousPhotoId] = useState(initialPreviousPhotoId);
+  const [activePhotoId, setActivePhotoId] = useState(initialActivePhoto?.id ?? null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -188,10 +213,8 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     setDisplayAlbums(initialAlbums);
     setActiveAlbum(initialActiveAlbum);
     setDisplayPhotos(initialPhotos);
-    setActivePhoto(initialActivePhoto);
-    setNextPhotoId(initialNextPhotoId);
-    setPreviousPhotoId(initialPreviousPhotoId);
-  }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialNextPhotoId, initialPhotos, initialPreviousPhotoId]);
+    setActivePhotoId(initialActivePhoto?.id ?? null);
+  }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos]);
 
   useEffect(() => {
     let isMounted = true;
@@ -218,14 +241,75 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     };
   }, []);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const { albumId, photoId } = readWorkspaceLocation();
+
+      if (!activeAlbum?.id || albumId !== activeAlbum.id) {
+        router.push(buildWorkspaceHref(albumId, photoId));
+        return;
+      }
+
+      if (!photoId) {
+        setActivePhotoId(null);
+        return;
+      }
+
+      const matchedPhoto = displayPhotos.find((photo) => photo.id === photoId);
+
+      if (matchedPhoto) {
+        setActivePhotoId(matchedPhoto.id);
+        return;
+      }
+
+      router.push(buildWorkspaceHref(albumId, photoId));
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [activeAlbum?.id, displayPhotos, router]);
+
   const activeAlbumIndex = useMemo(() => (activeAlbum ? displayAlbums.findIndex((album) => album.id === activeAlbum.id) : -1), [activeAlbum, displayAlbums]);
+  const activePhoto = useMemo(() => displayPhotos.find((photo) => photo.id === activePhotoId) ?? null, [activePhotoId, displayPhotos]);
+  const { previousPhotoId, nextPhotoId } = useMemo(() => getAdjacentPhotoIds(displayPhotos, activePhotoId), [activePhotoId, displayPhotos]);
+
+  const updateWorkspaceHistory = (albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const href = buildWorkspaceHref(albumId, photoId);
+    const method = mode === "push" ? window.history.pushState : window.history.replaceState;
+    method.call(window.history, window.history.state, "", href);
+  };
 
   const navigateToSelection = (albumId?: string | null, photoId?: string | null) => {
     router.push(buildWorkspaceHref(albumId, photoId));
   };
 
-  const closeLightbox = () => {
-    navigateToSelection(activeAlbum?.id ?? null, null);
+  const selectPhotoLocally = (photoId: string, mode: "push" | "replace" = "push") => {
+    if (!activeAlbum) {
+      return;
+    }
+
+    const targetPhoto = displayPhotos.find((photo) => photo.id === photoId);
+
+    if (!targetPhoto) {
+      navigateToSelection(activeAlbum.id, photoId);
+      return;
+    }
+
+    setActivePhotoId(targetPhoto.id);
+    updateWorkspaceHistory(activeAlbum.id, targetPhoto.id, mode);
+  };
+
+  const closeLightbox = (mode: "push" | "replace" = "replace") => {
+    if (!activeAlbum) {
+      return;
+    }
+
+    setActivePhotoId(null);
+    updateWorkspaceHistory(activeAlbum.id, null, mode);
   };
 
   const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
@@ -288,6 +372,20 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     const nextAlbum = nextAlbums[activeAlbumIndex] ?? nextAlbums[Math.max(0, activeAlbumIndex - 1)] ?? nextAlbums[0] ?? null;
     return nextAlbum?.id ?? null;
   };
+
+  useEffect(() => {
+    if (!activePhoto) {
+      return;
+    }
+
+    [previousPhotoId, nextPhotoId]
+      .map((photoId) => displayPhotos.find((photo) => photo.id === photoId)?.imageUrl)
+      .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
+      .forEach((imageUrl) => {
+        const image = new Image();
+        image.src = imageUrl;
+      });
+  }, [activePhoto, displayPhotos, nextPhotoId, previousPhotoId]);
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
@@ -366,7 +464,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                     return (
                       <article className={`relative rounded-[1.45rem] border p-3 shadow-[0_10px_26px_rgba(149,116,121,0.08)] transition ${isActive ? "border-[#c65f70] bg-[#fff7f8] ring-2 ring-[#f2c1c8]" : "border-[#e7ddd1] bg-white hover:-translate-y-1 hover:bg-[#fdf7ef]"}`} key={photo.id}>
                         <div aria-hidden="true" className={`absolute ${index % 2 === 0 ? "right-5 top-[-0.35rem] rotate-[7deg]" : "left-6 top-[-0.25rem] -rotate-[6deg]"} h-4 w-14 rounded-sm bg-[#e9dec9]/85`} />
-                        <button className="w-full text-left" onClick={() => activeAlbum && navigateToSelection(activeAlbum.id, photo.id)} type="button">
+                        <button className="w-full text-left" onClick={() => selectPhotoLocally(photo.id)} type="button">
                           <div className="overflow-hidden rounded-[1.2rem] bg-[#f4ebda]">
                             <div aria-label={getPhotoAriaLabel(photo.uploadedAt, "preview")} className="h-56 w-full bg-cover bg-center transition duration-300 hover:scale-[1.02]" role="img" style={{ backgroundImage: `url(${photo.imageUrl})`, backgroundPosition: photo.imagePosition }} />
                           </div>
@@ -399,13 +497,13 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
         activePhoto={activePhoto}
         isAdminUnlocked={isAdminUnlocked}
         nextPhotoId={nextPhotoId}
-        onClose={closeLightbox}
+        onClose={() => closeLightbox()}
         onDelete={() => {
           setPendingDeletePhotoError("");
           setPendingDeletePhoto(activePhoto);
         }}
         onEdit={() => activePhoto && setEditingPhoto(activePhoto)}
-        onNavigate={(photoId) => activeAlbum && navigateToSelection(activeAlbum.id, photoId)}
+        onNavigate={(photoId) => selectPhotoLocally(photoId)}
         previousPhotoId={previousPhotoId}
       />
 
@@ -444,9 +542,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             setDisplayAlbums(nextAlbums);
             setActiveAlbum(data.album);
             setDisplayPhotos([]);
-            setActivePhoto(null);
-            setNextPhotoId(null);
-            setPreviousPhotoId(null);
+            setActivePhotoId(null);
             setIsCreateDialogOpen(false);
             navigateToSelection(data.album.id);
           }}
@@ -529,7 +625,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
             setActiveAlbum(data.album);
             setDisplayPhotos(data.photos);
-            setActivePhoto(data.photo);
+            setActivePhotoId(data.photo.id);
             setIsUploadDialogOpen(false);
             navigateToSelection(activeAlbum.id, data.photo.id);
           }}
@@ -565,7 +661,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             }
 
             setDisplayPhotos((currentPhotos) => currentPhotos.map((photo) => (photo.id === data.photo?.id ? data.photo : photo)));
-            setActivePhoto(data.photo);
+            setActivePhotoId(data.photo.id);
             setEditingPhoto(data.photo);
           }}
           requireFile={false}
@@ -674,7 +770,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
                   setActiveAlbum(data.album);
                   setDisplayPhotos(data.photos);
+                  setActivePhotoId(nextSelectedPhotoId);
                   setPendingDeletePhoto(null);
+                  updateWorkspaceHistory(activeAlbum.id, nextSelectedPhotoId, "replace");
                   navigateToSelection(activeAlbum.id, nextSelectedPhotoId);
                 } catch (error) {
                   setPendingDeletePhotoError(error instanceof Error ? error.message : "删除照片失败");

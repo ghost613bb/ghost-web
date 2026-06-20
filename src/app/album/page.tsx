@@ -47,9 +47,7 @@ export default async function AlbumPage({ searchParams }: AlbumPageProps = {}) {
       initialActiveAlbum={data.activeAlbum}
       initialActivePhoto={data.activePhoto}
       initialAlbums={data.albums}
-      initialNextPhotoId={data.nextPhotoId}
       initialPhotos={data.photos}
-      initialPreviousPhotoId={data.previousPhotoId}
     />
   );
 }
