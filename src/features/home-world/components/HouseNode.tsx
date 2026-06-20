@@ -30,7 +30,6 @@ export function HouseNode({ module, active, onActiveChange, pointerNavigationEna
   const router = useRouter();
   const [pressedOnce, setPressedOnce] = useState(false);
   const emissiveIntensity = active ? 1.2 : 0.25;
-  const scale = active ? 1.08 : 1;
   const y = grassSurfaceY;
   const rotationY = module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
   const hoverRingPosition = getHoverRingPosition(module);
@@ -49,7 +48,6 @@ export function HouseNode({ module, active, onActiveChange, pointerNavigationEna
     <group
       position={[module.position[0], module.position[1] + y, module.position[2]]}
       rotation={[0, rotationY, 0]}
-      scale={scale}
       onPointerEnter={(event) => {
         if (!pointerNavigationEnabled) {
           return;
