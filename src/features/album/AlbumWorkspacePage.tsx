@@ -230,8 +230,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const [pendingDeletePhoto, setPendingDeletePhoto] = useState<AlbumPhoto | null>(null);
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
   const [pendingDeletePhotoError, setPendingDeletePhotoError] = useState("");
-  const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
-  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
   const [adminToken, setAdminToken] = useState("");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
@@ -858,18 +856,34 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             <p className="mt-3 text-sm font-semibold leading-6 text-[#7d5960]">确认删除“{pendingDeleteAlbum.title}”吗？删除后会从相册列表中移除。</p>
             {pendingDeleteAlbumError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{pendingDeleteAlbumError}</p> : null}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button className="rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-2 text-[1rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] disabled:cursor-not-allowed disabled:opacity-70" disabled={isDeletingAlbum} onClick={() => {
+              <button className="rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-2 text-[1rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] disabled:cursor-not-allowed disabled:opacity-70" onClick={() => {
                 setPendingDeleteAlbumError("");
                 setPendingDeleteAlbum(null);
               }} type="button">
                 取消
               </button>
-              <button className="rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-5 py-2 text-[1rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] disabled:cursor-not-allowed disabled:opacity-70" disabled={isDeletingAlbum} onClick={async () => {
+              <button className="rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-5 py-2 text-[1rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] disabled:cursor-not-allowed disabled:opacity-70" onClick={async () => {
+                const deletingAlbum = pendingDeleteAlbum;
+                const albumsBeforeDelete = displayAlbums;
+                const photosBeforeDelete = photosByAlbumId;
+                const activeAlbumIdBeforeDelete = activeAlbumId;
+                const activePhotoIdBeforeDelete = activePhotoId;
+                const nextAlbums = albumsBeforeDelete.filter((album) => album.id !== deletingAlbum.id);
+                const nextAlbumId = chooseNextAlbumId(nextAlbums);
+
                 setPendingDeleteAlbumError("");
-                setIsDeletingAlbum(true);
+                setPendingDeleteAlbum(null);
+                setPhotosByAlbumId((current) => {
+                  const nextPhotos = { ...current };
+                  delete nextPhotos[deletingAlbum.id];
+                  return nextPhotos;
+                });
+                await applyAlbumSelectionLocally(nextAlbums, nextAlbumId, {
+                  historyMode: "replace",
+                });
 
                 try {
-                  const response = await fetch(`/api/albums/${pendingDeleteAlbum.id}`, {
+                  const response = await fetch(`/api/albums/${deletingAlbum.id}`, {
                     credentials: "same-origin",
                     method: "DELETE",
                   });
@@ -884,25 +898,17 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
                     throw new Error(message);
                   }
-
-                  const nextAlbums = displayAlbums.filter((album) => album.id !== pendingDeleteAlbum.id);
-                  const nextAlbumId = chooseNextAlbumId(nextAlbums);
-                  setPhotosByAlbumId((current) => {
-                    const nextPhotos = { ...current };
-                    delete nextPhotos[pendingDeleteAlbum.id];
-                    return nextPhotos;
-                  });
-                  await applyAlbumSelectionLocally(nextAlbums, nextAlbumId, {
-                    historyMode: "replace",
-                  });
-                  setPendingDeleteAlbum(null);
                 } catch (error) {
+                  setDisplayAlbums(albumsBeforeDelete);
+                  setPhotosByAlbumId(photosBeforeDelete);
+                  setActiveAlbumId(activeAlbumIdBeforeDelete);
+                  setActivePhotoId(activePhotoIdBeforeDelete);
+                  updateWorkspaceHistory(activeAlbumIdBeforeDelete, activePhotoIdBeforeDelete, "replace");
+                  setPendingDeleteAlbum(deletingAlbum);
                   setPendingDeleteAlbumError(error instanceof Error ? error.message : "删除相册失败");
-                } finally {
-                  setIsDeletingAlbum(false);
                 }
               }} type="button">
-                {isDeletingAlbum ? "删除中" : "确认删除"}
+                确认删除
               </button>
             </div>
           </div>
@@ -920,13 +926,13 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             <p className="mt-3 text-sm font-semibold leading-6 text-[#7d5960]">确认删除这张照片吗？删除后会从当前相册中移除。</p>
             {pendingDeletePhotoError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{pendingDeletePhotoError}</p> : null}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button className="rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-2 text-[1rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] disabled:cursor-not-allowed disabled:opacity-70" disabled={isDeletingPhoto} onClick={() => {
+              <button className="rounded-full border-[3px] border-[#6f343b] bg-[#fcf8ef] px-5 py-2 text-[1rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#fffdf7] disabled:cursor-not-allowed disabled:opacity-70" onClick={() => {
                 setPendingDeletePhotoError("");
                 setPendingDeletePhoto(null);
               }} type="button">
                 取消
               </button>
-              <button className="rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-5 py-2 text-[1rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] disabled:cursor-not-allowed disabled:opacity-70" disabled={isDeletingPhoto} onClick={async () => {
+              <button className="rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-5 py-2 text-[1rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] disabled:cursor-not-allowed disabled:opacity-70" onClick={async () => {
                 const deletingPhoto = pendingDeletePhoto;
                 const albumBeforeDelete = activeAlbum;
                 const albumsBeforeDelete = displayAlbums;
@@ -971,7 +977,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   setPendingDeletePhotoError(error instanceof Error ? error.message : "删除照片失败");
                 }
               }} type="button">
-                {isDeletingPhoto ? "删除中" : "确认删除照片"}
+                确认删除照片
               </button>
             </div>
           </div>
