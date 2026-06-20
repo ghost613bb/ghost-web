@@ -82,17 +82,21 @@ export async function getNextCreatedAlbumId(): Promise<string> {
   return `album-created-${String(nextAlbumIndex).padStart(3, "0")}`;
 }
 
-async function withActualPhotoCount(album: Album): Promise<Album> {
-  const photos = await listAlbumPhotos(album.id);
+function getAdjacentPhotoIds(photos: AlbumPhoto[], photoId: string) {
+  const index = photos.findIndex((photo) => photo.id === photoId);
+
+  if (index === -1) {
+    return { previousPhotoId: null, nextPhotoId: null };
+  }
+
   return {
-    ...album,
-    photoCount: photos.length,
+    previousPhotoId: photos[index - 1]?.id ?? null,
+    nextPhotoId: photos[index + 1]?.id ?? null,
   };
 }
 
 export async function listAlbums(): Promise<Album[]> {
-  const storedAlbums = await listStoredAlbums();
-  return Promise.all(storedAlbums.map(withActualPhotoCount));
+  return listStoredAlbums();
 }
 
 export async function getAlbumById(id: string): Promise<Album | null> {
@@ -151,16 +155,7 @@ export async function getAlbumPhotoById(albumId: string, photoId: string): Promi
 
 export async function getAdjacentAlbumPhotoIds(albumId: string, photoId: string) {
   const photos = await listAlbumPhotos(albumId);
-  const index = photos.findIndex((photo) => photo.id === photoId);
-
-  if (index === -1) {
-    return { previousPhotoId: null, nextPhotoId: null };
-  }
-
-  return {
-    previousPhotoId: photos[index - 1]?.id ?? null,
-    nextPhotoId: photos[index + 1]?.id ?? null,
-  };
+  return getAdjacentPhotoIds(photos, photoId);
 }
 
 export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoInput) {
@@ -402,7 +397,7 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
 
   try {
     const albums = await listAlbums();
-    const activeAlbum = selectedAlbumId ? await getAlbumById(selectedAlbumId) : albums[0] ?? null;
+    const activeAlbum = selectedAlbumId ? albums.find((album) => album.id === selectedAlbumId) ?? null : albums[0] ?? null;
 
     if (!activeAlbum) {
       return {
@@ -417,8 +412,8 @@ export async function getAlbumWorkspaceData(selectedAlbumId?: string, selectedPh
     }
 
     const photos = await listAlbumPhotos(activeAlbum.id);
-    const activePhoto = selectedPhotoId ? await getAlbumPhotoById(activeAlbum.id, selectedPhotoId) : null;
-    const adjacentPhotoIds = activePhoto ? await getAdjacentAlbumPhotoIds(activeAlbum.id, activePhoto.id) : { previousPhotoId: null, nextPhotoId: null };
+    const activePhoto = selectedPhotoId ? photos.find((photo) => photo.id === selectedPhotoId) ?? null : null;
+    const adjacentPhotoIds = activePhoto ? getAdjacentPhotoIds(photos, activePhoto.id) : { previousPhotoId: null, nextPhotoId: null };
 
     return {
       activeAlbum,

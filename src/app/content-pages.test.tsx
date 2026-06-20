@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { notFound } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album, AlbumPhoto } from "@/features/album/types";
 import AboutPage from "./about/page";
@@ -73,6 +74,9 @@ vi.mock("next/navigation", async () => {
   const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
   return {
     ...actual,
+    notFound: vi.fn(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    }),
     useRouter: () => ({ push: vi.fn() }),
   };
 });
@@ -226,6 +230,7 @@ describe("content module pages", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-26T10:00:00.000Z"));
+    vi.mocked(notFound).mockClear();
     mockTiptapState.useEditorOptions = undefined;
     await resetStoredAlbums();
     await upsertStoredAlbum(storedAlbumFixture);
@@ -565,6 +570,36 @@ describe("content module pages", () => {
     expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "上一张" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "下一张" })).toBeDisabled();
+  });
+
+  it("calls notFound when the selected album is missing", async () => {
+    albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
+      activeAlbum: null,
+      activePhoto: null,
+      albums: [storedAlbumFixture],
+      dataSource: "available",
+      nextPhotoId: null,
+      photos: [],
+      previousPhotoId: null,
+    });
+
+    await expect(AlbumPage({ searchParams: Promise.resolve({ albumId: "missing-album" }) })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFound).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls notFound when the selected photo is missing", async () => {
+    albumPageDataState.getAlbumWorkspaceData.mockResolvedValueOnce({
+      activeAlbum: storedAlbumFixture,
+      activePhoto: null,
+      albums: [storedAlbumFixture],
+      dataSource: "available",
+      nextPhotoId: null,
+      photos: storedAlbumPhotos,
+      previousPhotoId: null,
+    });
+
+    await expect(AlbumPage({ searchParams: Promise.resolve({ albumId: storedAlbumFixture.id, photoId: "missing-photo" }) })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFound).toHaveBeenCalledTimes(1);
   });
 
   it("renders the album demo page in demo mode", async () => {

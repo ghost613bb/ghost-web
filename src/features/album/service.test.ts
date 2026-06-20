@@ -13,7 +13,7 @@ vi.mock("@/lib/supabase/server", async () => {
   };
 });
 
-import { resetStoredAlbums, upsertStoredAlbum } from "./repository";
+import { resetStoredAlbums, upsertStoredAlbum, upsertStoredAlbumPhoto } from "./repository";
 import { createAlbumPhoto, getAlbumById, getAlbumDetailPageData, getAlbumPageData, getAlbumPhotoDetailPageData, getAlbumWorkspaceData, listAlbums } from "./service";
 
 const storedAlbum = {
@@ -58,6 +58,7 @@ describe("album service", () => {
       title: "编辑后的相册标题",
       description: "把数据库相册展示出来。",
       coverImage: "/uploads/albums/edited-cover.png",
+      photoCount: 3,
     });
 
     const albums = await listAlbums();
@@ -68,6 +69,7 @@ describe("album service", () => {
         title: "编辑后的相册标题",
         description: "把数据库相册展示出来。",
         coverImage: "/uploads/albums/edited-cover.png",
+        photoCount: 3,
       }),
     ]);
   });
@@ -147,18 +149,86 @@ describe("album service", () => {
 
   it("returns workspace data for a stored selected photo", async () => {
     await upsertStoredAlbum(storedAlbum);
-    const created = await createAlbumPhoto(storedAlbum.id, {
-      note: "数据库里的照片。",
+    const firstPhoto = await createAlbumPhoto(storedAlbum.id, {
+      note: "第一张照片。",
       imageUrl: "/uploads/albums/first-photo.png",
     });
+    const secondPhoto = await createAlbumPhoto(storedAlbum.id, {
+      note: "第二张照片。",
+      imageUrl: "/uploads/albums/second-photo.png",
+    });
+    const thirdPhoto = await createAlbumPhoto(storedAlbum.id, {
+      note: "第三张照片。",
+      imageUrl: "/uploads/albums/third-photo.png",
+    });
 
-    const data = await getAlbumWorkspaceData(storedAlbum.id, created.photo.id);
+    const data = await getAlbumWorkspaceData(storedAlbum.id, secondPhoto.photo.id);
 
     expect(data).toEqual(
       expect.objectContaining({
         activeAlbum: expect.objectContaining({ id: storedAlbum.id }),
-        activePhoto: expect.objectContaining({ id: created.photo.id }),
+        activePhoto: expect.objectContaining({ id: secondPhoto.photo.id }),
         dataSource: "available",
+        previousPhotoId: firstPhoto.photo.id,
+        nextPhotoId: thirdPhoto.photo.id,
+      }),
+    );
+  });
+
+  it("defaults to the first stored album when no album is selected", async () => {
+    await upsertStoredAlbum(storedAlbum);
+    await upsertStoredAlbum({
+      ...storedAlbum,
+      id: "album-002",
+      title: "第二本相册",
+      sortOrder: 2,
+    });
+    await upsertStoredAlbumPhoto(
+      {
+        id: "album-001-photo-001",
+        albumId: storedAlbum.id,
+        uploadedAt: "2026-05-28 / 10:00",
+        note: "默认命中的第一张照片。",
+        imageUrl: "/uploads/albums/album-001-photo-001.png",
+        imagePosition: "center center",
+      },
+      1,
+    );
+
+    const data = await getAlbumWorkspaceData();
+
+    expect(data).toEqual(
+      expect.objectContaining({
+        activeAlbum: expect.objectContaining({ id: storedAlbum.id }),
+        activePhoto: null,
+        dataSource: "available",
+        photos: [expect.objectContaining({ albumId: storedAlbum.id, id: "album-001-photo-001" })],
+      }),
+    );
+  });
+
+  it("returns a null active photo when the selected photo is missing", async () => {
+    await upsertStoredAlbum(storedAlbum);
+    await upsertStoredAlbumPhoto(
+      {
+        id: "album-001-photo-001",
+        albumId: storedAlbum.id,
+        uploadedAt: "2026-05-28 / 10:00",
+        note: "唯一一张照片。",
+        imageUrl: "/uploads/albums/album-001-photo-001.png",
+        imagePosition: "center center",
+      },
+      1,
+    );
+
+    const data = await getAlbumWorkspaceData(storedAlbum.id, "missing-photo");
+
+    expect(data).toEqual(
+      expect.objectContaining({
+        activeAlbum: expect.objectContaining({ id: storedAlbum.id }),
+        activePhoto: null,
+        previousPhotoId: null,
+        nextPhotoId: null,
       }),
     );
   });
