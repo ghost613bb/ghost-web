@@ -20,12 +20,11 @@ type StoredAlbumPhotoRow = {
   image_url: string;
   note: string | null;
   sort_order: number;
-  title: string;
   uploaded_at: string;
 };
 
 const albumColumns = "id,title,description,cover_image,photo_count,visibility,status,created_at,sort_order";
-const albumPhotoColumns = "id,album_id,title,uploaded_at,note,image_url,image_position,sort_order";
+const albumPhotoColumns = "id,album_id,uploaded_at,note,image_url,image_position,sort_order";
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const testAlbumStore = new Map<string, Album>();
 const testAlbumPhotoStore = new Map<string, StoredAlbumPhotoRow>();
@@ -73,7 +72,6 @@ function toStoredAlbumPhotoRow(photo: AlbumPhoto, sortOrder: number): StoredAlbu
   return {
     id: photo.id,
     album_id: photo.albumId,
-    title: "照片",
     uploaded_at: photo.uploadedAt,
     note: photo.note,
     image_url: photo.imageUrl,

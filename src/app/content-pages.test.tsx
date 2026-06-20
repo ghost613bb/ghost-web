@@ -467,8 +467,8 @@ describe("content module pages", () => {
     expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
     expect(screen.getByText("诗注：小妞写，图片，女孩子的碎片收藏。")).toBeInTheDocument();
     expect(screen.getAllByText("Created: 2023-07-31")).toHaveLength(1);
-    const detailCover = screen.getAllByRole("img", { name: "我的相册封面背景" })[0];
-    expect(detailCover).toHaveClass("absolute", "inset-0", "h-full", "w-full", "bg-[#f4ebda]", "text-[#b58d86]");
+    const detailSection = screen.getAllByText("Created: 2023-07-31")[0].closest("section");
+    expect(detailSection).toHaveClass("bg-[linear-gradient(135deg,#fcf8ef_0%,#fffdf8_62%,#f8efe2_100%)]");
     expect(detailPage.container.querySelectorAll("article").length).toBeGreaterThan(7);
     expect(screen.getByRole("button", { name: "上传照片" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "编辑相册" }).length).toBeGreaterThan(0);
