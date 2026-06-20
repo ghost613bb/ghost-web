@@ -481,7 +481,14 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                         <div aria-hidden="true" className={`absolute ${index % 2 === 0 ? "right-5 top-[-0.35rem] rotate-[7deg]" : "left-6 top-[-0.25rem] -rotate-[6deg]"} h-4 w-14 rounded-sm bg-[#e9dec9]/85`} />
                         <button className="w-full text-left" onClick={() => selectPhotoLocally(photo.id)} type="button">
                           <div className="overflow-hidden rounded-[1.2rem] bg-[#f4ebda]">
-                            <div aria-label={getPhotoAriaLabel(photo.uploadedAt, "preview")} className="h-56 w-full bg-cover bg-center transition duration-300 hover:scale-[1.02]" role="img" style={{ backgroundImage: `url(${photo.imageUrl})`, backgroundPosition: photo.imagePosition }} />
+                            <img
+                              alt={getPhotoAriaLabel(photo.uploadedAt, "preview")}
+                              className="h-56 w-full object-cover transition duration-300 hover:scale-[1.02]"
+                              decoding="async"
+                              loading="lazy"
+                              src={photo.imageUrl}
+                              style={{ objectPosition: photo.imagePosition }}
+                            />
                           </div>
                           <div className="mt-3">
                             <div className="flex items-center justify-between gap-3">

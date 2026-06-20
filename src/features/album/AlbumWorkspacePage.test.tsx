@@ -93,7 +93,7 @@ describe("AlbumWorkspacePageView", () => {
     globalThis.Image = originalImage;
   });
 
-  it("opens a photo locally and updates the URL without router.push", async () => {
+  it("renders grid photos as lazy img elements and opens a photo locally without router.push", async () => {
     render(
       <AlbumWorkspacePageView
         initialActiveAlbum={albumFixture}
@@ -102,6 +102,12 @@ describe("AlbumWorkspacePageView", () => {
         initialPhotos={photoFixtures}
       />,
     );
+
+    const previewImage = screen.getByRole("img", { name: "照片预览，上传于 2023-07-31 / 10:05" });
+    expect(previewImage).toHaveAttribute("src", "/uploads/albums/photo-002.png");
+    expect(previewImage).toHaveAttribute("loading", "lazy");
+    expect(previewImage).toHaveAttribute("decoding", "async");
+    expect(previewImage).toHaveStyle({ objectPosition: "center center" });
 
     fireEvent.click(screen.getByRole("button", { name: /第二张照片/ }));
 
