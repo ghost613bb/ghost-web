@@ -12,6 +12,7 @@ type AlbumWorkspacePageViewProps = {
   initialActiveAlbum: Album | null;
   initialActivePhoto: AlbumPhoto | null;
   initialAlbums: Album[];
+  initialDeleteAlbumCandidate?: Album | null;
   initialPhotos: AlbumPhoto[];
 };
 
@@ -195,7 +196,7 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
   );
 }
 
-export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos }: AlbumWorkspacePageViewProps) {
+export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialDeleteAlbumCandidate = null, initialPhotos }: AlbumWorkspacePageViewProps) {
   const router = useRouter();
   const [displayAlbums, setDisplayAlbums] = useState(initialAlbums);
   const [activeAlbum, setActiveAlbum] = useState(initialActiveAlbum);
@@ -205,7 +206,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<AlbumPhoto | null>(null);
-  const [pendingDeleteAlbum, setPendingDeleteAlbum] = useState<Album | null>(null);
+  const [pendingDeleteAlbum, setPendingDeleteAlbum] = useState<Album | null>(initialDeleteAlbumCandidate);
   const [pendingDeletePhoto, setPendingDeletePhoto] = useState<AlbumPhoto | null>(null);
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
   const [pendingDeletePhotoError, setPendingDeletePhotoError] = useState("");
@@ -384,6 +385,39 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const chooseNextAlbumId = (nextAlbums: Album[]) => {
     const nextAlbum = nextAlbums[activeAlbumIndex] ?? nextAlbums[Math.max(0, activeAlbumIndex - 1)] ?? nextAlbums[0] ?? null;
     return nextAlbum?.id ?? null;
+  };
+
+  const applyAlbumSelectionLocally = async (nextAlbums: Album[], nextAlbumId: string | null) => {
+    const nextActiveAlbum = nextAlbumId ? nextAlbums.find((album) => album.id === nextAlbumId) ?? null : null;
+
+    setDisplayAlbums(nextAlbums);
+    setActiveAlbum(nextActiveAlbum);
+    setActivePhotoId(null);
+    updateWorkspaceHistory(nextActiveAlbum?.id ?? null, null, "replace");
+
+    if (!nextActiveAlbum) {
+      setDisplayPhotos([]);
+      return;
+    }
+
+    if (nextActiveAlbum.id === activeAlbum?.id) {
+      setDisplayPhotos(displayPhotos);
+      return;
+    }
+
+    setDisplayPhotos([]);
+
+    const response = await fetch(`/api/albums/${nextActiveAlbum.id}/photos`, {
+      credentials: "same-origin",
+    });
+    const data = (await response.json()) as { photos?: AlbumPhoto[] };
+
+    if (!response.ok || !data.photos) {
+      navigateToSelection(nextActiveAlbum.id);
+      return;
+    }
+
+    setDisplayPhotos(data.photos);
   };
 
   useEffect(() => {
@@ -748,9 +782,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   }
 
                   const nextAlbums = displayAlbums.filter((album) => album.id !== pendingDeleteAlbum.id);
-                  setDisplayAlbums(nextAlbums);
+                  const nextAlbumId = chooseNextAlbumId(nextAlbums);
+                  await applyAlbumSelectionLocally(nextAlbums, nextAlbumId);
                   setPendingDeleteAlbum(null);
-                  navigateToSelection(chooseNextAlbumId(nextAlbums));
                 } catch (error) {
                   setPendingDeleteAlbumError(error instanceof Error ? error.message : "删除相册失败");
                 } finally {

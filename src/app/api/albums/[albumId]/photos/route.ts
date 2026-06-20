@@ -27,6 +27,19 @@ type AlbumPhotoRouteContext = {
   }>;
 };
 
+export async function GET(_request: Request, context: AlbumPhotoRouteContext) {
+  const { albumId } = await context.params;
+  const currentAlbum = await getAlbumById(albumId);
+
+  if (!currentAlbum) {
+    return NextResponse.json({ error: "相册不存在" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    photos: await listAlbumPhotos(albumId),
+  });
+}
+
 export async function POST(request: Request, context: AlbumPhotoRouteContext) {
   const { albumId } = await context.params;
   const unauthorizedResponse = requireAdminRequest(request, "无权限上传照片");

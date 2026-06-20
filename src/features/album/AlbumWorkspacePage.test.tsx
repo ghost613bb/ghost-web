@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album, AlbumPhoto } from "./types";
 import { AlbumWorkspacePageView } from "./AlbumWorkspacePage";
@@ -30,6 +30,17 @@ const albumFixture: Album = {
   status: "published",
   createdAt: "2023-07-31",
   sortOrder: 1,
+};
+
+const secondAlbumFixture: Album = {
+  id: "album-002",
+  title: "第二本相册",
+  description: "另一组照片。",
+  photoCount: 0,
+  visibility: "public",
+  status: "published",
+  createdAt: "2023-08-01",
+  sortOrder: 2,
 };
 
 const photoFixtures: AlbumPhoto[] = [
@@ -67,11 +78,25 @@ describe("AlbumWorkspacePageView", () => {
     pushMock.mockClear();
     imageSources.length = 0;
     window.history.replaceState({}, "", "/album?albumId=album-001");
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
       if (String(input) === "/api/admin/session") {
         return {
           ok: true,
           json: async () => ({ authenticated: false }),
+        } as Response;
+      }
+
+      if (String(input) === "/api/albums/album-002/photos") {
+        return {
+          ok: true,
+          json: async () => ({ photos: [] }),
+        } as Response;
+      }
+
+      if (String(input) === "/api/albums/album-001" && init?.method === "DELETE") {
+        return {
+          ok: true,
+          json: async () => ({ success: true }),
         } as Response;
       }
 
@@ -200,5 +225,31 @@ describe("AlbumWorkspacePageView", () => {
       expect(imageSources).toContain("/uploads/albums/photo-001.png");
       expect(imageSources).toContain("/uploads/albums/photo-003.png");
     });
+  });
+
+  it("deletes the current album locally without router.push and switches to the next album", async () => {
+    render(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={albumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialDeleteAlbumCandidate={albumFixture}
+        initialPhotos={photoFixtures}
+      />,
+    );
+
+    const dialog = screen.getByRole("heading", { level: 2, name: "删除相册" }).closest("div");
+    expect(dialog).not.toBeNull();
+
+    fireEvent.click(within(dialog as HTMLElement).getByRole("button", { name: "确认删除" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("我的相册")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Photos (0)")).toBeInTheDocument();
+    expect(window.location.search).toBe("?albumId=album-002");
+    expect(pushMock).not.toHaveBeenCalled();
   });
 });
