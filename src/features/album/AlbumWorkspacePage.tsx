@@ -304,13 +304,18 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     updateWorkspaceHistory(activeAlbum.id, targetPhoto.id, mode);
   };
 
-  const closeLightbox = (mode: "push" | "replace" = "replace") => {
+  const clearPhotoSelection = (mode: "push" | "replace" = "replace") => {
+    setActivePhotoId(null);
+
     if (!activeAlbum) {
       return;
     }
 
-    setActivePhotoId(null);
     updateWorkspaceHistory(activeAlbum.id, null, mode);
+  };
+
+  const closeLightbox = (mode: "push" | "replace" = "replace") => {
+    clearPhotoSelection(mode);
   };
 
   const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
@@ -398,7 +403,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             <div className="mb-4 mt-4">
               <button className="flex w-full items-center justify-center gap-2 rounded-[1.15rem] border-[2.5px] border-stone-700/80 bg-[#ffe6ad] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_5px_0_rgba(112,84,84,0.16)] transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
                 setAdminError(null);
-                setActivePhotoId(null);
+                clearPhotoSelection();
                 setIsCreateDialogOpen(true);
               }} type="button">
                 <Plus aria-hidden="true" className="h-4 w-4" />
@@ -440,7 +445,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 <div className="flex flex-col gap-3">
                   <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => {
                     setAdminError(null);
-                    setActivePhotoId(null);
+                    clearPhotoSelection();
                     setIsUploadDialogOpen(true);
                   }} type="button">
                     <Camera aria-hidden="true" className="mr-2 h-[1.05rem] w-[1.05rem] stroke-[1.9]" />
@@ -451,7 +456,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                       return;
                     }
 
-                    setActivePhotoId(null);
+                    clearPhotoSelection();
                     setEditingAlbum(activeAlbum);
                   }} type="button">
                     <Pencil aria-hidden="true" className="mr-2 h-[1.02rem] w-[1.02rem] stroke-[1.9]" />
@@ -510,7 +515,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
         onClose={() => closeLightbox()}
         onDelete={() => {
           setPendingDeletePhotoError("");
-          setActivePhotoId(null);
+          clearPhotoSelection();
           setPendingDeletePhoto(activePhoto);
         }}
         onEdit={() => {
@@ -518,7 +523,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             return;
           }
 
-          setActivePhotoId(null);
+          clearPhotoSelection();
           setEditingPhoto(activePhoto);
         }}
         onNavigate={(photoId) => selectPhotoLocally(photoId)}
@@ -643,9 +648,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
             setActiveAlbum(data.album);
             setDisplayPhotos(data.photos);
-            setActivePhotoId(data.photo.id);
+            setActivePhotoId(null);
             setIsUploadDialogOpen(false);
-            navigateToSelection(activeAlbum.id, data.photo.id);
+            updateWorkspaceHistory(activeAlbum.id, null, "replace");
           }}
           submitErrorMessage="上传照片失败"
           submitLabel="上传照片"
@@ -679,8 +684,8 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             }
 
             setDisplayPhotos((currentPhotos) => currentPhotos.map((photo) => (photo.id === data.photo?.id ? data.photo : photo)));
-            setActivePhotoId(data.photo.id);
-            setEditingPhoto(data.photo);
+            setActivePhotoId(null);
+            setEditingPhoto(null);
           }}
           requireFile={false}
           showFileInput={false}
@@ -788,10 +793,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
                   setActiveAlbum(data.album);
                   setDisplayPhotos(data.photos);
-                  setActivePhotoId(nextSelectedPhotoId);
+                  setActivePhotoId(null);
                   setPendingDeletePhoto(null);
-                  updateWorkspaceHistory(activeAlbum.id, nextSelectedPhotoId, "replace");
-                  navigateToSelection(activeAlbum.id, nextSelectedPhotoId);
+                  updateWorkspaceHistory(activeAlbum.id, null, "replace");
                 } catch (error) {
                   setPendingDeletePhotoError(error instanceof Error ? error.message : "删除照片失败");
                 } finally {
