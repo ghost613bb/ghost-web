@@ -10,8 +10,9 @@ describe("HomeWorld", () => {
   it("renders the canvas mount and accessible module navigation", () => {
     render(<HomeWorld />);
 
-    expect(screen.getByTestId("home-world-canvas")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ghostspace" })).toBeInTheDocument();
+    expect(screen.getByTestId("home-world-canvas")).toBeInTheDocument();
+    expect(screen.getByText("Home")).toHaveClass("bg-[#ffb9c8]");
     expect(screen.getByRole("link", { name: "个人相册" })).toHaveAttribute("href", "/album");
     expect(screen.getByRole("link", { name: "歌单" })).toHaveAttribute("href", "/playlists");
     expect(screen.getByRole("link", { name: "咖啡推荐" })).toHaveAttribute("href", "/coffee");

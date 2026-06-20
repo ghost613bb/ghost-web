@@ -2,14 +2,15 @@ import Link from "next/link";
 import { contentTabs, type ContentTabId } from "@/features/content-modules/config/contentTabs";
 
 type ContentTabsHeaderProps = {
-  activeTab: ContentTabId;
+  activeTab: ContentTabId | "home";
   title?: string;
 };
 
 export function ContentTabsHeader({ activeTab, title }: ContentTabsHeaderProps) {
-  const activeContentTab = contentTabs.find((tab) => tab.id === activeTab);
+  const isHomeActive = activeTab === "home";
+  const activeContentTab = isHomeActive ? undefined : contentTabs.find((tab) => tab.id === activeTab);
   const displayTitle = title ?? activeContentTab?.headerTitle ?? "Pocket Diary";
-  const avatarAlt = activeContentTab ? `${activeContentTab.label}头像` : "内容页头像";
+  const avatarAlt = isHomeActive ? "首页头像" : activeContentTab ? `${activeContentTab.label}头像` : "内容页头像";
 
   return (
     <header className="relative overflow-hidden border-b-[2px] border-[#5b3a30] bg-[#ffe8a8] shadow-[0_8px_0_rgba(91,58,48,0.06)]">
@@ -24,9 +25,15 @@ export function ContentTabsHeader({ activeTab, title }: ContentTabsHeaderProps) 
           </h1>
         </div>
         <nav aria-label="内容页导航" className="flex flex-wrap items-center gap-3 text-base font-black text-[#4a2e28]">
-          <Link aria-label="返回首页小镇" className="rounded-full px-4 py-1.5 transition hover:-translate-y-0.5 hover:bg-[#fff4cf]" href="/">
-            Home
-          </Link>
+          {isHomeActive ? (
+            <span className="rounded-full border-[2px] border-[#5b3a30] bg-[#ffb9c8] px-5 py-1.5 shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
+              Home
+            </span>
+          ) : (
+            <Link aria-label="返回首页小镇" className="rounded-full px-4 py-1.5 transition hover:-translate-y-0.5 hover:bg-[#fff4cf]" href="/">
+              Home
+            </Link>
+          )}
           {contentTabs.map((tab) =>
             tab.id === activeTab ? (
               <span className="rounded-full border-[2px] border-[#5b3a30] bg-[#ffb9c8] px-5 py-1.5 shadow-[3px_3px_0_rgba(91,58,48,0.12)]" key={tab.id}>
