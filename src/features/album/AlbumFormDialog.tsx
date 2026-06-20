@@ -14,12 +14,13 @@ type AlbumFormDialogProps = {
   album?: Album;
   heading: string;
   onClose: () => void;
+  onDelete?: () => void;
   onSubmit: (payload: AlbumFormPayload) => Promise<void>;
   submitErrorMessage: string;
   submitLabel: string;
 };
 
-export function AlbumFormDialog({ album, heading, onClose, onSubmit, submitErrorMessage, submitLabel }: AlbumFormDialogProps) {
+export function AlbumFormDialog({ album, heading, onClose, onDelete, onSubmit, submitErrorMessage, submitLabel }: AlbumFormDialogProps) {
   const titleId = useId();
   const nameId = useId();
   const noteId = useId();
@@ -94,7 +95,7 @@ export function AlbumFormDialog({ album, heading, onClose, onSubmit, submitError
             </label>
             <div className="relative mt-2">
               <input
-                className="h-14 w-full rounded-full border-[3px] border-[#6f343b] bg-[linear-gradient(90deg,#fff5f6_0%,#fdecef_100%)] px-5 pr-14 text-base text-[#6f343b] outline-none placeholder:text-[#c7a9af] focus:bg-white"
+                className="h-14 w-full rounded-full border-[3px] border-[#6f343b] bg-[linear-gradient(90deg,#fff5f6_0%,#fdecef_100%)] px-5 text-base text-[#6f343b] outline-none placeholder:text-[#c7a9af] focus:bg-white"
                 id={nameId}
                 onChange={(event) => {
                   setAlbumName(event.target.value);
@@ -106,9 +107,6 @@ export function AlbumFormDialog({ album, heading, onClose, onSubmit, submitError
                 type="text"
                 value={albumName}
               />
-              <span aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[1.65rem]">
-                🌥️
-              </span>
             </div>
             {nameError ? <p className="mt-2 text-sm font-semibold text-[#b14f5d]">{nameError}</p> : null}
           </div>
@@ -126,27 +124,6 @@ export function AlbumFormDialog({ album, heading, onClose, onSubmit, submitError
                 rows={4}
                 value={albumNote}
               />
-              <span aria-hidden="true" className="absolute -left-4 top-13 text-[1.8rem] drop-shadow-[0_3px_0_rgba(255,255,255,0.7)]">
-                ⭐
-              </span>
-              <span aria-hidden="true" className="absolute left-0 bottom-2 text-[1.9rem] drop-shadow-[0_3px_0_rgba(255,255,255,0.7)]">
-                🐱
-              </span>
-              <span aria-hidden="true" className="absolute right-5 top-[-0.7rem] text-[1.7rem]">
-                😊
-              </span>
-              <span aria-hidden="true" className="absolute right-0 top-5 text-[1.8rem]">
-                💙
-              </span>
-              <span aria-hidden="true" className="absolute right-7 bottom-3 text-[1.7rem]">
-                😊
-              </span>
-              <span aria-hidden="true" className="absolute right-18 bottom-3 text-[1.7rem]">
-                ❤️
-              </span>
-              <span aria-hidden="true" className="absolute right-0 bottom-4 text-[1.7rem]">
-                🐾
-              </span>
             </div>
           </div>
 
@@ -179,6 +156,15 @@ export function AlbumFormDialog({ album, heading, onClose, onSubmit, submitError
         {submitError ? <p className="mt-4 text-sm font-semibold text-[#b14f5d]">{submitError}</p> : null}
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+          {onDelete ? (
+            <button
+              className="min-w-[10.5rem] rounded-full border-[3px] border-[#9d3245] bg-[#f8c4cd] px-6 py-2.5 text-[1.15rem] font-black text-[#9d3245] transition hover:-translate-y-0.5 hover:bg-[#fad0d7] sm:text-[1.25rem]"
+              onClick={onDelete}
+              type="button"
+            >
+              删除相册
+            </button>
+          ) : null}
           <button
             className="min-w-[10.5rem] rounded-full border-[3px] border-[#6f343b] bg-[#f4b2be] px-6 py-2.5 text-[1.15rem] font-black text-[#6f343b] transition hover:-translate-y-0.5 hover:bg-[#f6bec8] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[1.25rem]"
             disabled={isSubmitting}

@@ -51,4 +51,32 @@ describe("AlbumFormDialog", () => {
       });
     });
   });
+
+  it("removes emoji ornaments and shows a delete action in edit mode", () => {
+    const onDelete = vi.fn();
+
+    render(
+      <AlbumFormDialog
+        album={album}
+        heading="编辑相册"
+        onClose={vi.fn()}
+        onDelete={onDelete}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        submitErrorMessage="编辑相册失败"
+        submitLabel="保存修改"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "删除相册" })).toBeInTheDocument();
+    expect(screen.queryByText("🌥️")).not.toBeInTheDocument();
+    expect(screen.queryByText("⭐")).not.toBeInTheDocument();
+    expect(screen.queryByText("🐱")).not.toBeInTheDocument();
+    expect(screen.queryByText("😊")).not.toBeInTheDocument();
+    expect(screen.queryByText("💙")).not.toBeInTheDocument();
+    expect(screen.queryByText("❤️")).not.toBeInTheDocument();
+    expect(screen.queryByText("🐾")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "删除相册" }));
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
 });

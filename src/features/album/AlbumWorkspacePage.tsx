@@ -725,6 +725,11 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
           album={editingAlbum}
           heading="编辑相册"
           onClose={() => setEditingAlbum(null)}
+          onDelete={() => {
+            clearPhotoSelection();
+            setEditingAlbum(null);
+            setPendingDeleteAlbum(editingAlbum);
+          }}
           onSubmit={async ({ title, description, coverFile }) => {
             const formData = new FormData();
             formData.set("title", title);
