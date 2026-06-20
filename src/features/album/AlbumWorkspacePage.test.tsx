@@ -36,7 +36,7 @@ const secondAlbumFixture: Album = {
   id: "album-002",
   title: "第二本相册",
   description: "另一组照片。",
-  photoCount: 0,
+  photoCount: 1,
   visibility: "public",
   status: "published",
   createdAt: "2023-08-01",
@@ -70,6 +70,17 @@ const photoFixtures: AlbumPhoto[] = [
   },
 ];
 
+const secondAlbumPhotos: AlbumPhoto[] = [
+  {
+    id: "photo-010",
+    albumId: "album-002",
+    uploadedAt: "2023-08-01 / 09:30",
+    note: "第二本的照片",
+    imageUrl: "/uploads/albums/photo-010.png",
+    imagePosition: "center center",
+  },
+];
+
 describe("AlbumWorkspacePageView", () => {
   const imageSources: string[] = [];
   const originalImage = globalThis.Image;
@@ -89,7 +100,7 @@ describe("AlbumWorkspacePageView", () => {
       if (String(input) === "/api/albums/album-002/photos") {
         return {
           ok: true,
-          json: async () => ({ photos: [] }),
+          json: async () => ({ photos: secondAlbumPhotos }),
         } as Response;
       }
 
@@ -185,30 +196,71 @@ describe("AlbumWorkspacePageView", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("replays same-album photo history on popstate and falls back to router.push for another album", async () => {
+  it("switches albums locally and reuses cached photos on revisit", async () => {
     render(
       <AlbumWorkspacePageView
         initialActiveAlbum={albumFixture}
-        initialActivePhoto={photoFixtures[1]}
-        initialAlbums={[albumFixture]}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={photoFixtures}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /第二本相册/ }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
+    });
+    expect(screen.getByText("Photos (1)")).toBeInTheDocument();
+    expect(window.location.search).toBe("?albumId=album-002");
+    expect(pushMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /我的相册/ }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
+    });
+    expect(screen.getByText("Photos (3)")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /第二本相册/ }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
+    });
+
+    const albumTwoFetchCalls = vi.mocked(globalThis.fetch).mock.calls.filter(([input]) => String(input) === "/api/albums/album-002/photos");
+    expect(albumTwoFetchCalls).toHaveLength(1);
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("replays cross-album history locally and falls back to router.push for a missing album", async () => {
+    render(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={albumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
         initialPhotos={photoFixtures}
       />,
     );
 
     act(() => {
-      window.history.pushState({}, "", "/album?albumId=album-001&photoId=photo-001");
+      window.history.pushState({}, "", "/album?albumId=album-002&photoId=photo-010");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    expect(screen.getByLabelText("照片大图，上传于 2023-07-31 / 10:00")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
+    });
+    expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
+    expect(screen.getByLabelText("照片大图，上传于 2023-08-01 / 09:30")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
 
     act(() => {
-      window.history.pushState({}, "", "/album?albumId=album-002&photoId=photo-999");
+      window.history.pushState({}, "", "/album?albumId=album-999&photoId=photo-999");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    expect(pushMock).toHaveBeenCalledWith("/album?albumId=album-002&photoId=photo-999");
+    expect(pushMock).toHaveBeenCalledWith("/album?albumId=album-999&photoId=photo-999");
   });
 
   it("preloads adjacent images for the active photo", async () => {
@@ -248,7 +300,7 @@ describe("AlbumWorkspacePageView", () => {
     });
 
     expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Photos (0)")).toBeInTheDocument();
+    expect(screen.getByText("Photos (1)")).toBeInTheDocument();
     expect(window.location.search).toBe("?albumId=album-002");
     expect(pushMock).not.toHaveBeenCalled();
   });

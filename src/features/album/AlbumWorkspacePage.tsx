@@ -2,7 +2,7 @@
 
 import { Camera, ChevronLeft, ChevronRight, ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { AlbumFormDialog } from "./AlbumFormDialog";
 import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
@@ -19,6 +19,14 @@ type AlbumWorkspacePageViewProps = {
 type AdminSessionResult = {
   authenticated?: boolean;
   error?: string;
+};
+
+type AlbumPhotosByAlbumId = Record<string, AlbumPhoto[]>;
+
+type ApplyAlbumSelectionOptions = {
+  fallbackToRouter?: boolean;
+  historyMode?: "push" | "replace" | "none";
+  photoId?: string | null;
 };
 
 function AlbumPlaceholder({ className = "", label }: { className?: string; label: string }) {
@@ -83,6 +91,16 @@ function getManagementErrorMessage(error?: string) {
 
 function getPhotoAriaLabel(uploadedAt: string, variant: "preview" | "detail") {
   return variant === "detail" ? `照片大图，上传于 ${uploadedAt}` : `照片预览，上传于 ${uploadedAt}`;
+}
+
+function buildInitialAlbumPhotosMap(initialActiveAlbum: Album | null, initialPhotos: AlbumPhoto[]): AlbumPhotosByAlbumId {
+  if (!initialActiveAlbum) {
+    return {};
+  }
+
+  return {
+    [initialActiveAlbum.id]: initialPhotos,
+  };
 }
 
 function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
@@ -198,9 +216,11 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
 
 export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialDeleteAlbumCandidate = null, initialPhotos }: AlbumWorkspacePageViewProps) {
   const router = useRouter();
+  const albumSelectionRequestRef = useRef(0);
   const [displayAlbums, setDisplayAlbums] = useState(initialAlbums);
-  const [activeAlbum, setActiveAlbum] = useState(initialActiveAlbum);
-  const [displayPhotos, setDisplayPhotos] = useState(initialPhotos);
+  const [activeAlbumId, setActiveAlbumId] = useState(initialActiveAlbum?.id ?? null);
+  const [photosByAlbumId, setPhotosByAlbumId] = useState<AlbumPhotosByAlbumId>(() => buildInitialAlbumPhotosMap(initialActiveAlbum, initialPhotos));
+  const [loadingAlbumId, setLoadingAlbumId] = useState<string | null>(null);
   const [activePhotoId, setActivePhotoId] = useState(initialActivePhoto?.id ?? null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
@@ -218,9 +238,11 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const [adminError, setAdminError] = useState<string | null>(null);
 
   useEffect(() => {
+    albumSelectionRequestRef.current += 1;
     setDisplayAlbums(initialAlbums);
-    setActiveAlbum(initialActiveAlbum);
-    setDisplayPhotos(initialPhotos);
+    setActiveAlbumId(initialActiveAlbum?.id ?? null);
+    setPhotosByAlbumId(buildInitialAlbumPhotosMap(initialActiveAlbum, initialPhotos));
+    setLoadingAlbumId(null);
     setActivePhotoId(initialActivePhoto?.id ?? null);
   }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos]);
 
@@ -249,40 +271,15 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     };
   }, []);
 
-  useEffect(() => {
-    const handlePopState = () => {
-      const { albumId, photoId } = readWorkspaceLocation();
-
-      if (!activeAlbum?.id || albumId !== activeAlbum.id) {
-        router.push(buildWorkspaceHref(albumId, photoId));
-        return;
-      }
-
-      if (!photoId) {
-        setActivePhotoId(null);
-        return;
-      }
-
-      const matchedPhoto = displayPhotos.find((photo) => photo.id === photoId);
-
-      if (matchedPhoto) {
-        setActivePhotoId(matchedPhoto.id);
-        return;
-      }
-
-      router.push(buildWorkspaceHref(albumId, photoId));
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [activeAlbum?.id, displayPhotos, router]);
-
+  const activeAlbum = useMemo(() => (activeAlbumId ? displayAlbums.find((album) => album.id === activeAlbumId) ?? null : null), [activeAlbumId, displayAlbums]);
+  const displayPhotos = useMemo(() => (activeAlbum ? photosByAlbumId[activeAlbum.id] ?? [] : []), [activeAlbum, photosByAlbumId]);
   const activeAlbumIndex = useMemo(() => (activeAlbum ? displayAlbums.findIndex((album) => album.id === activeAlbum.id) : -1), [activeAlbum, displayAlbums]);
   const activePhoto = useMemo(() => displayPhotos.find((photo) => photo.id === activePhotoId) ?? null, [activePhotoId, displayPhotos]);
   const { previousPhotoId, nextPhotoId } = useMemo(() => getAdjacentPhotoIds(displayPhotos, activePhotoId), [activePhotoId, displayPhotos]);
   const shouldHidePhotoLightbox = Boolean(isCreateDialogOpen || editingAlbum || isUploadDialogOpen || editingPhoto || pendingDeleteAlbum || pendingDeletePhoto);
+  const isPhotoGridLoading = Boolean(activeAlbum?.id && loadingAlbumId === activeAlbum.id && !(activeAlbum.id in photosByAlbumId));
 
-  const updateWorkspaceHistory = (albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
+  const updateWorkspaceHistory = useCallback((albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
     if (typeof window === "undefined") {
       return;
     }
@@ -290,13 +287,134 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     const href = buildWorkspaceHref(albumId, photoId);
     const method = mode === "push" ? window.history.pushState : window.history.replaceState;
     method.call(window.history, window.history.state, "", href);
-  };
+  }, []);
 
-  const navigateToSelection = (albumId?: string | null, photoId?: string | null) => {
+  const navigateToSelection = useCallback((albumId?: string | null, photoId?: string | null) => {
     router.push(buildWorkspaceHref(albumId, photoId));
-  };
+  }, [router]);
 
-  const selectPhotoLocally = (photoId: string, mode: "push" | "replace" = "push") => {
+  const fetchAlbumPhotos = useCallback(async (albumId: string) => {
+    if (albumId in photosByAlbumId) {
+      return photosByAlbumId[albumId];
+    }
+
+    setLoadingAlbumId(albumId);
+
+    try {
+      const response = await fetch(`/api/albums/${albumId}/photos`, {
+        credentials: "same-origin",
+      });
+      const data = (await response.json()) as { photos?: AlbumPhoto[] };
+
+      if (!response.ok || !data.photos) {
+        return null;
+      }
+
+      setPhotosByAlbumId((current) => (albumId in current ? current : { ...current, [albumId]: data.photos! }));
+      return data.photos;
+    } catch {
+      return null;
+    } finally {
+      setLoadingAlbumId((current) => (current === albumId ? null : current));
+    }
+  }, [photosByAlbumId]);
+
+  const applyAlbumSelectionLocally = useCallback(async (nextAlbums: Album[], nextAlbumId: string | null, options: ApplyAlbumSelectionOptions = {}) => {
+    const { fallbackToRouter = true, historyMode = "replace", photoId = null } = options;
+    const requestId = ++albumSelectionRequestRef.current;
+
+    setDisplayAlbums(nextAlbums);
+
+    if (!nextAlbumId) {
+      setActiveAlbumId(null);
+      setActivePhotoId(null);
+
+      if (historyMode !== "none") {
+        updateWorkspaceHistory(null, null, historyMode);
+      }
+
+      return true;
+    }
+
+    const nextActiveAlbum = nextAlbums.find((album) => album.id === nextAlbumId) ?? null;
+
+    if (!nextActiveAlbum) {
+      if (fallbackToRouter) {
+        navigateToSelection(nextAlbumId, photoId);
+      }
+
+      return false;
+    }
+
+    setActiveAlbumId(nextActiveAlbum.id);
+    setActivePhotoId(null);
+
+    let nextPhotos = nextActiveAlbum.id in photosByAlbumId ? photosByAlbumId[nextActiveAlbum.id] : null;
+
+    if (!nextPhotos) {
+      const loadedPhotos = await fetchAlbumPhotos(nextActiveAlbum.id);
+
+      if (requestId !== albumSelectionRequestRef.current) {
+        return false;
+      }
+
+      if (!loadedPhotos) {
+        if (fallbackToRouter) {
+          navigateToSelection(nextActiveAlbum.id, photoId);
+        }
+
+        return false;
+      }
+
+      nextPhotos = loadedPhotos;
+    }
+
+    if (requestId !== albumSelectionRequestRef.current) {
+      return false;
+    }
+
+    if (photoId) {
+      const matchedPhoto = nextPhotos.find((photo) => photo.id === photoId) ?? null;
+
+      if (!matchedPhoto) {
+        if (fallbackToRouter) {
+          navigateToSelection(nextActiveAlbum.id, photoId);
+        }
+
+        return false;
+      }
+
+      setActivePhotoId(matchedPhoto.id);
+
+      if (historyMode !== "none") {
+        updateWorkspaceHistory(nextActiveAlbum.id, matchedPhoto.id, historyMode);
+      }
+
+      return true;
+    }
+
+    if (historyMode !== "none") {
+      updateWorkspaceHistory(nextActiveAlbum.id, null, historyMode);
+    }
+
+    return true;
+  }, [fetchAlbumPhotos, navigateToSelection, photosByAlbumId, updateWorkspaceHistory]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const { albumId, photoId } = readWorkspaceLocation();
+      void applyAlbumSelectionLocally(displayAlbums, albumId, {
+        fallbackToRouter: true,
+        historyMode: "none",
+        photoId,
+      });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [applyAlbumSelectionLocally, displayAlbums]);
+
+  const selectPhotoLocally = useCallback((photoId: string, mode: "push" | "replace" = "push") => {
     if (!activeAlbum) {
       return;
     }
@@ -310,9 +428,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
     setActivePhotoId(targetPhoto.id);
     updateWorkspaceHistory(activeAlbum.id, targetPhoto.id, mode);
-  };
+  }, [activeAlbum, displayPhotos, navigateToSelection, updateWorkspaceHistory]);
 
-  const clearPhotoSelection = (mode: "push" | "replace" = "replace") => {
+  const clearPhotoSelection = useCallback((mode: "push" | "replace" = "replace") => {
     setActivePhotoId(null);
 
     if (!activeAlbum) {
@@ -320,11 +438,18 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     }
 
     updateWorkspaceHistory(activeAlbum.id, null, mode);
-  };
+  }, [activeAlbum, updateWorkspaceHistory]);
 
-  const closeLightbox = (mode: "push" | "replace" = "replace") => {
+  const closeLightbox = useCallback((mode: "push" | "replace" = "replace") => {
     clearPhotoSelection(mode);
-  };
+  }, [clearPhotoSelection]);
+
+  const handleSelectAlbum = useCallback((albumId: string) => {
+    void applyAlbumSelectionLocally(displayAlbums, albumId, {
+      fallbackToRouter: true,
+      historyMode: "push",
+    });
+  }, [applyAlbumSelectionLocally, displayAlbums]);
 
   const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -382,43 +507,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     }
   };
 
-  const chooseNextAlbumId = (nextAlbums: Album[]) => {
+  const chooseNextAlbumId = useCallback((nextAlbums: Album[]) => {
     const nextAlbum = nextAlbums[activeAlbumIndex] ?? nextAlbums[Math.max(0, activeAlbumIndex - 1)] ?? nextAlbums[0] ?? null;
     return nextAlbum?.id ?? null;
-  };
-
-  const applyAlbumSelectionLocally = async (nextAlbums: Album[], nextAlbumId: string | null) => {
-    const nextActiveAlbum = nextAlbumId ? nextAlbums.find((album) => album.id === nextAlbumId) ?? null : null;
-
-    setDisplayAlbums(nextAlbums);
-    setActiveAlbum(nextActiveAlbum);
-    setActivePhotoId(null);
-    updateWorkspaceHistory(nextActiveAlbum?.id ?? null, null, "replace");
-
-    if (!nextActiveAlbum) {
-      setDisplayPhotos([]);
-      return;
-    }
-
-    if (nextActiveAlbum.id === activeAlbum?.id) {
-      setDisplayPhotos(displayPhotos);
-      return;
-    }
-
-    setDisplayPhotos([]);
-
-    const response = await fetch(`/api/albums/${nextActiveAlbum.id}/photos`, {
-      credentials: "same-origin",
-    });
-    const data = (await response.json()) as { photos?: AlbumPhoto[] };
-
-    if (!response.ok || !data.photos) {
-      navigateToSelection(nextActiveAlbum.id);
-      return;
-    }
-
-    setDisplayPhotos(data.photos);
-  };
+  }, [activeAlbumIndex]);
 
   useEffect(() => {
     if (!activePhoto) {
@@ -457,7 +549,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
                 return (
                   <article className={`rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 ${isActive ? "bg-[#fff4cf] outline outline-2 outline-offset-2 outline-[#c65f70]" : "bg-white/75"}`} key={album.id}>
-                    <button aria-pressed={isActive} className="flex w-full flex-col gap-2 text-left" onClick={() => navigateToSelection(album.id)} type="button">
+                    <button aria-pressed={isActive} className="flex w-full flex-col gap-2 text-left" onClick={() => handleSelectAlbum(album.id)} type="button">
                       <div className="overflow-hidden rounded-[0.95rem] bg-[#f4ebda]">
                         {coverImageFromAlbum(album) ? <img alt={`${album.title}封面`} className="h-24 w-full object-cover" src={coverImageFromAlbum(album) ?? undefined} /> : <AlbumPlaceholder className="h-24 w-full" label={`${album.title}封面`} />}
                       </div>
@@ -543,6 +635,12 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                     );
                   })}
                 </div>
+              ) : isPhotoGridLoading ? (
+                <div className="rounded-[1.4rem] border-[2px] border-dashed border-[#d3c5b8] bg-[#fffaf2] px-6 py-8 text-center text-[#7d5960]">
+                  <ImageIcon aria-hidden="true" className="mx-auto h-8 w-8 animate-pulse text-[#c79aa3]" />
+                  <p className="mt-3 text-base font-black">正在加载这个相册的照片</p>
+                  <p className="mt-2 text-sm font-semibold">已经先切换到目标相册，照片列表马上就到。</p>
+                </div>
               ) : (
                 <div className="rounded-[1.4rem] border-[2px] border-dashed border-[#d3c5b8] bg-[#fffaf2] px-6 py-8 text-center text-[#7d5960]">
                   <ImageIcon aria-hidden="true" className="mx-auto h-8 w-8 text-[#c79aa3]" />
@@ -611,11 +709,11 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
             const nextAlbums = [data.album, ...displayAlbums];
             setDisplayAlbums(nextAlbums);
-            setActiveAlbum(data.album);
-            setDisplayPhotos([]);
+            setActiveAlbumId(data.album.id);
+            setPhotosByAlbumId((current) => ({ ...current, [data.album!.id]: [] }));
             setActivePhotoId(null);
             setIsCreateDialogOpen(false);
-            navigateToSelection(data.album.id);
+            updateWorkspaceHistory(data.album.id, null, "push");
           }}
           submitErrorMessage="新建相册失败"
           submitLabel="保存"
@@ -655,7 +753,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             }
 
             setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-            setActiveAlbum((current) => (current?.id === data.album.id ? data.album : current));
             setEditingAlbum(null);
           }}
           submitErrorMessage="编辑相册失败"
@@ -694,8 +791,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             }
 
             setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-            setActiveAlbum(data.album);
-            setDisplayPhotos(data.photos);
+            setPhotosByAlbumId((current) => ({ ...current, [activeAlbum.id]: data.photos! }));
             setActivePhotoId(null);
             setIsUploadDialogOpen(false);
             updateWorkspaceHistory(activeAlbum.id, null, "replace");
@@ -731,7 +827,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
               throw new Error(message);
             }
 
-            setDisplayPhotos((currentPhotos) => currentPhotos.map((photo) => (photo.id === data.photo?.id ? data.photo : photo)));
+            setPhotosByAlbumId((current) => ({
+              ...current,
+              [activeAlbum.id]: (current[activeAlbum.id] ?? []).map((photo) => (photo.id === data.photo?.id ? data.photo : photo)),
+            }));
             setActivePhotoId(null);
             setEditingPhoto(null);
           }}
@@ -783,7 +882,14 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
                   const nextAlbums = displayAlbums.filter((album) => album.id !== pendingDeleteAlbum.id);
                   const nextAlbumId = chooseNextAlbumId(nextAlbums);
-                  await applyAlbumSelectionLocally(nextAlbums, nextAlbumId);
+                  setPhotosByAlbumId((current) => {
+                    const nextPhotos = { ...current };
+                    delete nextPhotos[pendingDeleteAlbum.id];
+                    return nextPhotos;
+                  });
+                  await applyAlbumSelectionLocally(nextAlbums, nextAlbumId, {
+                    historyMode: "replace",
+                  });
                   setPendingDeleteAlbum(null);
                 } catch (error) {
                   setPendingDeleteAlbumError(error instanceof Error ? error.message : "删除相册失败");
@@ -820,8 +926,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 setIsDeletingPhoto(true);
 
                 try {
-                  const deletingPhotoIndex = displayPhotos.findIndex((photo) => photo.id === pendingDeletePhoto.id);
-                  const nextSelectedPhotoId = displayPhotos[deletingPhotoIndex + 1]?.id ?? displayPhotos[deletingPhotoIndex - 1]?.id ?? null;
                   const response = await fetch(`/api/albums/${activeAlbum.id}/photos/${pendingDeletePhoto.id}`, {
                     credentials: "same-origin",
                     method: "DELETE",
@@ -839,8 +943,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   }
 
                   setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-                  setActiveAlbum(data.album);
-                  setDisplayPhotos(data.photos);
+                  setPhotosByAlbumId((current) => ({ ...current, [activeAlbum.id]: data.photos! }));
                   setActivePhotoId(null);
                   setPendingDeletePhoto(null);
                   updateWorkspaceHistory(activeAlbum.id, null, "replace");
