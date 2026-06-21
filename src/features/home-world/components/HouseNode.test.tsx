@@ -77,12 +77,12 @@ describe("HouseNode", () => {
   it("positions the hover ring under the tuned model xz offset", () => {
     const { container } = render(<HouseNode module={moduleWithOffsetAsset} active={false} onActiveChange={vi.fn()} />);
 
-    expect(container.querySelector("mesh")?.getAttribute("position")).toBe("-0.12,0.02,-1.05");
+    expect(container.querySelector("mesh")?.getAttribute("position")).toBe("-1,0.02,-0.45");
   });
 
   it("keeps the hover ring on the ground when the model has a local y offset", () => {
     const { container } = render(<HouseNode module={moduleWithRaisedAsset} active={false} onActiveChange={vi.fn()} />);
 
-    expect(container.querySelector("mesh")?.getAttribute("position")).toBe("-0.5,0.02,-0.7");
+    expect(container.querySelector("mesh")?.getAttribute("position")).toBe("2.4,0.02,-1.3");
   });
 });

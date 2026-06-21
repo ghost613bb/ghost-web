@@ -7,24 +7,24 @@ describe("houseAssets", () => {
   it("registers the study notes and album house models with the latest tuned placement", () => {
     expect(houseAssets.lowPolyPizzaRestaurant).toEqual({
       path: "/models/low_poly_pizza_restaurant/scene.gltf",
-      scale: 0.35,
-      position: [0.2, 0.03, -0.5],
-      rotation: [0, 0, 0],
+      scale: 0.5,
+      position: [-1.1, 0.03, 0.7],
+      rotation: [0, Math.PI / 2, 0],
     });
     expect(houseAssets.lowPolyHouse2).toEqual({
       path: "/models/low_poly_house_2/scene.gltf",
-      scale: 0.35,
-      position: [-0.12, 0, -1.05],
-      rotation: [0, -Math.PI / 2, 0],
+      scale: 0.5,
+      position: [-1, 0, -0.45],
+      rotation: [0, 0, 0],
     });
   });
 
   it("registers the coffee recommendation model with the tuned low poly cafe asset and keeps the cinema config", () => {
     expect(houseAssets.coffeeShopIsometric).toEqual({
       path: "/models/coffee_recommend_low_poly_cafe/scene.gltf",
-      scale: 0.35,
-      position: [0, 0, 0],
-      rotation: [0, -Math.PI / 4, 0],
+      scale: 0.45,
+      position: [-3.6, 0, -0.6],
+      rotation: [0, Math.PI / 4, 0],
     });
     expect(houseAssets.isometricCinema).toEqual({
       path: "/models/isometric_cinema/scene.gltf",
@@ -37,8 +37,8 @@ describe("houseAssets", () => {
   it("registers the thoughts model with the latest tuned low poly cinema placement", () => {
     expect(houseAssets.houseBuildingLowPoly).toEqual({
       path: "/models/low_poly_cinema/scene.gltf",
-      scale: 0.28,
-      position: [0, 0, -0.3],
+      scale: 0.45,
+      position: [-0.2, 0, -0.3],
       rotation: [0, 0, 0],
     });
   });
@@ -46,8 +46,8 @@ describe("houseAssets", () => {
   it("registers the mood diary model with the latest tuned burger restaurant placement", () => {
     expect(houseAssets.lowPolyBuilding).toEqual({
       path: "/models/low_poly_burger_restaurant/scene.gltf",
-      scale: 0.33,
-      position: [-0.5, 0.04, -0.7],
+      scale: 0.37,
+      position: [2.4, 0.04, -1.3],
       rotation: [0, 0, 0],
     });
   });
@@ -55,18 +55,18 @@ describe("houseAssets", () => {
   it("registers the low poly house model for life todo list with the latest tuned placement", () => {
     expect(houseAssets.lowPolyHouse3).toEqual({
       path: "/models/low_poly_house_3/scene.gltf",
-      scale: 0.29,
-      position: [0.15, 0.02, -0.3],
-      rotation: [0, -Math.PI / 2, 0],
+      scale: 0.45,
+      position: [0.8, 0.02, -0.5],
+      rotation: [0, -Math.PI, 0],
     });
   });
 
   it("registers the playlist lot model with the latest tuned generic shop placement", () => {
     expect(houseAssets.lowPolyBurgerRestaurant).toEqual({
       path: "/models/low_poly_generic_shop/scene.gltf",
-      scale: 0.44,
-      position: [-1.1, 0, -0.7],
-      rotation: [0, Math.PI / 2, 0],
+      scale: 0.5,
+      position: [1.7, 0, -1.7],
+      rotation: [0, 0, 0],
     });
   });
 

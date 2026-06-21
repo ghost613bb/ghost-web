@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
+import { firstPersonNavigation } from "@/features/home-world/config/townNavigation";
 import type { HomeModule } from "@/features/home-world/types";
 import { WorldScene } from "./WorldScene";
 
@@ -18,7 +19,7 @@ export function HomeWorldCanvas({ activeModuleId, isExploring, modules, onActive
   return (
     <div className="absolute inset-0">
       <Canvas
-        camera={{ position: [0, 0.82, 3.35], fov: 62, near: 0.05, far: 80 }}
+        camera={{ position: firstPersonNavigation.startPosition, fov: firstPersonNavigation.fov, near: 0.05, far: 80 }}
         dpr={[1, 1.6]}
         shadows
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}

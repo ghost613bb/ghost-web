@@ -6,7 +6,7 @@ describe("HomeWorldCanvas", () => {
   it("uses a first-person camera framing", () => {
     const source = readFileSync(path.join(process.cwd(), "src/features/home-world/components/HomeWorldCanvas.tsx"), "utf8");
 
-    expect(source).toContain("camera={{ position: [0, 0.82, 3.35], fov: 62, near: 0.05, far: 80 }}");
+    expect(source).toContain("camera={{ position: firstPersonNavigation.startPosition, fov: firstPersonNavigation.fov, near: 0.05, far: 80 }}");
   });
 
   it("passes first-person state into the scene controller", () => {

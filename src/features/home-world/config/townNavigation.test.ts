@@ -14,9 +14,9 @@ describe("townNavigation", () => {
 
     expect(albumModule).toBeDefined();
     expect(getModuleWorldTarget(albumModule!)).toEqual([
-      (-2.5 - 0.12) * townSceneTransform.scale,
+      (-2.5 - 1) * townSceneTransform.scale,
       firstPersonNavigation.eyeHeight,
-      (0.4 - 1.05) * townSceneTransform.scale,
+      (0.4 - 0.45) * townSceneTransform.scale,
     ]);
   });
 
