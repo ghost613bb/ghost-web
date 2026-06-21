@@ -3,7 +3,7 @@
 import { Html } from "@react-three/drei";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { houseAssets } from "@/features/home-world/config/houseAssets";
+import { getModuleRotationY, getModuleVisualOffset } from "@/features/home-world/config/townNavigation";
 import type { HomeModule } from "@/features/home-world/types";
 import { HouseVisual } from "./HouseVisual";
 
@@ -18,12 +18,9 @@ const grassSurfaceY = 0.17;
 const hoverRingElevation = 0.02;
 
 function getHoverRingPosition(module: HomeModule): [number, number, number] {
-  if (!module.assetKey) {
-    return [0, hoverRingElevation, 0];
-  }
+  const assetOffset = getModuleVisualOffset(module);
 
-  const asset = houseAssets[module.assetKey];
-  return [asset.position[0], hoverRingElevation, asset.position[2]];
+  return [assetOffset[0], hoverRingElevation, assetOffset[2]];
 }
 
 export function HouseNode({ module, active, onActiveChange, pointerNavigationEnabled = true }: HouseNodeProps) {
@@ -31,7 +28,7 @@ export function HouseNode({ module, active, onActiveChange, pointerNavigationEna
   const [pressedOnce, setPressedOnce] = useState(false);
   const emissiveIntensity = active ? 1.2 : 0.25;
   const y = grassSurfaceY;
-  const rotationY = module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
+  const rotationY = getModuleRotationY(module);
   const hoverRingPosition = getHoverRingPosition(module);
 
   function handleClick() {
@@ -80,7 +77,7 @@ export function HouseNode({ module, active, onActiveChange, pointerNavigationEna
         <meshBasicMaterial color={module.accentColor} transparent opacity={active ? 0.75 : 0.18} />
       </mesh>
       {active ? (
-        <Html center position={[0, 1.45, 0]}>
+        <Html center position={[hoverRingPosition[0], 1.45, hoverRingPosition[2]]}>
           <div className="w-max rounded-full border border-white/20 bg-black/65 px-3 py-1 text-xs font-semibold text-white shadow-xl backdrop-blur">
             {module.title}
           </div>

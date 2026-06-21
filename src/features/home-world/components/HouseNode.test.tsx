@@ -11,7 +11,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@react-three/drei", () => ({
-  Html: ({ children }: { children: ReactNode }) => <div data-testid="house-node-html">{children}</div>,
+  Html: ({ children, position }: { children: ReactNode; position: [number, number, number] }) => (
+    <div data-position={position.join(",")} data-testid="house-node-html">
+      {children}
+    </div>
+  ),
 }));
 
 vi.mock("./HouseVisual", () => ({
@@ -47,6 +51,10 @@ const moduleWithRaisedAsset = {
   visibility: "public",
   sortOrder: 4,
 } satisfies HomeModule;
+
+function parsePosition(value: string | null) {
+  return value?.split(",").map(Number) ?? [];
+}
 
 describe("HouseNode", () => {
   beforeEach(() => {
@@ -84,5 +92,14 @@ describe("HouseNode", () => {
     const { container } = render(<HouseNode module={moduleWithRaisedAsset} active={false} onActiveChange={vi.fn()} />);
 
     expect(container.querySelector("mesh")?.getAttribute("position")).toBe("2.4,0.02,-1.3");
+  });
+
+  it("positions the active label above the tuned model xz offset", () => {
+    const { getByTestId } = render(<HouseNode module={moduleWithRaisedAsset} active onActiveChange={vi.fn()} />);
+    const [x, y, z] = parsePosition(getByTestId("house-node-html").getAttribute("data-position"));
+
+    expect(x).toBe(2.4);
+    expect(y).toBe(1.45);
+    expect(z).toBe(-1.3);
   });
 });

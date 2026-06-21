@@ -23,6 +23,14 @@ export const firstPersonNavigation = {
   pitchMax: 0.34,
 };
 
+export function getModuleRotationY(module: HomeModule) {
+  return module.position[0] < 0 ? Math.PI / 4 : -Math.PI / 4;
+}
+
+export function getModuleVisualOffset(module: HomeModule): Vec3 {
+  return module.assetKey ? houseAssets[module.assetKey].position : [0, 0, 0];
+}
+
 type FocusedModuleOptions = {
   cameraPosition: Vec3;
   forward: Vec3;
@@ -39,13 +47,28 @@ function normalizeHorizontal([x, , z]: Vec3): Vec3 {
   return [x / length, 0, z / length];
 }
 
-export function getModuleWorldTarget(module: HomeModule): Vec3 {
-  const assetOffset = module.assetKey ? houseAssets[module.assetKey].position : [0, 0, 0];
+export function getModuleLocalTarget(module: HomeModule): Vec3 {
+  const assetOffset = getModuleVisualOffset(module);
+  const rotationY = getModuleRotationY(module);
+  const cos = Math.cos(rotationY);
+  const sin = Math.sin(rotationY);
+  const rotatedOffsetX = assetOffset[0] * cos + assetOffset[2] * sin;
+  const rotatedOffsetZ = -assetOffset[0] * sin + assetOffset[2] * cos;
 
   return [
-    (module.position[0] + assetOffset[0]) * townSceneTransform.scale + townSceneTransform.position[0],
+    module.position[0] + rotatedOffsetX,
+    module.position[1] + assetOffset[1],
+    module.position[2] + rotatedOffsetZ,
+  ];
+}
+
+export function getModuleWorldTarget(module: HomeModule): Vec3 {
+  const target = getModuleLocalTarget(module);
+
+  return [
+    target[0] * townSceneTransform.scale + townSceneTransform.position[0],
     firstPersonNavigation.eyeHeight,
-    (module.position[2] + assetOffset[2]) * townSceneTransform.scale + townSceneTransform.position[2],
+    target[2] * townSceneTransform.scale + townSceneTransform.position[2],
   ];
 }
 

@@ -4,20 +4,47 @@ import {
   clampToTownDiamond,
   firstPersonNavigation,
   getFocusedModule,
+  getModuleLocalTarget,
+  getModuleRotationY,
   getModuleWorldTarget,
   townSceneTransform,
 } from "./townNavigation";
 
 describe("townNavigation", () => {
-  it("calculates module world targets with house asset offsets and scene transform", () => {
+  it("calculates module world targets with rotated house asset offsets and scene transform", () => {
     const albumModule = homeModules.find((module) => module.route === "/album");
 
     expect(albumModule).toBeDefined();
     expect(getModuleWorldTarget(albumModule!)).toEqual([
-      (-2.5 - 1) * townSceneTransform.scale,
+      expect.closeTo((-2.5 + (-1 - 0.45) / Math.SQRT2) * townSceneTransform.scale),
       firstPersonNavigation.eyeHeight,
-      (0.4 - 0.45) * townSceneTransform.scale,
+      expect.closeTo((0.4 + (1 - 0.45) / Math.SQRT2) * townSceneTransform.scale),
     ]);
+  });
+
+  it("keeps first-person targets aligned with rotated visible house centers", () => {
+    const modulesByRoute = new Map(homeModules.map((module) => [module.route, module]));
+
+    expect(getModuleLocalTarget(modulesByRoute.get("/coffee")!)).toEqual([
+      expect.closeTo(2.75 + (-3.6 + 0.6) / Math.SQRT2),
+      0,
+      expect.closeTo(-0.05 + (-3.6 - 0.6) / Math.SQRT2),
+    ]);
+    expect(getModuleLocalTarget(modulesByRoute.get("/playlists")!)).toEqual([
+      expect.closeTo((1.7 + 1.7) / Math.SQRT2),
+      0,
+      expect.closeTo(-1.95),
+    ]);
+    expect(getModuleLocalTarget(modulesByRoute.get("/about")!)).toEqual([
+      expect.closeTo(1.3 + (2.4 + 1.3) / Math.SQRT2),
+      0.04,
+      expect.closeTo(-0.9 + (2.4 - 1.3) / Math.SQRT2),
+    ]);
+  });
+
+  it("uses the same rotation rule for rendered houses and target calculation", () => {
+    expect(getModuleRotationY({ ...homeModules[0], position: [-1, 0, 0] })).toBe(Math.PI / 4);
+    expect(getModuleRotationY({ ...homeModules[0], position: [1, 0, 0] })).toBe(-Math.PI / 4);
   });
 
   it("keeps in-bounds camera positions unchanged", () => {
