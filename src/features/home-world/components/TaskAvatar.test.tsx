@@ -31,7 +31,7 @@ describe("TaskAvatar", () => {
   it("scales the large replacement model down for the center scene", () => {
     const { container } = render(<TaskAvatar />);
 
-    expect(container.querySelector("group")?.getAttribute("scale")).toBe("0.006");
+    expect(container.querySelector("group")?.getAttribute("scale")).toBe("0.003");
   });
 
   it("keeps all replacement model files available from public assets", () => {
