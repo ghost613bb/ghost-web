@@ -10,12 +10,12 @@ export const townSceneTransform = {
 
 export const firstPersonNavigation = {
   startEventName: "ghost-web:start-first-person",
-  startPosition: [0, 0.82, 3.35] as Vec3,
+  startPosition: [0, 0.38, 3.35] as Vec3,
   fov: 62,
   groundHalfWorldSize: 5.4 * townSceneTransform.scale - 0.35,
   focusDistance: 1.55,
   focusDotThreshold: 0.5,
-  eyeHeight: 0.82,
+  eyeHeight: 0.38,
   walkSpeed: 1.35,
   sprintSpeed: 2.05,
   mouseSensitivity: 0.0022,
