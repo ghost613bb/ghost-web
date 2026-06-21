@@ -103,6 +103,24 @@ function buildInitialAlbumPhotosMap(initialActiveAlbum: Album | null, initialPho
   };
 }
 
+function mergeAlbumPhotos(currentPhotos: AlbumPhoto[], serverPhotos: AlbumPhoto[], uploadedPhoto: AlbumPhoto) {
+  const currentPhotoIds = new Set(currentPhotos.map((photo) => photo.id));
+  const nextPhotos = [...currentPhotos];
+
+  serverPhotos.forEach((photo) => {
+    if (!currentPhotoIds.has(photo.id)) {
+      currentPhotoIds.add(photo.id);
+      nextPhotos.push(photo);
+    }
+  });
+
+  if (!currentPhotoIds.has(uploadedPhoto.id)) {
+    nextPhotos.push(uploadedPhoto);
+  }
+
+  return nextPhotos;
+}
+
 function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
     <form className="rounded-[1.15rem] border-2 border-stone-700/70 bg-white/65 p-3 shadow-[0_6px_0_rgba(91,58,48,0.08)]" onSubmit={onUnlock}>
@@ -218,6 +236,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const router = useRouter();
   const albumSelectionRequestRef = useRef(0);
   const deletedPhotoIdsRef = useRef(new Set<string>());
+  const uploadAlbumIdRef = useRef<string | null>(null);
   const [displayAlbums, setDisplayAlbums] = useState(initialAlbums);
   const [activeAlbumId, setActiveAlbumId] = useState(initialActiveAlbum?.id ?? null);
   const [photosByAlbumId, setPhotosByAlbumId] = useState<AlbumPhotosByAlbumId>(() => buildInitialAlbumPhotosMap(initialActiveAlbum, initialPhotos));
@@ -226,6 +245,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadingAlbum, setUploadingAlbum] = useState<Album | null>(null);
   const [editingPhoto, setEditingPhoto] = useState<AlbumPhoto | null>(null);
   const [pendingDeleteAlbum, setPendingDeleteAlbum] = useState<Album | null>(initialDeleteAlbumCandidate);
   const [pendingDeletePhoto, setPendingDeletePhoto] = useState<AlbumPhoto | null>(null);
@@ -236,15 +256,35 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
 
+  const updateWorkspaceHistory = useCallback((albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const href = buildWorkspaceHref(albumId, photoId);
+    const method = mode === "push" ? window.history.pushState : window.history.replaceState;
+    method.call(window.history, window.history.state, "", href);
+  }, []);
+
   useEffect(() => {
+    const { albumId, photoId } = readWorkspaceLocation();
+    const lockedAlbumId = uploadAlbumIdRef.current;
+    const nextActiveAlbum = (lockedAlbumId ? initialAlbums.find((album) => album.id === lockedAlbumId) : null) ?? (albumId ? initialAlbums.find((album) => album.id === albumId) : null) ?? initialActiveAlbum;
+    const nextActivePhoto = nextActiveAlbum?.id === initialActiveAlbum?.id ? initialActivePhoto : null;
+    const nextInitialPhotos = nextActiveAlbum?.id === initialActiveAlbum?.id ? initialPhotos : [];
+
     albumSelectionRequestRef.current += 1;
     deletedPhotoIdsRef.current.clear();
     setDisplayAlbums(initialAlbums);
-    setActiveAlbumId(initialActiveAlbum?.id ?? null);
-    setPhotosByAlbumId(buildInitialAlbumPhotosMap(initialActiveAlbum, initialPhotos));
+    setActiveAlbumId(nextActiveAlbum?.id ?? null);
+    setPhotosByAlbumId((current) => ({ ...current, ...buildInitialAlbumPhotosMap(nextActiveAlbum ?? null, nextInitialPhotos) }));
     setLoadingAlbumId(null);
-    setActivePhotoId(initialActivePhoto?.id ?? null);
-  }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos]);
+    setActivePhotoId(lockedAlbumId ? null : photoId ? (nextActivePhoto?.id === photoId ? nextActivePhoto.id : null) : (nextActivePhoto?.id ?? null));
+
+    if (lockedAlbumId && nextActiveAlbum) {
+      updateWorkspaceHistory(nextActiveAlbum.id, null, "replace");
+    }
+  }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos, updateWorkspaceHistory]);
 
   useEffect(() => {
     let isMounted = true;
@@ -285,16 +325,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const { previousPhotoId, nextPhotoId } = useMemo(() => getAdjacentPhotoIds(displayPhotos, activePhotoId), [activePhotoId, displayPhotos]);
   const shouldHidePhotoLightbox = Boolean(isCreateDialogOpen || editingAlbum || isUploadDialogOpen || editingPhoto || pendingDeleteAlbum || pendingDeletePhoto);
   const isPhotoGridLoading = Boolean(activeAlbum?.id && loadingAlbumId === activeAlbum.id && !(activeAlbum.id in photosByAlbumId));
-
-  const updateWorkspaceHistory = useCallback((albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const href = buildWorkspaceHref(albumId, photoId);
-    const method = mode === "push" ? window.history.pushState : window.history.replaceState;
-    method.call(window.history, window.history.state, "", href);
-  }, []);
+  const displayPhotoCount = isPhotoGridLoading && activeAlbum ? activeAlbum.photoCount : displayPhotos.length;
 
   const navigateToSelection = useCallback((albumId?: string | null, photoId?: string | null) => {
     router.push(buildWorkspaceHref(albumId, photoId));
@@ -356,6 +387,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     setActiveAlbumId(nextActiveAlbum.id);
     setActivePhotoId(null);
 
+    if (historyMode !== "none" && !photoId) {
+      updateWorkspaceHistory(nextActiveAlbum.id, null, historyMode);
+    }
+
     let nextPhotos = nextActiveAlbum.id in visiblePhotosByAlbumId ? visiblePhotosByAlbumId[nextActiveAlbum.id] : null;
 
     if (!nextPhotos) {
@@ -400,7 +435,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       return true;
     }
 
-    if (historyMode !== "none") {
+    if (historyMode !== "none" && photoId) {
       updateWorkspaceHistory(nextActiveAlbum.id, null, historyMode);
     }
 
@@ -503,7 +538,9 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       setIsAdminUnlocked(false);
       setIsCreateDialogOpen(false);
       setEditingAlbum(null);
+      uploadAlbumIdRef.current = null;
       setIsUploadDialogOpen(false);
+      setUploadingAlbum(null);
       setEditingPhoto(null);
       setPendingDeleteAlbum(null);
       setPendingDeletePhoto(null);
@@ -532,6 +569,20 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
         image.src = imageUrl;
       });
   }, [activePhoto, displayPhotos, nextPhotoId, previousPhotoId]);
+
+  useEffect(() => {
+    if (!isUploadDialogOpen) {
+      return;
+    }
+
+    displayPhotos
+      .map((photo) => photo.imageUrl)
+      .filter(Boolean)
+      .forEach((imageUrl) => {
+        const image = new Image();
+        image.src = imageUrl;
+      });
+  }, [displayPhotos, isUploadDialogOpen]);
 
   return (
     <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#f7f1e8] text-stone-900">
@@ -586,6 +637,8 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                   <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => {
                     setAdminError(null);
                     clearPhotoSelection();
+                    uploadAlbumIdRef.current = activeAlbum.id;
+                    setUploadingAlbum(activeAlbum);
                     setIsUploadDialogOpen(true);
                   }} type="button">
                     <Camera aria-hidden="true" className="mr-2 h-[1.05rem] w-[1.05rem] stroke-[1.9]" />
@@ -608,7 +661,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
             <section className="rounded-[2rem] border-[2px] border-[#ece3d7] bg-[#fffdf8] px-4 py-5 shadow-[0_16px_36px_rgba(144,118,118,0.08)] sm:px-6 sm:py-6">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-[1.6rem] font-black tracking-tight text-[#4c2b2d]">Photos ({displayPhotos.length})</h3>
+                <h3 className="text-[1.6rem] font-black tracking-tight text-[#4c2b2d]">Photos ({displayPhotoCount})</h3>
                 <p className="text-sm font-semibold text-[#7d5960]">点击一张照片放大浏览，左右切换会更像翻一本真正的相册。</p>
               </div>
               {displayPhotos.length > 0 ? (
@@ -790,20 +843,25 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
         />
       ) : null}
 
-      {isUploadDialogOpen && activeAlbum ? (
+      {isUploadDialogOpen && uploadingAlbum ? (
         <AlbumPhotoUploadDialog
-          onClose={() => setIsUploadDialogOpen(false)}
+          onClose={() => {
+            uploadAlbumIdRef.current = null;
+            setIsUploadDialogOpen(false);
+            setUploadingAlbum(null);
+          }}
           onSubmit={async ({ note, photoFile }) => {
             if (!photoFile) {
               throw new Error("请先选择照片");
             }
 
+            const uploadAlbum = uploadingAlbum;
             const formData = new FormData();
             formData.set("note", note);
             formData.set("photoFileName", photoFile.name);
             formData.append("photoFile", photoFile, photoFile.name);
 
-            const response = await fetch(`/api/albums/${activeAlbum.id}/photos`, {
+            const response = await fetch(`/api/albums/${uploadAlbum.id}/photos`, {
               credentials: "same-origin",
               method: "POST",
               body: formData,
@@ -821,10 +879,15 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             }
 
             setDisplayAlbums((currentAlbums) => currentAlbums.map((album) => (album.id === data.album?.id ? data.album : album)));
-            setPhotosByAlbumId((current) => ({ ...current, [activeAlbum.id]: data.photos! }));
+            setPhotosByAlbumId((current) => ({
+              ...current,
+              [uploadAlbum.id]: mergeAlbumPhotos(current[uploadAlbum.id] ?? [], data.photos!, data.photo!),
+            }));
+            setActiveAlbumId(uploadAlbum.id);
             setActivePhotoId(null);
+            updateWorkspaceHistory(uploadAlbum.id, null, "replace");
             setIsUploadDialogOpen(false);
-            updateWorkspaceHistory(activeAlbum.id, null, "replace");
+            setUploadingAlbum(null);
           }}
           submitErrorMessage="上传照片失败"
           submitLabel="上传照片"

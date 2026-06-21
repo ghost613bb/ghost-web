@@ -18,7 +18,16 @@ vi.mock("./AlbumFormDialog", () => ({
 }));
 
 vi.mock("./AlbumPhotoUploadDialog", () => ({
-  AlbumPhotoUploadDialog: () => null,
+  AlbumPhotoUploadDialog: ({ onClose, onSubmit, title }: { onClose: () => void; onSubmit: (payload: { note: string; photoFile?: File }) => Promise<void>; title: string }) => (
+    <div aria-label={title} role="dialog">
+      <button onClick={() => void onSubmit({ note: "新照片", photoFile: new File(["photo"], "new-photo.png", { type: "image/png" }) })} type="button">
+        提交上传照片
+      </button>
+      <button onClick={onClose} type="button">
+        关闭上传照片
+      </button>
+    </div>
+  ),
 }));
 
 const albumFixture: Album = {
@@ -93,7 +102,7 @@ describe("AlbumWorkspacePageView", () => {
       if (String(input) === "/api/admin/session") {
         return {
           ok: true,
-          json: async () => ({ authenticated: false }),
+          json: async () => ({ authenticated: true }),
         } as Response;
       }
 
@@ -101,6 +110,34 @@ describe("AlbumWorkspacePageView", () => {
         return {
           ok: true,
           json: async () => ({ photos: secondAlbumPhotos }),
+        } as Response;
+      }
+
+      if (String(input) === "/api/albums/album-001/photos" && init?.method === "POST") {
+        return {
+          ok: true,
+          json: async () => ({
+            album: { ...albumFixture, photoCount: 4 },
+            photo: {
+              id: "photo-004",
+              albumId: "album-001",
+              uploadedAt: "2023-07-31 / 10:15",
+              note: "新照片",
+              imageUrl: "/uploads/albums/photo-004.png",
+              imagePosition: "center center",
+            },
+            photos: [
+              ...photoFixtures,
+              {
+                id: "photo-004",
+                albumId: "album-001",
+                uploadedAt: "2023-07-31 / 10:15",
+                note: "新照片",
+                imageUrl: "/uploads/albums/photo-004.png",
+                imagePosition: "center center",
+              },
+            ],
+          }),
         } as Response;
       }
 
@@ -261,6 +298,146 @@ describe("AlbumWorkspacePageView", () => {
     });
 
     expect(pushMock).toHaveBeenCalledWith("/album?albumId=album-999&photoId=photo-999");
+  });
+
+  it("keeps the upload album selected and appends the new photo after upload succeeds", async () => {
+    render(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={albumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={photoFixtures}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "上传照片" })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "上传照片" }));
+    expect(screen.getByRole("dialog", { name: "上传照片" })).toBeInTheDocument();
+    expect(screen.getByText("Photos (3)")).toBeInTheDocument();
+    expect(screen.getByText("第一张照片")).toBeInTheDocument();
+    expect(screen.getByText("第二张照片")).toBeInTheDocument();
+    expect(screen.getByText("第三张照片")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "提交上传照片" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "上传照片" })).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Photos (4)")).toBeInTheDocument();
+    expect(screen.getByText("新照片")).toBeInTheDocument();
+    expect(window.location.search).toBe("?albumId=album-001");
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the URL-selected album when initial props refresh with the default album", async () => {
+    window.history.replaceState({}, "", "/album?albumId=album-002");
+    const { rerender } = render(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={secondAlbumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={secondAlbumPhotos}
+      />,
+    );
+
+    expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
+
+    rerender(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={albumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={photoFixtures}
+      />,
+    );
+
+    expect(screen.getAllByRole("heading", { level: 2, name: "第二本相册" }).length).toBeGreaterThan(0);
+    expect(window.location.search).toBe("?albumId=album-002");
+  });
+
+  it("keeps the uploading album selected when initial props refresh after upload", async () => {
+    window.history.replaceState({}, "", "/album?albumId=album-001");
+    const { rerender } = render(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={albumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={photoFixtures}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "上传照片" })).toBeEnabled();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "上传照片" }));
+    fireEvent.click(screen.getByRole("button", { name: "提交上传照片" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Photos (4)")).toBeInTheDocument();
+    });
+
+    rerender(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={secondAlbumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={secondAlbumPhotos}
+      />,
+    );
+
+    expect(screen.getAllByRole("heading", { level: 2, name: "我的相册" }).length).toBeGreaterThan(0);
+    expect(window.location.search).toBe("?albumId=album-001");
+  });
+
+  it("shows the album photo count while an uncached album is loading", async () => {
+    let resolvePhotos: (value: Response) => void = () => undefined;
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      if (String(input) === "/api/admin/session") {
+        return {
+          ok: true,
+          json: async () => ({ authenticated: true }),
+        } as Response;
+      }
+
+      if (String(input) === "/api/albums/album-002/photos") {
+        return new Promise<Response>((resolve) => {
+          resolvePhotos = resolve;
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${String(input)}`);
+    });
+
+    render(
+      <AlbumWorkspacePageView
+        initialActiveAlbum={albumFixture}
+        initialActivePhoto={null}
+        initialAlbums={[albumFixture, secondAlbumFixture]}
+        initialPhotos={photoFixtures}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /第二本相册/ }));
+
+    expect(window.location.search).toBe("?albumId=album-002");
+    expect(await screen.findByText("正在加载这个相册的照片")).toBeInTheDocument();
+    expect(screen.getByText("Photos (1)")).toBeInTheDocument();
+    expect(screen.queryByText("这个相册还没有照片")).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolvePhotos({
+        ok: true,
+        json: async () => ({ photos: secondAlbumPhotos }),
+      } as Response);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Photos (1)")).toBeInTheDocument();
+    });
   });
 
   it("preloads adjacent images for the active photo", async () => {
