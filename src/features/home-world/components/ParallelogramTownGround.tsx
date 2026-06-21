@@ -1,6 +1,6 @@
 import { Shape, Vector2 } from "three";
 
-const groundHalfSize = 4.25;
+const groundHalfSize = 5.4;
 
 const groundShape = new Shape([
   new Vector2(0, -groundHalfSize),

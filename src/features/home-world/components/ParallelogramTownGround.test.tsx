@@ -12,7 +12,7 @@ describe("ParallelogramTownGround", () => {
   it("uses equal horizontal and vertical radii for the town ground shape", () => {
     const source = readSource();
 
-    expect(source).toContain("const groundHalfSize = 4.25;");
+    expect(source).toContain("const groundHalfSize = 5.4;");
     expect(source).not.toContain("const halfWidth = 4.25;");
     expect(source).not.toContain("const halfDepth = 3.35;");
   });

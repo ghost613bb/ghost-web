@@ -12,7 +12,7 @@ export const firstPersonNavigation = {
   startEventName: "ghost-web:start-first-person",
   startPosition: [0, 0.82, 3.35] as Vec3,
   fov: 62,
-  groundHalfWorldSize: 4.25 * townSceneTransform.scale - 0.35,
+  groundHalfWorldSize: 5.4 * townSceneTransform.scale - 0.35,
   focusDistance: 1.55,
   focusDotThreshold: 0.5,
   eyeHeight: 0.82,
