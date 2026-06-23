@@ -1,4 +1,5 @@
 import type { PlaylistCollection, PlaylistLyricLine, PlaylistNote, PlaylistSong } from "@/data/playlists";
+import { uploadStorageObject } from "@/features/storage/service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type PlaylistSongRow = {
@@ -359,18 +360,20 @@ export async function getNextSupabasePlaylistSongSortOrder() {
 }
 
 export async function uploadSupabasePlaylistAsset({ buffer, contentType, path }: { buffer: Buffer; contentType: string; path: string }) {
-  const supabase = createSupabaseServerClient();
-  const bucket = process.env.PLAYLIST_STORAGE_BUCKET ?? "playlist-assets";
-  const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
-    contentType,
-    upsert: true,
-  });
+  try {
+    const result = await uploadStorageObject({
+      buffer,
+      contentType,
+      objectPath: path,
+      provider: "supabase",
+      scope: "playlists",
+    });
 
-  throwSupabaseError("上传 Supabase 歌单资源失败", error);
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-
-  return data.publicUrl;
+    return result.url;
+  } catch (error) {
+    throwSupabaseError("上传 Supabase 歌单资源失败", error instanceof Error ? { message: error.message } : { message: "未知错误" });
+    throw error;
+  }
 }
 
 export async function insertSupabasePlaylistSongs(songs: PlaylistSongInsert[]) {
