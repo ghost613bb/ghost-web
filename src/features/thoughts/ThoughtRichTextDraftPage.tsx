@@ -11,7 +11,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ArrowLeft, Bold, ChevronDown, ChevronsLeft, ChevronsRight, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon } from "lucide-react";
+import { ArrowLeft, Bold, ChevronDown, ChevronsLeft, ChevronsRight, Code2, ImagePlus, Italic, List, ListMinus, ListOrdered, ListPlus, ListTodo, Palette, Paperclip, SmilePlus, Strikethrough, Table2, Underline as UnderlineIcon, Undo2, Video as VideoIcon } from "lucide-react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -170,6 +170,10 @@ function thoughtBodyToEditorContent(body: string) {
     .join("");
 }
 
+function buildFileAttachmentLinkHtml(fileName: string, url: string) {
+  return `<p><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(fileName)}</a></p>`;
+}
+
 function getThoughtSlug(title: string, timestamp: number) {
   const normalizedTitle = title
     .trim()
@@ -207,6 +211,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const customPaperTemplateMenuRef = useRef<HTMLDivElement | null>(null);
   const paperBackgroundImageUrlRef = useRef("");
@@ -622,6 +627,8 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
         editor.chain().focus().setImage({ src: data.attachment.url }).run();
       } else if (data.attachment.type === "video") {
         editor.chain().focus().setVideo({ src: data.attachment.url }).run();
+      } else if (data.attachment.type === "file") {
+        editor.chain().focus().insertContent(buildFileAttachmentLinkHtml(file.name, data.attachment.url)).run();
       }
 
       setAttachmentUploadStatus("uploaded");
@@ -893,6 +900,10 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
               <input aria-label="上传视频附件" accept="video/*" className="sr-only" onChange={handleAttachmentChange} ref={videoInputRef} type="file" />
               <button aria-label="视频" className={toolbarButtonClass(false, true)} disabled={attachmentActionDisabled} onClick={() => videoInputRef.current?.click()} title="上传视频附件" type="button">
                 <VideoIcon aria-hidden="true" size={17} strokeWidth={2.6} />
+              </button>
+              <input aria-label="上传文件附件" accept=".pdf,.txt,.md,.zip" className="sr-only" onChange={handleAttachmentChange} ref={fileInputRef} type="file" />
+              <button aria-label="文件" className={toolbarButtonClass(false, true)} disabled={attachmentActionDisabled} onClick={() => fileInputRef.current?.click()} title="上传文件附件" type="button">
+                <Paperclip aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
               <button aria-label="撤销" className={toolbarButtonClass(false, true)} disabled={editorActionDisabled || !toolbarState.canUndo} onClick={() => editor?.chain().focus().undo().run()} title="撤销" type="button">
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />

@@ -57,16 +57,33 @@ describe("/api/thoughts/attachments", () => {
     await expect(access(path.join(thoughtUploadDir, data.attachment.fileName))).resolves.toBeUndefined();
   });
 
-  it("rejects non image or video files", async () => {
+  it("uploads a file attachment and returns a public URL", async () => {
     const formData = new FormData();
-    formData.set("attachmentFileName", "note.txt");
-    formData.append("attachmentFile", new Blob(["text"], { type: "text/plain" }));
+    formData.set("attachmentFileName", "note.md");
+    formData.append("attachmentFile", new Blob(["hello markdown"], { type: "text/markdown" }));
+
+    const response = await POST(requestWithFormData(formData));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.attachment).toMatchObject({
+      type: "file",
+      fileName: expect.stringMatching(/^thought-attachment-\d+-note\.md$/),
+      url: expect.stringMatching(/^\/uploads\/thoughts\/thought-attachment-\d+-note\.md$/),
+    });
+    await expect(access(path.join(thoughtUploadDir, data.attachment.fileName))).resolves.toBeUndefined();
+  });
+
+  it("rejects unsupported files", async () => {
+    const formData = new FormData();
+    formData.set("attachmentFileName", "script.js");
+    formData.append("attachmentFile", new Blob(["console.log('bad')"], { type: "application/javascript" }));
 
     const response = await POST(requestWithFormData(formData));
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toEqual({ error: "只支持上传图片或视频附件" });
+    expect(data).toEqual({ error: "只支持上传图片、视频或文件附件" });
   });
 
   it("rejects empty files", async () => {
@@ -81,7 +98,7 @@ describe("/api/thoughts/attachments", () => {
     expect(data).toEqual({ error: "请先选择附件" });
   });
 
-  it("rejects files larger than the image or video size limit", async () => {
+  it("rejects files larger than the image, video or file size limit", async () => {
     const oversizedImage = new Blob([new Uint8Array(10 * 1024 * 1024 + 1)], { type: "image/png" });
     const imageFormData = new FormData();
     imageFormData.set("attachmentFileName", "large.png");
@@ -99,5 +116,14 @@ describe("/api/thoughts/attachments", () => {
     const videoResponse = await POST(requestWithFormData(videoFormData));
     expect(videoResponse.status).toBe(400);
     await expect(videoResponse.json()).resolves.toEqual({ error: "视频附件不能超过 100MB" });
+
+    const oversizedFile = new Blob([new Uint8Array(20 * 1024 * 1024 + 1)], { type: "application/pdf" });
+    const fileFormData = new FormData();
+    fileFormData.set("attachmentFileName", "large.pdf");
+    fileFormData.append("attachmentFile", oversizedFile);
+
+    const fileResponse = await POST(requestWithFormData(fileFormData));
+    expect(fileResponse.status).toBe(400);
+    await expect(fileResponse.json()).resolves.toEqual({ error: "文件附件不能超过 20MB" });
   });
 });

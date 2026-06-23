@@ -13,15 +13,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "请先选择附件" }, { status: 400 });
     }
 
-    const attachmentType = getThoughtAttachmentKind(rawAttachmentFile.type);
+    const requestedFileName = typeof rawAttachmentFileName === "string" && rawAttachmentFileName.trim().length > 0 ? rawAttachmentFileName.trim() : rawAttachmentFile.name;
+    const attachmentType = getThoughtAttachmentKind(rawAttachmentFile.type, requestedFileName);
 
     if (!attachmentType) {
-      return NextResponse.json({ error: "只支持上传图片或视频附件" }, { status: 400 });
+      return NextResponse.json({ error: "只支持上传图片、视频或文件附件" }, { status: 400 });
     }
 
     assertThoughtAttachmentSize(attachmentType, rawAttachmentFile.size);
 
-    const requestedFileName = typeof rawAttachmentFileName === "string" && rawAttachmentFileName.trim().length > 0 ? rawAttachmentFileName.trim() : rawAttachmentFile.name;
     const finalFileName = buildThoughtAttachmentFileName(requestedFileName || "attachment");
     const result = await uploadStorageObject({
       buffer: Buffer.from(await rawAttachmentFile.arrayBuffer()),

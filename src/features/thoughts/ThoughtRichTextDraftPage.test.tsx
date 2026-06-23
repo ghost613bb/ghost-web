@@ -238,7 +238,7 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).toHaveClass("album-page-scrollbar", "h-[545px]", "overflow-y-auto");
     expect(screen.getByLabelText("碎碎念富文本编辑纸张")).not.toHaveClass("min-h-[545px]", "overflow-hidden");
 
-    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频"].forEach((name) => {
+    ["撤销", "H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频", "文件"].forEach((name) => {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     });
     expect(within(screen.getByLabelText("富文本工具栏")).queryByRole("button", { name: "背景" })).not.toBeInTheDocument();
@@ -253,8 +253,9 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.queryByRole("button", { name: "链接" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("上传图片附件")).toHaveAttribute("accept", "image/*");
     expect(screen.getByLabelText("上传视频附件")).toHaveAttribute("accept", "video/*");
+    expect(screen.getByLabelText("上传文件附件")).toHaveAttribute("accept", ".pdf,.txt,.md,.zip");
     const toolbarButtons = within(screen.getByLabelText("富文本工具栏")).getAllByRole("button");
-    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频", "撤销"]);
+    expect(toolbarButtons.map((button) => button.getAttribute("aria-label"))).toEqual(["H1", "H2", "H3", "无序列表", "有序列表", "任务列表", "加粗", "删除线", "斜体", "下划线", "代码块", "表格", "表情包", "文字颜色", "图片", "视频", "文件", "撤销"]);
     expect(screen.queryByRole("button", { name: "标题" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "列表" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "H1" })).not.toBeInTheDocument();
@@ -778,19 +779,22 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(screen.getByRole("button", { name: "下划线" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("uploads image and video attachments then inserts media nodes into the editor", async () => {
+  it("uploads image, video and file attachments then inserts matching content into the editor", async () => {
     const imageChain = chainResult();
     const videoChain = chainResult();
-    mockEditor.chain.mockReturnValueOnce(imageChain).mockReturnValueOnce(videoChain).mockImplementation(chainResult);
+    const fileChain = chainResult();
+    mockEditor.chain.mockReturnValueOnce(imageChain).mockReturnValueOnce(videoChain).mockReturnValueOnce(fileChain).mockImplementation(chainResult);
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png" } }) } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "video", url: "/uploads/thoughts/clip.mp4", fileName: "clip.mp4" } }) } as Response);
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "video", url: "/uploads/thoughts/clip.mp4", fileName: "clip.mp4" } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "file", url: "/uploads/thoughts/note.md", fileName: "note.md" } }) } as Response);
 
     render(<ThoughtRichTextDraftPage />);
 
     const imageInput = screen.getByLabelText("上传图片附件");
     const videoInput = screen.getByLabelText("上传视频附件");
+    const fileInput = screen.getByLabelText("上传文件附件");
     fireEvent.change(imageInput, { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
@@ -805,15 +809,21 @@ describe("ThoughtRichTextDraftPage", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
     expect(videoChain.setVideo).toHaveBeenCalledWith({ src: "/uploads/thoughts/clip.mp4" });
     expect(videoChain.run).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(fileInput, { target: { files: [new File(["markdown"], "note.md", { type: "text/markdown" })] } });
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    expect(fileChain.insertContent).toHaveBeenCalledWith('<p><a href="/uploads/thoughts/note.md" target="_blank" rel="noreferrer noopener">note.md</a></p>');
+    expect(fileChain.run).toHaveBeenCalledTimes(1);
   });
 
   it("shows attachment upload errors without saving the thought", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: false, json: async () => ({ error: "只支持上传图片或视频附件" }) } as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: false, json: async () => ({ error: "只支持上传图片、视频或文件附件" }) } as Response);
     render(<ThoughtRichTextDraftPage />);
 
-    fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["text"], "note.txt", { type: "text/plain" })] } });
+    fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["text"], "note.txt", { type: "application/javascript" })] } });
 
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("只支持上传图片或视频附件"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("只支持上传图片、视频或文件附件"));
     const errorToast = screen.getByRole("alert");
     expect(errorToast).toHaveClass("fixed", "right-6", "top-6");
   });
