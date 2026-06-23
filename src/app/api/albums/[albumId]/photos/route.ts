@@ -1,23 +1,10 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { createAlbumPhoto, getAlbumById, listAlbumPhotos } from "@/features/album/service";
-import { requireAdminRequest } from "@/lib/admin-auth";
 import { parseCreateAlbumPhoto } from "@/features/album/validation";
-
-function sanitizeFileName(fileName: string) {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
-}
-
-function isUploadedFile(value: FormDataEntryValue | null): value is File {
-  return (
-    value !== null &&
-    typeof value !== "string" &&
-    typeof value.arrayBuffer === "function" &&
-    typeof value.name === "string" &&
-    typeof value.size === "number"
-  );
-}
+import { buildAlbumPhotoFileName } from "@/features/storage/paths";
+import { uploadStorageObject } from "@/features/storage/service";
+import { isUploadedFile } from "@/features/storage/validation";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -65,24 +52,24 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
     }
 
     const requestedFileName = typeof rawPhotoFileName === "string" && rawPhotoFileName.trim().length > 0 ? rawPhotoFileName.trim() : rawPhotoFile.name;
-    const safeFileName = sanitizeFileName(requestedFileName || "photo");
     const photoId = crypto.randomUUID();
-    const finalFileName = `${photoId}-${safeFileName}`;
-    const uploadDir = process.env.ALBUM_UPLOAD_DIR ?? path.join(process.cwd(), "public/uploads/albums");
-    const outputPath = path.join(uploadDir, finalFileName);
-
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(outputPath, Buffer.from(await rawPhotoFile.arrayBuffer()));
+    const finalFileName = buildAlbumPhotoFileName(photoId, requestedFileName || "photo");
+    const result = await uploadStorageObject({
+      buffer: Buffer.from(await rawPhotoFile.arrayBuffer()),
+      contentType: rawPhotoFile.type,
+      objectPath: finalFileName,
+      scope: "albums",
+    });
 
     const photoDraft = parseCreateAlbumPhoto({
       id: photoId,
       note: typeof rawNote === "string" ? rawNote : undefined,
-      imageUrl: `/uploads/albums/${finalFileName}`,
+      imageUrl: result.url,
     });
 
-    const result = await createAlbumPhoto(albumId, photoDraft);
+    const resultPayload = await createAlbumPhoto(albumId, photoDraft);
 
-    return NextResponse.json(result);
+    return NextResponse.json(resultPayload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "photo 参数不合法";
 

@@ -1,24 +1,11 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { deleteAlbum, getAlbumById, updateAlbum } from "@/features/album/service";
 import type { CreateAlbumInput } from "@/features/album/types";
-import { requireAdminRequest } from "@/lib/admin-auth";
 import { parseCreateAlbum } from "@/features/album/validation";
-
-function sanitizeFileName(fileName: string) {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
-}
-
-function isUploadedFile(value: FormDataEntryValue | null): value is File {
-  return (
-    value !== null &&
-    typeof value !== "string" &&
-    typeof value.arrayBuffer === "function" &&
-    typeof value.name === "string" &&
-    typeof value.size === "number"
-  );
-}
+import { buildAlbumCoverFileName } from "@/features/storage/paths";
+import { uploadStorageObject } from "@/features/storage/service";
+import { isUploadedFile } from "@/features/storage/validation";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -60,16 +47,16 @@ export async function PATCH(request: Request, context: AlbumRouteContext) {
 
       if (isUploadedFile(rawCoverFile) && rawCoverFile.size > 0) {
         const requestedFileName = typeof rawCoverFileName === "string" && rawCoverFileName.trim().length > 0 ? rawCoverFileName.trim() : rawCoverFile.name;
-        const safeFileName = sanitizeFileName(requestedFileName || "cover");
-        const finalFileName = `${albumId}-${safeFileName}`;
-        const uploadDir = process.env.ALBUM_UPLOAD_DIR ?? path.join(process.cwd(), "public/uploads/albums");
-        const outputPath = path.join(uploadDir, finalFileName);
-
-        await mkdir(uploadDir, { recursive: true });
-        await writeFile(outputPath, Buffer.from(await rawCoverFile.arrayBuffer()));
+        const finalFileName = buildAlbumCoverFileName(albumId, requestedFileName || "cover");
+        const result = await uploadStorageObject({
+          buffer: Buffer.from(await rawCoverFile.arrayBuffer()),
+          contentType: rawCoverFile.type,
+          objectPath: finalFileName,
+          scope: "albums",
+        });
         albumDraft = {
           ...albumDraft,
-          coverImage: `/uploads/albums/${finalFileName}`,
+          coverImage: result.url,
         };
       }
     } else {
