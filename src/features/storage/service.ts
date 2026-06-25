@@ -4,7 +4,7 @@ import type { StorageProvider, StorageScope, StorageWriteInput, StorageWriteResu
 
 const defaultProviderByScope: Record<StorageScope, StorageProvider> = {
   thoughts: "local",
-  albums: "local",
+  albums: "supabase",
   playlists: "supabase",
 };
 

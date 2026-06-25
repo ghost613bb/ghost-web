@@ -1,11 +1,16 @@
-import { access, rm } from "node:fs/promises";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetStoredAlbums } from "@/features/album/repository";
 import { deleteAlbum } from "@/features/album/service";
 import { GET, POST } from "./route";
 
-const albumUploadDir = path.join(process.cwd(), ".tmp/vitest/album-route-uploads");
+vi.mock("@/features/storage/service", () => ({
+  uploadStorageObject: vi.fn(async ({ objectPath, scope }: { objectPath: string; scope: string }) => ({
+    objectPath,
+    provider: "supabase",
+    scope,
+    url: `https://cdn.example.com/${objectPath}`,
+  })),
+}));
 
 describe("/api/albums", () => {
   beforeEach(async () => {
@@ -14,16 +19,12 @@ describe("/api/albums", () => {
     vi.stubEnv("PLAYLIST_IMPORT_ADMIN_TOKEN", "test-token");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
-    process.env.ALBUM_UPLOAD_DIR = albumUploadDir;
     await resetStoredAlbums();
-    await rm(albumUploadDir, { force: true, recursive: true });
   });
 
   afterEach(async () => {
     vi.useRealTimers();
     vi.unstubAllEnvs();
-    delete process.env.ALBUM_UPLOAD_DIR;
-    await rm(albumUploadDir, { force: true, recursive: true });
   });
 
   it("returns an empty album list when storage is empty", async () => {
@@ -34,7 +35,8 @@ describe("/api/albums", () => {
     expect(data).toEqual({ albums: [] });
   });
 
-  it("creates a stored album from multipart form data and saves the cover file", async () => {
+  it("creates a stored album from multipart form data and uploads the cover file", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("title", "数据库相册");
     formData.set("description", "把封面链路接到持久化。");
@@ -59,7 +61,7 @@ describe("/api/albums", () => {
         id: "album-created-001",
         title: "数据库相册",
         description: "把封面链路接到持久化。",
-        coverImage: "/uploads/albums/album-created-001-summer-cover.png",
+        coverImage: "https://cdn.example.com/covers/album-created-001-summer-cover.png",
         photoCount: 0,
         visibility: "public",
         status: "published",
@@ -67,10 +69,13 @@ describe("/api/albums", () => {
         sortOrder: 1,
       },
     });
-
-    const storedCoverPath = path.join(albumUploadDir, "album-created-001-summer-cover.png");
-
-    await expect(access(storedCoverPath)).resolves.toBeUndefined();
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/png",
+        objectPath: "covers/album-created-001-summer-cover.png",
+        scope: "albums",
+      }),
+    );
 
     const nextResponse = await GET();
     const nextData = await nextResponse.json();
@@ -79,7 +84,7 @@ describe("/api/albums", () => {
       id: "album-created-001",
       title: "数据库相册",
       description: "把封面链路接到持久化。",
-      coverImage: "/uploads/albums/album-created-001-summer-cover.png",
+      coverImage: "https://cdn.example.com/covers/album-created-001-summer-cover.png",
       photoCount: 0,
       visibility: "public",
       status: "published",

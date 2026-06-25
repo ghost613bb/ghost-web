@@ -1,11 +1,17 @@
-import { access, rm, stat } from "node:fs/promises";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetStoredAlbums, upsertStoredAlbum } from "@/features/album/repository";
 import { DELETE, PATCH } from "./route";
 import { POST } from "./photos/route";
 
-const albumUploadDir = path.join(process.cwd(), ".tmp/vitest/album-detail-route-uploads");
+vi.mock("@/features/storage/service", () => ({
+  uploadStorageObject: vi.fn(async ({ objectPath, scope }: { objectPath: string; scope: string }) => ({
+    objectPath,
+    provider: "supabase",
+    scope,
+    url: `https://cdn.example.com/${objectPath}`,
+  })),
+}));
+
 const storedAlbum = {
   id: "album-001",
   title: "我的相册",
@@ -24,20 +30,17 @@ describe("/api/albums/[albumId]", () => {
     vi.stubEnv("PLAYLIST_IMPORT_ADMIN_TOKEN", "test-token");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
-    process.env.ALBUM_UPLOAD_DIR = albumUploadDir;
     await resetStoredAlbums();
     await upsertStoredAlbum(storedAlbum);
-    await rm(albumUploadDir, { force: true, recursive: true });
   });
 
   afterEach(async () => {
     vi.useRealTimers();
     vi.unstubAllEnvs();
-    delete process.env.ALBUM_UPLOAD_DIR;
-    await rm(albumUploadDir, { force: true, recursive: true });
   });
 
   it("updates a stored album through patch multipart form data", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("title", "编辑后的相册");
     formData.set("description", "更新后的备注");
@@ -66,11 +69,19 @@ describe("/api/albums/[albumId]", () => {
       id: "album-001",
       title: "编辑后的相册",
       description: "更新后的备注",
-      coverImage: "/uploads/albums/album-001-updated-cover.png",
+      coverImage: "https://cdn.example.com/covers/album-001-updated-cover.png",
     });
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/png",
+        objectPath: "covers/album-001-updated-cover.png",
+        scope: "albums",
+      }),
+    );
   });
 
-  it("uploads a photo for a stored album and saves the image file", async () => {
+  it("uploads a photo for a stored album and returns a remote image URL", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("note", "窗边打盹的照片");
     formData.set("photoFileName", "cat-window.png");
@@ -104,11 +115,14 @@ describe("/api/albums/[albumId]", () => {
       note: "窗边打盹的照片",
     });
     expect(createdPhoto.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(createdPhoto.imageUrl).toBe(`/uploads/albums/${createdPhoto.id}-cat-window.png`);
-
-    const storedPhotoPath = path.join(albumUploadDir, `${createdPhoto.id}-cat-window.png`);
-    await expect(access(storedPhotoPath)).resolves.toBeUndefined();
-    await expect(stat(storedPhotoPath)).resolves.toMatchObject({ size: 9 });
+    expect(createdPhoto.imageUrl).toBe(`https://cdn.example.com/photos/${createdPhoto.id}-cat-window.png`);
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/png",
+        objectPath: `photos/${createdPhoto.id}-cat-window.png`,
+        scope: "albums",
+      }),
+    );
   });
 
   it("updates a stored photo through patch json", async () => {

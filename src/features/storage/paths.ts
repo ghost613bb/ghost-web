@@ -17,11 +17,11 @@ export function buildThoughtAttachmentFileName(fileName: string, timestamp = Dat
 }
 
 export function buildAlbumCoverFileName(albumId: string, fileName: string) {
-  return `${albumId}-${sanitizeAlbumUploadFileName(fileName || "cover")}`;
+  return `covers/${albumId}-${sanitizeAlbumUploadFileName(fileName || "cover")}`;
 }
 
 export function buildAlbumPhotoFileName(photoId: string, fileName: string) {
-  return `${photoId}-${sanitizeAlbumUploadFileName(fileName || "photo")}`;
+  return `photos/${photoId}-${sanitizeAlbumUploadFileName(fileName || "photo")}`;
 }
 
 export function buildPlaylistCollectionCoverPath(collectionId: string, extension: string) {
