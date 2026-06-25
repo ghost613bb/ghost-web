@@ -53,7 +53,7 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
 
     const requestedFileName = typeof rawPhotoFileName === "string" && rawPhotoFileName.trim().length > 0 ? rawPhotoFileName.trim() : rawPhotoFile.name;
     const photoId = crypto.randomUUID();
-    const finalFileName = buildAlbumPhotoFileName(photoId, requestedFileName || "photo");
+    const finalFileName = buildAlbumPhotoFileName(albumId, photoId, requestedFileName || "photo");
     const result = await uploadStorageObject({
       buffer: Buffer.from(await rawPhotoFile.arrayBuffer()),
       contentType: rawPhotoFile.type,

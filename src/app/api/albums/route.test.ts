@@ -61,7 +61,7 @@ describe("/api/albums", () => {
         id: "album-created-001",
         title: "数据库相册",
         description: "把封面链路接到持久化。",
-        coverImage: "https://cdn.example.com/covers/album-created-001-summer-cover.png",
+        coverImage: "https://cdn.example.com/album-created-001/cover/summer-cover.png",
         photoCount: 0,
         visibility: "public",
         status: "published",
@@ -72,7 +72,7 @@ describe("/api/albums", () => {
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
-        objectPath: "covers/album-created-001-summer-cover.png",
+        objectPath: "album-created-001/cover/summer-cover.png",
         scope: "albums",
       }),
     );
@@ -84,7 +84,7 @@ describe("/api/albums", () => {
       id: "album-created-001",
       title: "数据库相册",
       description: "把封面链路接到持久化。",
-      coverImage: "https://cdn.example.com/covers/album-created-001-summer-cover.png",
+      coverImage: "https://cdn.example.com/album-created-001/cover/summer-cover.png",
       photoCount: 0,
       visibility: "public",
       status: "published",

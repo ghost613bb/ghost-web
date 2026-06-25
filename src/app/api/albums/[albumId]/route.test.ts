@@ -69,12 +69,12 @@ describe("/api/albums/[albumId]", () => {
       id: "album-001",
       title: "编辑后的相册",
       description: "更新后的备注",
-      coverImage: "https://cdn.example.com/covers/album-001-updated-cover.png",
+      coverImage: "https://cdn.example.com/album-001/cover/updated-cover.png",
     });
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
-        objectPath: "covers/album-001-updated-cover.png",
+        objectPath: "album-001/cover/updated-cover.png",
         scope: "albums",
       }),
     );
@@ -115,11 +115,11 @@ describe("/api/albums/[albumId]", () => {
       note: "窗边打盹的照片",
     });
     expect(createdPhoto.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(createdPhoto.imageUrl).toBe(`https://cdn.example.com/photos/${createdPhoto.id}-cat-window.png`);
+    expect(createdPhoto.imageUrl).toBe(`https://cdn.example.com/album-001/photos/${createdPhoto.id}-cat-window.png`);
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
-        objectPath: `photos/${createdPhoto.id}-cat-window.png`,
+        objectPath: `album-001/photos/${createdPhoto.id}-cat-window.png`,
         scope: "albums",
       }),
     );

@@ -14,8 +14,8 @@ describe("storage paths", () => {
   });
 
   it("keeps the current album file naming rules", () => {
-    expect(buildAlbumCoverFileName("album-created-001", "summer cover.png")).toBe("covers/album-created-001-summer-cover.png");
-    expect(buildAlbumPhotoFileName("photo-001", "cat window.png")).toBe("photos/photo-001-cat-window.png");
+    expect(buildAlbumCoverFileName("album-created-001", "summer cover.png")).toBe("album-created-001/cover/summer-cover.png");
+    expect(buildAlbumPhotoFileName("album-created-001", "photo-001", "cat window.png")).toBe("album-created-001/photos/photo-001-cat-window.png");
   });
 
   it("keeps the current playlist object path rules", () => {
