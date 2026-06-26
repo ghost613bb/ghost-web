@@ -19,8 +19,8 @@ describe("storage paths", () => {
   });
 
   it("keeps the current playlist object path rules", () => {
-    expect(buildPlaylistCollectionCoverPath("collection-001", ".PNG")).toBe("collection-covers/collection-001.png");
-    expect(buildPlaylistAudioPath("song-001")).toBe("audio/song-001.mp3");
-    expect(buildPlaylistSongCoverPath("song-001", "WebP")).toBe("covers/song-001.webp");
+    expect(buildPlaylistCollectionCoverPath("collection-001", ".PNG")).toBe("collections/collection-001/cover.png");
+    expect(buildPlaylistAudioPath("song-001")).toBe("songs/song-001/audio.mp3");
+    expect(buildPlaylistSongCoverPath("song-001", "WebP")).toBe("songs/song-001/cover.webp");
   });
 });

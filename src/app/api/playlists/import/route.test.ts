@@ -114,8 +114,8 @@ describe("/api/playlists/import", () => {
         shortReview: "风吹过枷锁",
       }),
     );
-    expect(insertedSong?.audioSrc).toMatch(/^https:\/\/cdn\.example\.com\/audio\/song-\d+-1-doll\.mp3$/);
-    expect(insertedSong?.coverImageSrc).toMatch(/^https:\/\/cdn\.example\.com\/covers\/song-\d+-1-doll\.jpg$/);
+    expect(insertedSong?.audioSrc).toMatch(/^https:\/\/cdn\.example\.com\/songs\/song-\d+-1-doll\/audio\.mp3$/);
+    expect(insertedSong?.coverImageSrc).toMatch(/^https:\/\/cdn\.example\.com\/songs\/song-\d+-1-doll\/cover\.jpg$/);
     expect(repository.insertSupabasePlaylistCollectionSongs).toHaveBeenCalledWith("daily-moods", [expect.stringMatching(/^song-/)]);
   });
 });

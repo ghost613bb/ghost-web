@@ -25,13 +25,13 @@ export function buildAlbumPhotoFileName(albumId: string, photoId: string, fileNa
 }
 
 export function buildPlaylistCollectionCoverPath(collectionId: string, extension: string) {
-  return `collection-covers/${collectionId}.${normalizeExtension(extension)}`;
+  return `collections/${collectionId}/cover.${normalizeExtension(extension)}`;
 }
 
 export function buildPlaylistAudioPath(songId: string) {
-  return `audio/${songId}.mp3`;
+  return `songs/${songId}/audio.mp3`;
 }
 
 export function buildPlaylistSongCoverPath(songId: string, extension: string) {
-  return `covers/${songId}.${normalizeExtension(extension)}`;
+  return `songs/${songId}/cover.${normalizeExtension(extension)}`;
 }

@@ -11,6 +11,7 @@ import {
   slugifyCollectionTitle,
   validatePlaylistCollectionCoverFile,
 } from "@/features/playlists/collection-validation";
+import { buildPlaylistCollectionCoverPath } from "@/features/storage/paths";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       coverImageSrc = await uploadSupabasePlaylistAsset({
         buffer: Buffer.from(await coverFile.file.arrayBuffer()),
         contentType: coverFile.file.type,
-        path: `collection-covers/${id}.${coverFile.extension}`,
+        path: buildPlaylistCollectionCoverPath(id, coverFile.extension),
       });
     }
 

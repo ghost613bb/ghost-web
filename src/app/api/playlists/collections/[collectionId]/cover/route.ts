@@ -5,6 +5,7 @@ import {
   uploadSupabasePlaylistAsset,
 } from "@/features/playlists/repository";
 import { parsePlaylistCollectionFields, validatePlaylistCollectionCoverFile } from "@/features/playlists/collection-validation";
+import { buildPlaylistCollectionCoverPath } from "@/features/storage/paths";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
@@ -46,7 +47,7 @@ export async function POST(request: Request, context: RouteContext) {
     const coverImageSrc = await uploadSupabasePlaylistAsset({
       buffer,
       contentType: coverFile.file.type,
-      path: `collection-covers/${collectionId}.${coverFile.extension}`,
+      path: buildPlaylistCollectionCoverPath(collectionId, coverFile.extension),
     });
 
     const collection = await updateSupabasePlaylistCollection({

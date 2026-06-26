@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parsePlaylistAudioMetadata } from "@/features/playlists/metadata";
+import { buildPlaylistAudioPath, buildPlaylistSongCoverPath } from "@/features/storage/paths";
 import {
   ensureSupabasePlaylistCollection,
   getNextSupabasePlaylistSongSortOrder,
@@ -156,7 +157,7 @@ export async function POST(request: Request) {
 
       // songId 同时用于数据库主键和存储路径，带上序号与标题片段便于排查文件。
       const songId = `song-${Date.now()}-${index + 1}-${slugify(metadata.title)}`;
-      const audioPath = `audio/${songId}.mp3`;
+      const audioPath = buildPlaylistAudioPath(songId);
       const audioSrc = await uploadSupabasePlaylistAsset({
         buffer: audioBuffer,
         contentType: "audio/mpeg",
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
         coverImageSrc = await uploadSupabasePlaylistAsset({
           buffer: metadata.cover.buffer,
           contentType: metadata.cover.mimeType,
-          path: `covers/${songId}.${metadata.cover.extension}`,
+          path: buildPlaylistSongCoverPath(songId, metadata.cover.extension),
         });
       } else {
         warnings.push({ fileName: audioFile.name, message: "没有解析到内嵌封面" });

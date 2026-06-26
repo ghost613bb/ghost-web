@@ -121,7 +121,7 @@ describe("/api/playlists/collections", () => {
     expect(response.status).toBe(200);
     expect(data.collection).toMatchObject({
       accentClass: "bg-[#e5f0ff]",
-      coverImageSrc: expect.stringMatching(/^https:\/\/cdn\.example\.com\/collection-covers\/collection-late-night-loop-/),
+      coverImageSrc: expect.stringMatching(/^https:\/\/cdn\.example\.com\/collections\/collection-late-night-loop-.*\/cover\.png$/),
       description: "晚上听的歌。",
       emoji: "🌙",
       songIds: [],
@@ -130,12 +130,12 @@ describe("/api/playlists/collections", () => {
     expect(repository.uploadSupabasePlaylistAsset).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
-        path: expect.stringMatching(/^collection-covers\/collection-late-night-loop-.*\.png$/),
+        path: expect.stringMatching(/^collections\/collection-late-night-loop-.*\/cover\.png$/),
       }),
     );
     expect(repository.insertSupabasePlaylistCollection).toHaveBeenCalledWith(
       expect.objectContaining({
-        coverImageSrc: expect.stringMatching(/^https:\/\/cdn\.example\.com\/collection-covers\/collection-late-night-loop-/),
+        coverImageSrc: expect.stringMatching(/^https:\/\/cdn\.example\.com\/collections\/collection-late-night-loop-.*\/cover\.png$/),
       }),
     );
   });

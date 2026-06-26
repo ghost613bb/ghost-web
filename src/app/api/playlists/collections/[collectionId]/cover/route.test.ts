@@ -66,19 +66,19 @@ describe("/api/playlists/collections/[collectionId]/cover", () => {
 
     expect(response.status).toBe(200);
     expect(data.collection).toMatchObject({
-      coverImageSrc: "https://cdn.example.com/collection-covers/daily-moods.png",
+      coverImageSrc: "https://cdn.example.com/collections/daily-moods/cover.png",
       id: "daily-moods",
       title: "Daily Moods",
     });
     expect(repository.uploadSupabasePlaylistAsset).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
-        path: "collection-covers/daily-moods.png",
+        path: "collections/daily-moods/cover.png",
       }),
     );
     expect(repository.updateSupabasePlaylistCollection).toHaveBeenCalledWith({
       accentClass: "bg-[#fde2e7]",
-      coverImageSrc: "https://cdn.example.com/collection-covers/daily-moods.png",
+      coverImageSrc: "https://cdn.example.com/collections/daily-moods/cover.png",
       description: "today",
       emoji: "🌸",
       id: "daily-moods",
