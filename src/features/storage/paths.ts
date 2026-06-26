@@ -13,7 +13,7 @@ export function sanitizeAlbumUploadFileName(fileName: string) {
 }
 
 export function buildThoughtAttachmentFileName(fileName: string, timestamp = Date.now()) {
-  return `thought-attachment-${timestamp}-${sanitizeThoughtAttachmentFileName(fileName)}`;
+  return `attachments/thought-attachment-${timestamp}-${sanitizeThoughtAttachmentFileName(fileName)}`;
 }
 
 export function buildAlbumCoverFileName(albumId: string, fileName: string) {

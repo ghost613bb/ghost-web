@@ -1,9 +1,14 @@
-import { access, rm, stat } from "node:fs/promises";
-import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-const thoughtUploadDir = path.join(process.cwd(), ".tmp/vitest/thought-attachment-uploads");
+vi.mock("@/features/storage/service", () => ({
+  uploadStorageObject: vi.fn(async ({ objectPath, scope }: { objectPath: string; scope: string }) => ({
+    objectPath,
+    provider: "supabase",
+    scope,
+    url: `https://cdn.example.com/${objectPath}`,
+  })),
+}));
 
 function requestWithFormData(formData: FormData) {
   return {
@@ -12,17 +17,16 @@ function requestWithFormData(formData: FormData) {
 }
 
 describe("/api/thoughts/attachments", () => {
-  beforeEach(async () => {
-    process.env.THOUGHT_UPLOAD_DIR = thoughtUploadDir;
-    await rm(thoughtUploadDir, { force: true, recursive: true });
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  afterEach(async () => {
-    delete process.env.THOUGHT_UPLOAD_DIR;
-    await rm(thoughtUploadDir, { force: true, recursive: true });
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("uploads an image attachment and returns a public URL", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("attachmentFileName", "小猫 photo.png");
     formData.append("attachmentFile", new Blob(["image-binary"], { type: "image/png" }));
@@ -33,14 +37,20 @@ describe("/api/thoughts/attachments", () => {
     expect(response.status).toBe(200);
     expect(data.attachment).toMatchObject({
       type: "image",
-      fileName: expect.stringMatching(/^thought-attachment-\d+-小猫-photo\.png$/),
-      url: expect.stringMatching(/^\/uploads\/thoughts\/thought-attachment-\d+-小猫-photo\.png$/),
+      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-小猫-photo\.png$/),
+      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-小猫-photo\.png$/),
     });
-    await expect(access(path.join(thoughtUploadDir, data.attachment.fileName))).resolves.toBeUndefined();
-    await expect(stat(path.join(thoughtUploadDir, data.attachment.fileName))).resolves.toMatchObject({ size: 12 });
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/png",
+        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-小猫-photo\.png$/),
+        scope: "thoughts",
+      }),
+    );
   });
 
   it("uploads a video attachment and returns a public URL", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("attachmentFileName", "clip.mp4");
     formData.append("attachmentFile", new Blob(["video-binary"], { type: "video/mp4" }));
@@ -51,13 +61,20 @@ describe("/api/thoughts/attachments", () => {
     expect(response.status).toBe(200);
     expect(data.attachment).toMatchObject({
       type: "video",
-      fileName: expect.stringMatching(/^thought-attachment-\d+-clip\.mp4$/),
-      url: expect.stringMatching(/^\/uploads\/thoughts\/thought-attachment-\d+-clip\.mp4$/),
+      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-clip\.mp4$/),
+      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-clip\.mp4$/),
     });
-    await expect(access(path.join(thoughtUploadDir, data.attachment.fileName))).resolves.toBeUndefined();
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "video/mp4",
+        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-clip\.mp4$/),
+        scope: "thoughts",
+      }),
+    );
   });
 
   it("uploads a file attachment and returns a public URL", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("attachmentFileName", "note.md");
     formData.append("attachmentFile", new Blob(["hello markdown"], { type: "text/markdown" }));
@@ -68,13 +85,20 @@ describe("/api/thoughts/attachments", () => {
     expect(response.status).toBe(200);
     expect(data.attachment).toMatchObject({
       type: "file",
-      fileName: expect.stringMatching(/^thought-attachment-\d+-note\.md$/),
-      url: expect.stringMatching(/^\/uploads\/thoughts\/thought-attachment-\d+-note\.md$/),
+      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-note\.md$/),
+      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-note\.md$/),
     });
-    await expect(access(path.join(thoughtUploadDir, data.attachment.fileName))).resolves.toBeUndefined();
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "text/markdown",
+        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-note\.md$/),
+        scope: "thoughts",
+      }),
+    );
   });
 
   it("rejects unsupported files", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("attachmentFileName", "script.js");
     formData.append("attachmentFile", new Blob(["console.log('bad')"], { type: "application/javascript" }));
@@ -84,9 +108,11 @@ describe("/api/thoughts/attachments", () => {
 
     expect(response.status).toBe(400);
     expect(data).toEqual({ error: "只支持上传图片、视频或文件附件" });
+    expect(storageService.uploadStorageObject).not.toHaveBeenCalled();
   });
 
   it("rejects empty files", async () => {
+    const storageService = await import("@/features/storage/service");
     const formData = new FormData();
     formData.set("attachmentFileName", "empty.png");
     formData.append("attachmentFile", new Blob([], { type: "image/png" }));
@@ -96,9 +122,11 @@ describe("/api/thoughts/attachments", () => {
 
     expect(response.status).toBe(400);
     expect(data).toEqual({ error: "请先选择附件" });
+    expect(storageService.uploadStorageObject).not.toHaveBeenCalled();
   });
 
   it("rejects files larger than the image, video or file size limit", async () => {
+    const storageService = await import("@/features/storage/service");
     const oversizedImage = new Blob([new Uint8Array(10 * 1024 * 1024 + 1)], { type: "image/png" });
     const imageFormData = new FormData();
     imageFormData.set("attachmentFileName", "large.png");
@@ -125,5 +153,6 @@ describe("/api/thoughts/attachments", () => {
     const fileResponse = await POST(requestWithFormData(fileFormData));
     expect(fileResponse.status).toBe(400);
     await expect(fileResponse.json()).resolves.toEqual({ error: "文件附件不能超过 20MB" });
+    expect(storageService.uploadStorageObject).not.toHaveBeenCalled();
   });
 });

@@ -10,7 +10,7 @@ import {
 
 describe("storage paths", () => {
   it("keeps the current thought attachment file naming rule", () => {
-    expect(buildThoughtAttachmentFileName("小猫 photo.png", 1719206400000)).toBe("thought-attachment-1719206400000-小猫-photo.png");
+    expect(buildThoughtAttachmentFileName("小猫 photo.png", 1719206400000)).toBe("attachments/thought-attachment-1719206400000-小猫-photo.png");
   });
 
   it("keeps the current album file naming rules", () => {

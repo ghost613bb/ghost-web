@@ -3,7 +3,7 @@ import { uploadSupabaseStorageObject } from "./providers/supabase";
 import type { StorageProvider, StorageScope, StorageWriteInput, StorageWriteResult } from "./types";
 
 const defaultProviderByScope: Record<StorageScope, StorageProvider> = {
-  thoughts: "local",
+  thoughts: "supabase",
   albums: "supabase",
   playlists: "supabase",
 };
