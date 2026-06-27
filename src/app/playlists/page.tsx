@@ -6,9 +6,12 @@ import { renderModulePage } from "@/features/module-display-mode/demoPage";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 import { PlaylistsPageView } from "@/features/playlists/PlaylistsPage";
 import { getPlaylistPageData } from "@/features/playlists/service";
+import { measurePlaylistServerTiming } from "@/features/playlists/server-timing";
 
 export default async function PlaylistsPage() {
-  if ((await getDisplayMode("playlists")) === "demo") {
+  const displayMode = await measurePlaylistServerTiming("getDisplayMode(playlists)", () => getDisplayMode("playlists"));
+
+  if (displayMode === "demo") {
     return renderModulePage({
       moduleId: "playlists",
       title: "歌单",
@@ -18,9 +21,7 @@ export default async function PlaylistsPage() {
     });
   }
 
-  console.time("getPlaylistPageData");
   const data = await getPlaylistPageData();
-  console.timeEnd("getPlaylistPageData");
 
   return <PlaylistsPageView {...data} />;
 }

@@ -1,6 +1,7 @@
 import type { PlaylistCollection, PlaylistLyricLine, PlaylistNote, PlaylistSong } from "@/data/playlists";
 import { uploadStorageObject } from "@/features/storage/service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { measurePlaylistServerTiming } from "./server-timing";
 
 type PlaylistSongRow = {
   id: string;
@@ -155,55 +156,86 @@ function isMissingPlaylistCollectionCoverColumnError(error: { message: string } 
   return error?.message.includes("playlist_collections.cover_image_src") && error.message.includes("does not exist");
 }
 
-async function getSupabasePlaylistCollections() {
-  const supabase = createSupabaseServerClient();
-  const collectionColumns = "id,title,description,emoji,accent_class,cover_image_src,sort_order";
-  const fallbackCollectionColumns = "id,title,description,emoji,accent_class,sort_order";
-  const result = await supabase.from("playlist_collections").select(collectionColumns).order("sort_order", { ascending: true });
-
-  if (!isMissingPlaylistCollectionCoverColumnError(result.error)) {
-    throwSupabaseError("读取 Supabase 歌单失败", result.error);
-    return (result.data ?? []) as PlaylistCollectionRow[];
-  }
-
-  const fallbackResult = await supabase.from("playlist_collections").select(fallbackCollectionColumns).order("sort_order", { ascending: true });
-
-  throwSupabaseError("读取 Supabase 歌单失败", fallbackResult.error);
-
-  return (fallbackResult.data ?? []) as PlaylistCollectionRow[];
-}
-
-export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
-  const supabase = createSupabaseServerClient();
-
-  const [songsResult, collectionsResult, collectionSongsResult, notesResult] = await Promise.all([
-    supabase
+async function listSupabasePlaylistSongs(): Promise<PlaylistSongRow[]> {
+  return measurePlaylistServerTiming("list playlist songs", async () => {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase
       .from("playlist_songs")
       .select("id,title,artist,feeling,audio_src,cover_image_src,lyric_lines,short_review,visibility,status,sort_order,created_at")
       .eq("status", "published")
-      .order("sort_order", { ascending: true }),
-    getSupabasePlaylistCollections(),
-    supabase.from("playlist_collection_songs").select("collection_id,song_id,sort_order").order("sort_order", { ascending: true }),
-    supabase.from("playlist_notes").select("id,song_id,author,content,avatar,created_at").order("created_at", { ascending: true }),
-  ]);
+      .order("sort_order", { ascending: true });
 
-  throwSupabaseError("读取 Supabase 歌曲失败", songsResult.error);
-  throwSupabaseError("读取 Supabase 歌单歌曲关系失败", collectionSongsResult.error);
-  throwSupabaseError("读取 Supabase 歌单留言失败", notesResult.error);
+    throwSupabaseError("读取 Supabase 歌曲失败", error);
 
-  const relationsByCollection = new Map<string, string[]>();
-
-  ((collectionSongsResult.data ?? []) as PlaylistCollectionSongRow[]).forEach((relation) => {
-    const songIds = relationsByCollection.get(relation.collection_id) ?? [];
-    songIds.push(relation.song_id);
-    relationsByCollection.set(relation.collection_id, songIds);
+    return (data ?? []) as PlaylistSongRow[];
   });
+}
 
-  return {
-    songs: ((songsResult.data ?? []) as PlaylistSongRow[]).map((row) => toPlaylistSong(row)),
-    collections: collectionsResult.map((row) => toPlaylistCollection(row, relationsByCollection.get(row.id) ?? [])),
-    notes: ((notesResult.data ?? []) as PlaylistNoteRow[]).map((row) => toPlaylistNote(row)),
-  };
+async function listSupabasePlaylistCollections(): Promise<PlaylistCollectionRow[]> {
+  return measurePlaylistServerTiming("list playlist collections", async () => {
+    const supabase = createSupabaseServerClient();
+    const collectionColumns = "id,title,description,emoji,accent_class,cover_image_src,sort_order";
+    const fallbackCollectionColumns = "id,title,description,emoji,accent_class,sort_order";
+    const result = await supabase.from("playlist_collections").select(collectionColumns).order("sort_order", { ascending: true });
+
+    if (!isMissingPlaylistCollectionCoverColumnError(result.error)) {
+      throwSupabaseError("读取 Supabase 歌单失败", result.error);
+      return (result.data ?? []) as PlaylistCollectionRow[];
+    }
+
+    const fallbackResult = await supabase.from("playlist_collections").select(fallbackCollectionColumns).order("sort_order", { ascending: true });
+
+    throwSupabaseError("读取 Supabase 歌单失败", fallbackResult.error);
+
+    return (fallbackResult.data ?? []) as PlaylistCollectionRow[];
+  });
+}
+
+async function listSupabasePlaylistCollectionSongRelations(): Promise<PlaylistCollectionSongRow[]> {
+  return measurePlaylistServerTiming("list collection song relations", async () => {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase.from("playlist_collection_songs").select("collection_id,song_id,sort_order").order("sort_order", { ascending: true });
+
+    throwSupabaseError("读取 Supabase 歌单歌曲关系失败", error);
+
+    return (data ?? []) as PlaylistCollectionSongRow[];
+  });
+}
+
+async function listSupabasePlaylistNotes(): Promise<PlaylistNoteRow[]> {
+  return measurePlaylistServerTiming("list playlist notes", async () => {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase.from("playlist_notes").select("id,song_id,author,content,avatar,created_at").order("created_at", { ascending: true });
+
+    throwSupabaseError("读取 Supabase 歌单留言失败", error);
+
+    return (data ?? []) as PlaylistNoteRow[];
+  });
+}
+
+export async function getSupabasePlaylistData(): Promise<SupabasePlaylistData> {
+  return measurePlaylistServerTiming("getSupabasePlaylistData", async () => {
+    const [songRows, collectionRows, collectionSongRows, noteRows] = await Promise.all([
+      listSupabasePlaylistSongs(),
+      listSupabasePlaylistCollections(),
+      listSupabasePlaylistCollectionSongRelations(),
+      listSupabasePlaylistNotes(),
+    ]);
+
+    const relationsByCollection = new Map<string, string[]>();
+
+    collectionSongRows.forEach((relation) => {
+      const songIds = relationsByCollection.get(relation.collection_id) ?? [];
+      songIds.push(relation.song_id);
+      relationsByCollection.set(relation.collection_id, songIds);
+    });
+
+    return {
+      songs: songRows.map((row) => toPlaylistSong(row)),
+      collections: collectionRows.map((row) => toPlaylistCollection(row, relationsByCollection.get(row.id) ?? [])),
+      notes: noteRows.map((row) => toPlaylistNote(row)),
+    };
+  });
 }
 
 export type PlaylistCollectionInsert = {
