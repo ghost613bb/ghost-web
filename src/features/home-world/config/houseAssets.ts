@@ -41,13 +41,6 @@ export const houseAssets = {
     position: [-3.6, 0, -0.6],
     rotation: [0, Math.PI / 4, 0],
   },
-  isometricCinema: {
-    // 碎碎念模型
-    path: "/models/isometric_cinema/scene.gltf",
-    scale: 0.25,
-    position: [0, 0.06, 0],
-    rotation: [0, 0, 0],
-  },
   lowPolyHouse3: {
     // 人生todolist模型
     path: "/models/low_poly_house_3/scene.gltf",

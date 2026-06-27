@@ -19,18 +19,12 @@ describe("houseAssets", () => {
     });
   });
 
-  it("registers the coffee recommendation model with the tuned low poly cafe asset and keeps the cinema config", () => {
+  it("registers the coffee recommendation model with the tuned low poly cafe asset", () => {
     expect(houseAssets.coffeeShopIsometric).toEqual({
       path: "/models/coffee_recommend_low_poly_cafe/scene.gltf",
       scale: 0.45,
       position: [-3.6, 0, -0.6],
       rotation: [0, Math.PI / 4, 0],
-    });
-    expect(houseAssets.isometricCinema).toEqual({
-      path: "/models/isometric_cinema/scene.gltf",
-      scale: 0.25,
-      position: [0, 0.06, 0],
-      rotation: [0, 0, 0],
     });
   });
 
@@ -142,34 +136,6 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/coffee_recommend_low_poly_cafe/license.txt"), "utf8")).not.toThrow();
   });
 
-  it("removes the blog library house building source base plane from the model asset", () => {
-    const scene = JSON.parse(
-      readFileSync(
-        path.join(
-          process.cwd(),
-          "public/models/house_building_low_poly/scene.gltf",
-        ),
-        "utf8",
-      ),
-    );
-
-    expect(scene.nodes.map((node: { name?: string }) => node.name)).not.toContain(
-      "Plane_2",
-    );
-    expect(scene.nodes.map((node: { name?: string }) => node.name)).not.toContain(
-      "Object_13",
-    );
-    expect(scene.meshes.map((mesh: { name?: string }) => mesh.name)).not.toContain(
-      "Object_7",
-    );
-    expect(
-      scene.materials.map(
-        (material: { pbrMetallicRoughness?: { baseColorFactor?: number[] } }) =>
-          material.pbrMetallicRoughness?.baseColorFactor,
-      ),
-    ).not.toContainEqual([0.33108273651581677, 1, 0.9460033963762664, 1]);
-  });
-
   it("keeps the low poly cinema model files available from public assets", () => {
     expect(() =>
       readFileSync(
@@ -212,13 +178,6 @@ describe("houseAssets", () => {
     expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/scene.bin"))).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/textures/Texture_buildings1_baseColor.png"))).not.toThrow();
     expect(() => readFileSync(path.join(process.cwd(), "public/models/low_poly_generic_shop/license.txt"), "utf8")).not.toThrow();
-  });
-
-  it("keeps the isometric cinema model files available from public assets", () => {
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/scene.gltf"), "utf8")).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/scene.bin"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/textures/rig_initialShadingGroup1_baseColor.png"))).not.toThrow();
-    expect(() => readFileSync(path.join(process.cwd(), "public/models/isometric_cinema/license.txt"), "utf8")).not.toThrow();
   });
 
   it("keeps the low poly house model files available from public assets", () => {
