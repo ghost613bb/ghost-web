@@ -11,7 +11,6 @@ import {
 } from "@/data/playlists";
 import { hasSupabaseServerEnv } from "@/lib/supabase/server";
 import { getSupabasePlaylistData } from "./repository";
-import { measurePlaylistServerTiming } from "./server-timing";
 
 export type PlaylistDataSource = "static" | "supabase";
 
@@ -45,27 +44,25 @@ function buildPlayerSnapshot(collections: PlaylistCollection[]): PlaylistPlayerS
 }
 
 export async function getPlaylistPageData(): Promise<PlaylistPageData> {
-  return measurePlaylistServerTiming("getPlaylistPageData", async () => {
-    if (!hasSupabaseServerEnv()) {
+  if (!hasSupabaseServerEnv()) {
+    return getStaticPlaylistPageData();
+  }
+
+  try {
+    const data = await getSupabasePlaylistData();
+
+    if (data.songs.length === 0 || data.collections.length === 0) {
       return getStaticPlaylistPageData();
     }
 
-    try {
-      const data = await getSupabasePlaylistData();
-
-      if (data.songs.length === 0 || data.collections.length === 0) {
-        return getStaticPlaylistPageData();
-      }
-
-      return {
-        ...data,
-        dataSource: "supabase",
-        featuredSongId: data.collections[0]?.songIds[0] ?? data.songs[0]?.id ?? featuredPlaylistSongId,
-        playerSnapshot: buildPlayerSnapshot(data.collections),
-      };
-    } catch (error) {
-      console.warn(error instanceof Error ? error.message : "读取 Supabase 歌单失败，已回退静态数据");
-      return getStaticPlaylistPageData();
-    }
-  });
+    return {
+      ...data,
+      dataSource: "supabase",
+      featuredSongId: data.collections[0]?.songIds[0] ?? data.songs[0]?.id ?? featuredPlaylistSongId,
+      playerSnapshot: buildPlayerSnapshot(data.collections),
+    };
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : "读取 Supabase 歌单失败，已回退静态数据");
+    return getStaticPlaylistPageData();
+  }
 }

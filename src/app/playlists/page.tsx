@@ -6,10 +6,9 @@ import { renderModulePage } from "@/features/module-display-mode/demoPage";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 import { PlaylistsPageView } from "@/features/playlists/PlaylistsPage";
 import { getPlaylistPageData } from "@/features/playlists/service";
-import { measurePlaylistServerTiming } from "@/features/playlists/server-timing";
 
 export default async function PlaylistsPage() {
-  const displayMode = await measurePlaylistServerTiming("getDisplayMode(playlists)", () => getDisplayMode("playlists"));
+  const displayMode = await getDisplayMode("playlists");
 
   if (displayMode === "demo") {
     return renderModulePage({

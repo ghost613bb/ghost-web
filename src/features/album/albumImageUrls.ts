@@ -10,9 +10,9 @@ export function getAlbumCoverThumbnailUrl(album: Album | null) {
 }
 
 export function getAlbumPhotoDisplayUrl(photo: AlbumPhoto | null) {
-  return photo?.displayUrl ?? buildSupabaseImageTransformUrl(photo?.imageUrl, { width: 1600, quality: 82 }) ?? photo?.imageUrl ?? null;
+  return (photo?.displayUrl ?? buildSupabaseImageTransformUrl(photo?.imageUrl, { width: 1600, quality: 82 }) ?? photo?.imageUrl) || null;
 }
 
 export function getAlbumPhotoPreviewUrl(photo: AlbumPhoto | null) {
-  return photo?.thumbnailUrl ?? buildSupabaseImageTransformUrl(photo?.imageUrl, { width: 800, quality: 74 }) ?? photo?.imageUrl ?? null;
+  return (photo?.thumbnailUrl ?? buildSupabaseImageTransformUrl(photo?.imageUrl, { width: 800, quality: 74 }) ?? photo?.imageUrl) || null;
 }

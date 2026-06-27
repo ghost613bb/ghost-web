@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, Play, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { MokugyoStateNotice } from "@/features/content-modules/components/MokugyoStateNotice";
-import { useTemporaryImageLoadLogger } from "@/features/content-modules/components/useTemporaryMediaLoadLogger";
 import type { Thought } from "@/features/thoughts/types";
 import { thoughtBodyToPlainText } from "./text";
 import { formatThoughtListDate, getThoughtDateParts } from "./time";
@@ -238,8 +237,6 @@ function CalendarPanel({ calendarDates, month, onNextMonth, onPreviousMonth }: C
 }
 
 export function ThoughtsPageView({ dataSource, initialThoughts, statusReason }: ThoughtsPageViewProps) {
-  useTemporaryImageLoadLogger("thoughts");
-
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
   const normalizedQuery = trimmedQuery.toLowerCase();
