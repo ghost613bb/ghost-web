@@ -18,5 +18,9 @@ export default async function PlaylistsPage() {
     });
   }
 
-  return <PlaylistsPageView {...(await getPlaylistPageData())} />;
+  console.time("getPlaylistPageData");
+  const data = await getPlaylistPageData();
+  console.timeEnd("getPlaylistPageData");
+
+  return <PlaylistsPageView {...data} />;
 }

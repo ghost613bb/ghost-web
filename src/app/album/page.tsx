@@ -28,7 +28,9 @@ export default async function AlbumPage({ searchParams }: AlbumPageProps = {}) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const albumId = getSingleSearchParam(resolvedSearchParams.albumId);
   const photoId = getSingleSearchParam(resolvedSearchParams.photoId);
+  console.time("getAlbumWorkspaceData");
   const data = await getAlbumWorkspaceData(albumId, photoId);
+  console.timeEnd("getAlbumWorkspaceData");
 
   if (data.dataSource === "unavailable") {
     return <MokugyoStateNotice page="/album" reason={data.statusReason} />;

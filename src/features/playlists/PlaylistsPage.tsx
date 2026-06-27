@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { PlaylistCollection, PlaylistNote, PlaylistPlayerSnapshot, PlaylistSong } from "@/data/playlists";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
+import { useTemporaryImageLoadLogger } from "@/features/content-modules/components/useTemporaryMediaLoadLogger";
 import { CommentPlayerPanel } from "./CommentPlayerPanel";
 import { PlaylistBatchImportDialog } from "./PlaylistBatchImportDialog";
 import { PlaylistCollectionDialog } from "./PlaylistCollectionDialog";
@@ -569,6 +570,8 @@ function BottomPlayerBar({ isLyricsOpen, onToggleLyrics, player }: { isLyricsOpe
 }
 
 export function PlaylistsPageView({ collections, dataSource, featuredSongId, notes, playerSnapshot, songs }: PlaylistsPageViewProps) {
+  useTemporaryImageLoadLogger("playlists");
+
   const [displayCollections, setDisplayCollections] = useState(collections);
   const [displayNotes, setDisplayNotes] = useState(notes);
   const initialCollection = displayCollections.find((collection) => collection.songIds.includes(featuredSongId)) ?? displayCollections[0];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject, type SyntheticEvent } from "react";
 import type { PlaylistPlayerSnapshot, PlaylistSong } from "@/data/playlists";
 
 export type PlaylistMode = "order" | "shuffle" | "repeat-one";
@@ -101,24 +101,86 @@ type SongDurationPreloaderProps = {
 };
 
 export function SongDurationPreloader({ durationLabels, onDurationLoaded, songs }: SongDurationPreloaderProps) {
+  const preloadSongs = useMemo(() => songs.filter((song) => song.audioSrc && !durationLabels[getDurationCacheKey(song)] && !song.duration), [durationLabels, songs]);
+  const preloadStartedAtRef = useRef(0);
+  const preloadPendingCountRef = useRef(0);
+  const preloadTimerEndedRef = useRef(false);
+
+  useEffect(() => {
+    const timerLabel = "playlistAudioMetadataPreload";
+    const shouldLogPreload = process.env.NODE_ENV !== "test";
+    preloadStartedAtRef.current = performance.now();
+    preloadPendingCountRef.current = preloadSongs.length;
+    preloadTimerEndedRef.current = false;
+
+    if (shouldLogPreload) {
+      console.time(timerLabel);
+      console.info("playlistAudioMetadataPreloadPending", {
+        sources: preloadSongs.map((song) => song.audioSrc),
+        total: preloadSongs.length,
+      });
+    }
+
+    if (preloadSongs.length === 0) {
+      if (shouldLogPreload) {
+        console.timeEnd(timerLabel);
+      }
+
+      preloadTimerEndedRef.current = true;
+      return;
+    }
+
+    return () => {
+      if (!preloadTimerEndedRef.current) {
+        if (shouldLogPreload) {
+          console.timeEnd(timerLabel);
+        }
+
+        preloadTimerEndedRef.current = true;
+      }
+    };
+  }, [preloadSongs]);
+
+  const handlePreloadSettled = (event: SyntheticEvent<HTMLAudioElement>, song: PlaylistSong) => {
+    const audio = event.currentTarget;
+    const duration = audio.duration;
+
+    preloadPendingCountRef.current -= 1;
+
+    if (process.env.NODE_ENV !== "test") {
+      console.info("playlistAudioMetadataLoaded", {
+        duration,
+        elapsedMs: Math.round(performance.now() - preloadStartedAtRef.current),
+        pending: Math.max(0, preloadPendingCountRef.current),
+        src: audio.currentSrc || audio.src,
+        status: event.type,
+      });
+    }
+
+    if (event.type === "loadedmetadata" && Number.isFinite(duration) && duration > 0) {
+      onDurationLoaded(song, formatTime(duration));
+    }
+
+    if (preloadPendingCountRef.current <= 0 && !preloadTimerEndedRef.current) {
+      if (process.env.NODE_ENV !== "test") {
+        console.timeEnd("playlistAudioMetadataPreload");
+      }
+
+      preloadTimerEndedRef.current = true;
+    }
+  };
+
   return (
     <div aria-hidden="true" className="hidden">
-      {songs.map((song) =>
-        song.audioSrc && !durationLabels[getDurationCacheKey(song)] && !song.duration ? (
-          <audio
-            key={song.id}
-            onLoadedMetadata={(event) => {
-              const duration = event.currentTarget.duration;
-
-              if (Number.isFinite(duration) && duration > 0) {
-                onDurationLoaded(song, formatTime(duration));
-              }
-            }}
-            preload="metadata"
-            src={song.audioSrc}
-          />
-        ) : null,
-      )}
+      {preloadSongs.map((song) => (
+        <audio
+          key={song.id}
+          onError={(event) => handlePreloadSettled(event, song)}
+          onLoadedMetadata={(event) => handlePreloadSettled(event, song)}
+          preload="metadata"
+          src={song.audioSrc}
+        />
+      ))}
     </div>
   );
 }

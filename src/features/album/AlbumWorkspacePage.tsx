@@ -4,6 +4,7 @@ import { Camera, ChevronLeft, ChevronRight, ImageIcon, Pencil, Plus, Trash2, X }
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
+import { useTemporaryImageLoadLogger } from "@/features/content-modules/components/useTemporaryMediaLoadLogger";
 import { AlbumFormDialog } from "./AlbumFormDialog";
 import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
 import type { Album, AlbumPhoto } from "./types";
@@ -233,6 +234,8 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
 }
 
 export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto, initialAlbums, initialDeleteAlbumCandidate = null, initialPhotos }: AlbumWorkspacePageViewProps) {
+  useTemporaryImageLoadLogger("album");
+
   const router = useRouter();
   const albumSelectionRequestRef = useRef(0);
   const deletedPhotoIdsRef = useRef(new Set<string>());
