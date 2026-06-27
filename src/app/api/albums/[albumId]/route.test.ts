@@ -46,6 +46,10 @@ describe("/api/albums/[albumId]", () => {
     formData.set("description", "更新后的备注");
     formData.set("coverFileName", "updated-cover.png");
     formData.append("coverFile", new Blob(["updated-cover"], { type: "image/png" }), "updated-cover.png");
+    formData.set("coverDisplayFileName", "updated-cover-display.webp");
+    formData.append("coverDisplayFile", new Blob(["updated-display"], { type: "image/webp" }), "updated-cover-display.webp");
+    formData.set("coverThumbnailFileName", "updated-cover-thumbnail.webp");
+    formData.append("coverThumbnailFile", new Blob(["updated-thumbnail"], { type: "image/webp" }), "updated-cover-thumbnail.webp");
 
     const response = await PATCH(
       new Request("http://localhost/api/albums/album-001", {
@@ -70,11 +74,27 @@ describe("/api/albums/[albumId]", () => {
       title: "编辑后的相册",
       description: "更新后的备注",
       coverImage: "https://cdn.example.com/album-001/cover/updated-cover.png",
+      coverDisplayImage: "https://cdn.example.com/album-001/cover/display-updated-cover-display.webp",
+      coverThumbnailImage: "https://cdn.example.com/album-001/cover/thumbnail-updated-cover-thumbnail.webp",
     });
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
         objectPath: "album-001/cover/updated-cover.png",
+        scope: "albums",
+      }),
+    );
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/webp",
+        objectPath: "album-001/cover/display-updated-cover-display.webp",
+        scope: "albums",
+      }),
+    );
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/webp",
+        objectPath: "album-001/cover/thumbnail-updated-cover-thumbnail.webp",
         scope: "albums",
       }),
     );
@@ -86,6 +106,10 @@ describe("/api/albums/[albumId]", () => {
     formData.set("note", "窗边打盹的照片");
     formData.set("photoFileName", "cat-window.png");
     formData.append("photoFile", new Blob(["photo-binary"], { type: "image/png" }), "cat-window.png");
+    formData.set("photoDisplayFileName", "cat-window-display.webp");
+    formData.append("photoDisplayFile", new Blob(["photo-display"], { type: "image/webp" }), "cat-window-display.webp");
+    formData.set("photoThumbnailFileName", "cat-window-thumbnail.webp");
+    formData.append("photoThumbnailFile", new Blob(["photo-thumbnail"], { type: "image/webp" }), "cat-window-thumbnail.webp");
 
     const response = await POST(
       new Request("http://localhost/api/albums/album-001/photos", {
@@ -116,10 +140,26 @@ describe("/api/albums/[albumId]", () => {
     });
     expect(createdPhoto.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(createdPhoto.imageUrl).toBe(`https://cdn.example.com/album-001/photos/${createdPhoto.id}-cat-window.png`);
+    expect(createdPhoto.displayUrl).toBe(`https://cdn.example.com/album-001/photos/${createdPhoto.id}-display-cat-window-display.webp`);
+    expect(createdPhoto.thumbnailUrl).toBe(`https://cdn.example.com/album-001/photos/${createdPhoto.id}-thumbnail-cat-window-thumbnail.webp`);
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
         objectPath: `album-001/photos/${createdPhoto.id}-cat-window.png`,
+        scope: "albums",
+      }),
+    );
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/webp",
+        objectPath: `album-001/photos/${createdPhoto.id}-display-cat-window-display.webp`,
+        scope: "albums",
+      }),
+    );
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/webp",
+        objectPath: `album-001/photos/${createdPhoto.id}-thumbnail-cat-window-thumbnail.webp`,
         scope: "albums",
       }),
     );

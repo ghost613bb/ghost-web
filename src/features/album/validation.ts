@@ -19,6 +19,14 @@ export function parseCreateAlbum(body: unknown): CreateAlbumInput {
     throw new Error("album 参数不合法");
   }
 
+  if (album.coverDisplayImage !== undefined && album.coverDisplayImage !== null && typeof album.coverDisplayImage !== "string") {
+    throw new Error("album 参数不合法");
+  }
+
+  if (album.coverThumbnailImage !== undefined && album.coverThumbnailImage !== null && typeof album.coverThumbnailImage !== "string") {
+    throw new Error("album 参数不合法");
+  }
+
   if (album.id !== undefined && album.id !== null && typeof album.id !== "string") {
     throw new Error("album 参数不合法");
   }
@@ -28,6 +36,8 @@ export function parseCreateAlbum(body: unknown): CreateAlbumInput {
     title: album.title.trim(),
     description: album.description?.trim() || undefined,
     coverImage: album.coverImage ?? undefined,
+    coverDisplayImage: album.coverDisplayImage ?? undefined,
+    coverThumbnailImage: album.coverThumbnailImage ?? undefined,
   };
 }
 
@@ -50,6 +60,14 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
     throw new Error("请先选择照片");
   }
 
+  if (photo.displayUrl !== undefined && photo.displayUrl !== null && typeof photo.displayUrl !== "string") {
+    throw new Error("photo 参数不合法");
+  }
+
+  if (photo.thumbnailUrl !== undefined && photo.thumbnailUrl !== null && typeof photo.thumbnailUrl !== "string") {
+    throw new Error("photo 参数不合法");
+  }
+
   if (photo.imagePosition !== undefined && photo.imagePosition !== null && typeof photo.imagePosition !== "string") {
     throw new Error("photo 参数不合法");
   }
@@ -58,6 +76,8 @@ export function parseCreateAlbumPhoto(body: unknown): CreateAlbumPhotoInput {
     id: photo.id?.trim() || undefined,
     note: photo.note?.trim() || undefined,
     imageUrl: photo.imageUrl.trim(),
+    displayUrl: photo.displayUrl?.trim() || undefined,
+    thumbnailUrl: photo.thumbnailUrl?.trim() || undefined,
     imagePosition: photo.imagePosition?.trim() || undefined,
   };
 }

@@ -111,6 +111,8 @@ export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
     title: input.title,
     description: input.description || "先留一个新的相册位置。",
     coverImage: input.coverImage,
+    coverDisplayImage: input.coverDisplayImage ?? undefined,
+    coverThumbnailImage: input.coverThumbnailImage ?? undefined,
     photoCount: 0,
     visibility: "public",
     status: "published",
@@ -135,6 +137,8 @@ export async function updateAlbum(id: string, input: CreateAlbumInput): Promise<
     title: input.title,
     description: input.description || "先留一个新的相册位置。",
     coverImage: input.coverImage ?? currentAlbum.coverImage,
+    coverDisplayImage: input.coverDisplayImage === null ? undefined : (input.coverDisplayImage ?? currentAlbum.coverDisplayImage),
+    coverThumbnailImage: input.coverThumbnailImage === null ? undefined : (input.coverThumbnailImage ?? currentAlbum.coverThumbnailImage),
     status: "published",
   };
 
@@ -171,6 +175,8 @@ export async function createAlbumPhoto(albumId: string, input: CreateAlbumPhotoI
     uploadedAt: formatUploadedAt(new Date()),
     note: input.note || "先记下这一刻。",
     imageUrl: input.imageUrl,
+    displayUrl: input.displayUrl,
+    thumbnailUrl: input.thumbnailUrl,
     imagePosition: input.imagePosition ?? "center center",
   } satisfies AlbumPhoto;
 

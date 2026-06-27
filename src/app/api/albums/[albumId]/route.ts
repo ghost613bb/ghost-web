@@ -2,12 +2,27 @@ import { NextResponse } from "next/server";
 import { deleteAlbum, getAlbumById, updateAlbum } from "@/features/album/service";
 import type { CreateAlbumInput } from "@/features/album/types";
 import { parseCreateAlbum } from "@/features/album/validation";
-import { buildAlbumCoverFileName } from "@/features/storage/paths";
+import { buildAlbumCoverFileName, buildAlbumCoverVariantFileName } from "@/features/storage/paths";
 import { uploadStorageObject } from "@/features/storage/service";
 import { isUploadedFile } from "@/features/storage/validation";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
+
+async function uploadAlbumFile(rawFile: FormDataEntryValue | null, objectPath: string) {
+  if (!isUploadedFile(rawFile) || rawFile.size === 0) {
+    return undefined;
+  }
+
+  const result = await uploadStorageObject({
+    buffer: Buffer.from(await rawFile.arrayBuffer()),
+    contentType: rawFile.type,
+    objectPath,
+    scope: "albums",
+  });
+
+  return result.url;
+}
 
 type AlbumRouteContext = {
   params: Promise<{
@@ -39,6 +54,10 @@ export async function PATCH(request: Request, context: AlbumRouteContext) {
       const rawDescription = formData.get("description");
       const rawCoverFile = formData.get("coverFile");
       const rawCoverFileName = formData.get("coverFileName");
+      const rawCoverDisplayFile = formData.get("coverDisplayFile");
+      const rawCoverDisplayFileName = formData.get("coverDisplayFileName");
+      const rawCoverThumbnailFile = formData.get("coverThumbnailFile");
+      const rawCoverThumbnailFileName = formData.get("coverThumbnailFileName");
 
       albumDraft = parseCreateAlbum({
         title: typeof rawTitle === "string" ? rawTitle : "",
@@ -47,16 +66,27 @@ export async function PATCH(request: Request, context: AlbumRouteContext) {
 
       if (isUploadedFile(rawCoverFile) && rawCoverFile.size > 0) {
         const requestedFileName = typeof rawCoverFileName === "string" && rawCoverFileName.trim().length > 0 ? rawCoverFileName.trim() : rawCoverFile.name;
-        const finalFileName = buildAlbumCoverFileName(albumId, requestedFileName || "cover");
-        const result = await uploadStorageObject({
-          buffer: Buffer.from(await rawCoverFile.arrayBuffer()),
-          contentType: rawCoverFile.type,
-          objectPath: finalFileName,
-          scope: "albums",
-        });
         albumDraft = {
           ...albumDraft,
-          coverImage: result.url,
+          coverImage: await uploadAlbumFile(rawCoverFile, buildAlbumCoverFileName(albumId, requestedFileName || "cover")),
+          coverDisplayImage: null,
+          coverThumbnailImage: null,
+        };
+      }
+
+      if (isUploadedFile(rawCoverDisplayFile) && rawCoverDisplayFile.size > 0) {
+        const requestedFileName = typeof rawCoverDisplayFileName === "string" && rawCoverDisplayFileName.trim().length > 0 ? rawCoverDisplayFileName.trim() : rawCoverDisplayFile.name;
+        albumDraft = {
+          ...albumDraft,
+          coverDisplayImage: await uploadAlbumFile(rawCoverDisplayFile, buildAlbumCoverVariantFileName(albumId, "display", requestedFileName || "cover")),
+        };
+      }
+
+      if (isUploadedFile(rawCoverThumbnailFile) && rawCoverThumbnailFile.size > 0) {
+        const requestedFileName = typeof rawCoverThumbnailFileName === "string" && rawCoverThumbnailFileName.trim().length > 0 ? rawCoverThumbnailFileName.trim() : rawCoverThumbnailFile.name;
+        albumDraft = {
+          ...albumDraft,
+          coverThumbnailImage: await uploadAlbumFile(rawCoverThumbnailFile, buildAlbumCoverVariantFileName(albumId, "thumbnail", requestedFileName || "cover")),
         };
       }
     } else {
@@ -67,6 +97,8 @@ export async function PATCH(request: Request, context: AlbumRouteContext) {
       title: albumDraft.title,
       description: albumDraft.description,
       coverImage: albumDraft.coverImage,
+      coverDisplayImage: albumDraft.coverDisplayImage,
+      coverThumbnailImage: albumDraft.coverThumbnailImage,
     });
 
     return NextResponse.json({ album });

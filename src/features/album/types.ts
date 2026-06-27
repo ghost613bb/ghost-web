@@ -1,7 +1,9 @@
 import type { Visibility } from "@/features/content-modules/types";
 
 export type Album = {
+  coverDisplayImage?: string;
   coverImage?: string;
+  coverThumbnailImage?: string;
   createdAt?: string;
   description?: string;
   id: string;
@@ -13,25 +15,31 @@ export type Album = {
 };
 
 export type CreateAlbumInput = {
+  coverDisplayImage?: string | null;
   coverImage?: string;
+  coverThumbnailImage?: string | null;
   description?: string;
   id?: string;
   title: string;
 };
 
 export type CreateAlbumPhotoInput = {
+  displayUrl?: string;
   id?: string;
   imagePosition?: string;
   imageUrl: string;
   note?: string;
+  thumbnailUrl?: string;
 };
 
 export type AlbumPhoto = {
   albumId: string;
+  displayUrl?: string;
   id: string;
   imagePosition: string;
   imageUrl: string;
   note: string;
+  thumbnailUrl?: string;
   uploadedAt: string;
 };
 

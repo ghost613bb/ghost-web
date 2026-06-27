@@ -42,6 +42,10 @@ describe("/api/albums", () => {
     formData.set("description", "把封面链路接到持久化。");
     formData.set("coverFileName", "summer-cover.png");
     formData.append("coverFile", new Blob(["cover-binary"], { type: "image/png" }), "summer-cover.png");
+    formData.set("coverDisplayFileName", "summer-cover-display.webp");
+    formData.append("coverDisplayFile", new Blob(["cover-display"], { type: "image/webp" }), "summer-cover-display.webp");
+    formData.set("coverThumbnailFileName", "summer-cover-thumbnail.webp");
+    formData.append("coverThumbnailFile", new Blob(["cover-thumbnail"], { type: "image/webp" }), "summer-cover-thumbnail.webp");
 
     const response = await POST(
       new Request("http://localhost/api/albums", {
@@ -62,6 +66,8 @@ describe("/api/albums", () => {
         title: "数据库相册",
         description: "把封面链路接到持久化。",
         coverImage: "https://cdn.example.com/album-created-001/cover/summer-cover.png",
+        coverDisplayImage: "https://cdn.example.com/album-created-001/cover/display-summer-cover-display.webp",
+        coverThumbnailImage: "https://cdn.example.com/album-created-001/cover/thumbnail-summer-cover-thumbnail.webp",
         photoCount: 0,
         visibility: "public",
         status: "published",
@@ -76,6 +82,20 @@ describe("/api/albums", () => {
         scope: "albums",
       }),
     );
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/webp",
+        objectPath: "album-created-001/cover/display-summer-cover-display.webp",
+        scope: "albums",
+      }),
+    );
+    expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "image/webp",
+        objectPath: "album-created-001/cover/thumbnail-summer-cover-thumbnail.webp",
+        scope: "albums",
+      }),
+    );
 
     const nextResponse = await GET();
     const nextData = await nextResponse.json();
@@ -85,6 +105,8 @@ describe("/api/albums", () => {
       title: "数据库相册",
       description: "把封面链路接到持久化。",
       coverImage: "https://cdn.example.com/album-created-001/cover/summer-cover.png",
+      coverDisplayImage: "https://cdn.example.com/album-created-001/cover/display-summer-cover-display.webp",
+      coverThumbnailImage: "https://cdn.example.com/album-created-001/cover/thumbnail-summer-cover-thumbnail.webp",
       photoCount: 0,
       visibility: "public",
       status: "published",

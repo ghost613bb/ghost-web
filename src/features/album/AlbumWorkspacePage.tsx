@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { useTemporaryImageLoadLogger } from "@/features/content-modules/components/useTemporaryMediaLoadLogger";
+import { getAlbumCoverDisplayUrl, getAlbumCoverThumbnailUrl, getAlbumPhotoDisplayUrl, getAlbumPhotoPreviewUrl } from "./albumImageUrls";
+import { createAlbumCoverImageVariants, createAlbumPhotoImageVariants } from "./albumImageVariants";
 import { AlbumFormDialog } from "./AlbumFormDialog";
 import { AlbumPhotoUploadDialog } from "./AlbumPhotoUploadDialog";
 import type { Album, AlbumPhoto } from "./types";
@@ -36,10 +38,6 @@ function AlbumPlaceholder({ className = "", label }: { className?: string; label
       <ImageIcon aria-hidden="true" className="h-14 w-14 stroke-[1.8]" />
     </div>
   );
-}
-
-function coverImageFromAlbum(album: Album | null) {
-  return album?.coverImage ?? null;
 }
 
 function buildWorkspaceHref(albumId?: string | null, photoId?: string | null) {
@@ -153,6 +151,7 @@ function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnl
 }
 
 function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPhotoId, onClose, onDelete, onEdit, onNavigate, previousPhotoId }: { activeAlbum: Album | null; activePhoto: AlbumPhoto | null; isAdminUnlocked: boolean; nextPhotoId: string | null; onClose: () => void; onDelete: () => void; onEdit: () => void; onNavigate: (photoId: string) => void; previousPhotoId: string | null }) {
+  const activePhotoDisplayUrl = getAlbumPhotoDisplayUrl(activePhoto);
   useEffect(() => {
     if (!activePhoto) {
       return;
@@ -185,7 +184,7 @@ function AlbumPhotoLightbox({ activeAlbum, activePhoto, isAdminUnlocked, nextPho
       <div aria-label="照片详情弹窗" className="relative z-10 mx-auto w-full max-w-[760px] overflow-hidden rounded-[2rem] border-[2.5px] border-stone-700/75 bg-black shadow-[0_24px_80px_rgba(78,49,50,0.28)]" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
         <div className="relative h-[460px] bg-black sm:h-[560px]">
           <div aria-label={getPhotoAriaLabel(activePhoto.uploadedAt, "detail")} className="absolute inset-0 grid place-items-center overflow-hidden" role="img">
-            <img alt="" className="h-full w-full object-contain" src={activePhoto.imageUrl} style={{ objectPosition: activePhoto.imagePosition }} />
+            <img alt="" className="h-full w-full object-contain" src={activePhotoDisplayUrl ?? undefined} style={{ objectPosition: activePhoto.imagePosition }} />
           </div>
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(39,27,28,0)_0%,rgba(39,27,28,0.72)_100%)]" />
           <div className="absolute right-4 top-4 z-20">
@@ -565,7 +564,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     }
 
     [previousPhotoId, nextPhotoId]
-      .map((photoId) => displayPhotos.find((photo) => photo.id === photoId)?.imageUrl)
+      .map((photoId) => getAlbumPhotoDisplayUrl(displayPhotos.find((photo) => photo.id === photoId) ?? null))
       .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
       .forEach((imageUrl) => {
         const image = new Image();
@@ -579,8 +578,8 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     }
 
     displayPhotos
-      .map((photo) => photo.imageUrl)
-      .filter(Boolean)
+      .map((photo) => getAlbumPhotoPreviewUrl(photo))
+      .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
       .forEach((imageUrl) => {
         const image = new Image();
         image.src = imageUrl;
@@ -607,12 +606,13 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             <div className="album-page-scrollbar min-h-0 space-y-3 xl:flex-1 xl:overflow-y-auto xl:px-1 xl:py-2">
               {displayAlbums.map((album) => {
                 const isActive = activeAlbum?.id === album.id;
+                const coverThumbnailUrl = getAlbumCoverThumbnailUrl(album);
 
                 return (
                   <article className={`rounded-[1.2rem] border-[2.5px] border-stone-700/75 p-3 shadow-[0_6px_0_rgba(112,84,84,0.11)] transition hover:-translate-y-0.5 ${isActive ? "bg-[#fff4cf] outline outline-2 outline-offset-2 outline-[#c65f70]" : "bg-white/75"}`} key={album.id}>
                     <button aria-pressed={isActive} className="flex w-full flex-col gap-2 text-left" onClick={() => handleSelectAlbum(album.id)} type="button">
                       <div className="overflow-hidden rounded-[0.95rem] bg-[#f4ebda]">
-                        {coverImageFromAlbum(album) ? <img alt={`${album.title}封面`} className="h-24 w-full object-cover" src={coverImageFromAlbum(album) ?? undefined} /> : <AlbumPlaceholder className="h-24 w-full" label={`${album.title}封面`} />}
+                        {coverThumbnailUrl ? <img alt={`${album.title}封面`} className="h-24 w-full object-cover" decoding="async" loading="lazy" src={coverThumbnailUrl} /> : <AlbumPlaceholder className="h-24 w-full" label={`${album.title}封面`} />}
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <h2 className="text-[1rem] font-black text-[#4f2525]">{album.title}</h2>
@@ -627,7 +627,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
 
           <div className="min-w-0 space-y-5">
             <section className="relative overflow-hidden rounded-[2rem] border-[2.5px] border-[#d8cec0] bg-[linear-gradient(135deg,#fcf8ef_0%,#fffdf8_62%,#f8efe2_100%)] shadow-[0_20px_42px_rgba(145,118,118,0.12)]">
-              {coverImageFromAlbum(activeAlbum) ? <img alt={`${activeAlbum?.title ?? "相册"}封面背景`} className="absolute inset-0 h-full w-full object-cover" src={coverImageFromAlbum(activeAlbum) ?? undefined} /> : null}
+              {getAlbumCoverDisplayUrl(activeAlbum) ? <img alt={`${activeAlbum?.title ?? "相册"}封面背景`} className="absolute inset-0 h-full w-full object-cover" decoding="async" fetchPriority="high" src={getAlbumCoverDisplayUrl(activeAlbum) ?? undefined} /> : null}
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(252,248,239,0.92)_0%,rgba(255,253,248,0.9)_48%,rgba(248,239,226,0.84)_100%)]" />
               <div className="relative grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_224px] lg:items-start lg:gap-8">
                 <div className="max-w-2xl">
@@ -638,6 +638,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 </div>
                 <div className="flex flex-col gap-3">
                   <button className="inline-flex items-center rounded-full border-2 border-[#b89b9b] bg-[#f4c0c9] px-5 py-3 text-left text-[1.05rem] font-black text-[#4c2b2d] shadow-[0_7px_16px_rgba(149,116,121,0.12)] transition hover:-translate-y-0.5 hover:bg-[#f7ccd3] disabled:cursor-not-allowed disabled:opacity-60" disabled={!activeAlbum || !isAdminUnlocked} onClick={() => {
+                    if (!activeAlbum) {
+                      return;
+                    }
+
                     setAdminError(null);
                     clearPhotoSelection();
                     uploadAlbumIdRef.current = activeAlbum.id;
@@ -671,6 +675,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   {displayPhotos.map((photo, index) => {
                     const isActive = activePhoto?.id === photo.id;
+                    const photoPreviewUrl = getAlbumPhotoPreviewUrl(photo);
 
                     return (
                       <article className={`relative rounded-[1.45rem] border p-3 shadow-[0_10px_26px_rgba(149,116,121,0.08)] transition ${isActive ? "border-[#c65f70] bg-[#fff7f8] ring-2 ring-[#f2c1c8]" : "border-[#e7ddd1] bg-white hover:-translate-y-1 hover:bg-[#fdf7ef]"}`} key={photo.id}>
@@ -682,7 +687,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                               className="h-56 w-full object-cover transition duration-300 hover:scale-[1.02]"
                               decoding="async"
                               loading="lazy"
-                              src={photo.imageUrl}
+                              src={photoPreviewUrl ?? undefined}
                               style={{ objectPosition: photo.imagePosition }}
                             />
                           </div>
@@ -749,8 +754,13 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             formData.set("description", description);
 
             if (coverFile) {
+              const variants = await createAlbumCoverImageVariants(coverFile);
               formData.set("coverFileName", coverFile.name);
               formData.append("coverFile", coverFile, coverFile.name);
+              formData.set("coverDisplayFileName", variants.displayFile.name);
+              formData.append("coverDisplayFile", variants.displayFile, variants.displayFile.name);
+              formData.set("coverThumbnailFileName", variants.thumbnailFile.name);
+              formData.append("coverThumbnailFile", variants.thumbnailFile, variants.thumbnailFile.name);
             }
 
             const response = await fetch("/api/albums", {
@@ -812,8 +822,13 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             formData.set("description", description);
 
             if (coverFile) {
+              const variants = await createAlbumCoverImageVariants(coverFile);
               formData.set("coverFileName", coverFile.name);
               formData.append("coverFile", coverFile, coverFile.name);
+              formData.set("coverDisplayFileName", variants.displayFile.name);
+              formData.append("coverDisplayFile", variants.displayFile, variants.displayFile.name);
+              formData.set("coverThumbnailFileName", variants.thumbnailFile.name);
+              formData.append("coverThumbnailFile", variants.thumbnailFile, variants.thumbnailFile.name);
             }
 
             try {
@@ -859,10 +874,15 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
             }
 
             const uploadAlbum = uploadingAlbum;
+            const variants = await createAlbumPhotoImageVariants(photoFile);
             const formData = new FormData();
             formData.set("note", note);
             formData.set("photoFileName", photoFile.name);
             formData.append("photoFile", photoFile, photoFile.name);
+            formData.set("photoDisplayFileName", variants.displayFile.name);
+            formData.append("photoDisplayFile", variants.displayFile, variants.displayFile.name);
+            formData.set("photoThumbnailFileName", variants.thumbnailFile.name);
+            formData.append("photoThumbnailFile", variants.thumbnailFile, variants.thumbnailFile.name);
 
             const response = await fetch(`/api/albums/${uploadAlbum.id}/photos`, {
               credentials: "same-origin",

@@ -47,9 +47,13 @@ describe("album service", () => {
     const result = await createAlbumPhoto(storedAlbum.id, {
       note: "小时和分钟应跟随本地时间",
       imageUrl: "/uploads/albums/local-time.png",
+      displayUrl: "/uploads/albums/local-time-display.webp",
+      thumbnailUrl: "/uploads/albums/local-time-thumbnail.webp",
     });
 
     expect(result.photo.uploadedAt).toBe("2026-05-28 / 10:05");
+    expect(result.photo.displayUrl).toBe("/uploads/albums/local-time-display.webp");
+    expect(result.photo.thumbnailUrl).toBe("/uploads/albums/local-time-thumbnail.webp");
   });
 
   it("lists stored albums without local fallback data", async () => {
@@ -58,6 +62,8 @@ describe("album service", () => {
       title: "编辑后的相册标题",
       description: "把数据库相册展示出来。",
       coverImage: "/uploads/albums/edited-cover.png",
+      coverDisplayImage: "/uploads/albums/edited-cover-display.webp",
+      coverThumbnailImage: "/uploads/albums/edited-cover-thumbnail.webp",
       photoCount: 3,
     });
 
@@ -69,6 +75,8 @@ describe("album service", () => {
         title: "编辑后的相册标题",
         description: "把数据库相册展示出来。",
         coverImage: "/uploads/albums/edited-cover.png",
+        coverDisplayImage: "/uploads/albums/edited-cover-display.webp",
+        coverThumbnailImage: "/uploads/albums/edited-cover-thumbnail.webp",
         photoCount: 3,
       }),
     ]);

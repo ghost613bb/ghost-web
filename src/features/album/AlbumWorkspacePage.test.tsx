@@ -13,6 +13,17 @@ vi.mock("@/features/content-modules/components/ContentTabsHeader", () => ({
   ContentTabsHeader: () => <div data-testid="content-tabs-header" />,
 }));
 
+vi.mock("./albumImageVariants", () => ({
+  createAlbumCoverImageVariants: vi.fn(async (file: File) => ({
+    displayFile: new File(["cover-display"], `display-${file.name}`, { type: "image/webp" }),
+    thumbnailFile: new File(["cover-thumbnail"], `thumbnail-${file.name}`, { type: "image/webp" }),
+  })),
+  createAlbumPhotoImageVariants: vi.fn(async (file: File) => ({
+    displayFile: new File(["photo-display"], `display-${file.name}`, { type: "image/webp" }),
+    thumbnailFile: new File(["photo-thumbnail"], `thumbnail-${file.name}`, { type: "image/webp" }),
+  })),
+}));
+
 vi.mock("./AlbumFormDialog", () => ({
   AlbumFormDialog: () => null,
 }));
@@ -34,6 +45,9 @@ const albumFixture: Album = {
   id: "album-001",
   title: "我的相册",
   description: "记录光影和猫咪。",
+  coverImage: "/uploads/albums/cover-original.png",
+  coverDisplayImage: "/uploads/albums/cover-display.webp",
+  coverThumbnailImage: "/uploads/albums/cover-thumbnail.webp",
   photoCount: 3,
   visibility: "public",
   status: "published",
@@ -45,6 +59,9 @@ const secondAlbumFixture: Album = {
   id: "album-002",
   title: "第二本相册",
   description: "另一组照片。",
+  coverImage: "/uploads/albums/cover-002-original.png",
+  coverDisplayImage: "/uploads/albums/cover-002-display.webp",
+  coverThumbnailImage: "/uploads/albums/cover-002-thumbnail.webp",
   photoCount: 1,
   visibility: "public",
   status: "published",
@@ -59,6 +76,8 @@ const photoFixtures: AlbumPhoto[] = [
     uploadedAt: "2023-07-31 / 10:00",
     note: "第一张照片",
     imageUrl: "/uploads/albums/photo-001.png",
+    displayUrl: "/uploads/albums/photo-001-display.webp",
+    thumbnailUrl: "/uploads/albums/photo-001-thumbnail.webp",
     imagePosition: "center center",
   },
   {
@@ -67,6 +86,8 @@ const photoFixtures: AlbumPhoto[] = [
     uploadedAt: "2023-07-31 / 10:05",
     note: "第二张照片",
     imageUrl: "/uploads/albums/photo-002.png",
+    displayUrl: "/uploads/albums/photo-002-display.webp",
+    thumbnailUrl: "/uploads/albums/photo-002-thumbnail.webp",
     imagePosition: "center center",
   },
   {
@@ -75,6 +96,8 @@ const photoFixtures: AlbumPhoto[] = [
     uploadedAt: "2023-07-31 / 10:10",
     note: "第三张照片",
     imageUrl: "/uploads/albums/photo-003.png",
+    displayUrl: "/uploads/albums/photo-003-display.webp",
+    thumbnailUrl: "/uploads/albums/photo-003-thumbnail.webp",
     imagePosition: "center center",
   },
 ];
@@ -86,6 +109,8 @@ const secondAlbumPhotos: AlbumPhoto[] = [
     uploadedAt: "2023-08-01 / 09:30",
     note: "第二本的照片",
     imageUrl: "/uploads/albums/photo-010.png",
+    displayUrl: "/uploads/albums/photo-010-display.webp",
+    thumbnailUrl: "/uploads/albums/photo-010-thumbnail.webp",
     imagePosition: "center center",
   },
 ];
@@ -124,6 +149,8 @@ describe("AlbumWorkspacePageView", () => {
               uploadedAt: "2023-07-31 / 10:15",
               note: "新照片",
               imageUrl: "/uploads/albums/photo-004.png",
+              displayUrl: "/uploads/albums/photo-004-display.webp",
+              thumbnailUrl: "/uploads/albums/photo-004-thumbnail.webp",
               imagePosition: "center center",
             },
             photos: [
@@ -134,6 +161,8 @@ describe("AlbumWorkspacePageView", () => {
                 uploadedAt: "2023-07-31 / 10:15",
                 note: "新照片",
                 imageUrl: "/uploads/albums/photo-004.png",
+                displayUrl: "/uploads/albums/photo-004-display.webp",
+                thumbnailUrl: "/uploads/albums/photo-004-thumbnail.webp",
                 imagePosition: "center center",
               },
             ],
@@ -176,8 +205,18 @@ describe("AlbumWorkspacePageView", () => {
       />,
     );
 
+    const coverImage = screen.getByRole("img", { name: "我的相册封面" });
+    expect(coverImage).toHaveAttribute("src", "/uploads/albums/cover-thumbnail.webp");
+    expect(coverImage).toHaveAttribute("loading", "lazy");
+    expect(coverImage).toHaveAttribute("decoding", "async");
+
+    const heroImage = screen.getByRole("img", { name: "我的相册封面背景" });
+    expect(heroImage).toHaveAttribute("src", "/uploads/albums/cover-display.webp");
+    expect(heroImage).toHaveAttribute("decoding", "async");
+    expect(heroImage).toHaveAttribute("fetchpriority", "high");
+
     const previewImage = screen.getByRole("img", { name: "照片预览，上传于 2023-07-31 / 10:05" });
-    expect(previewImage).toHaveAttribute("src", "/uploads/albums/photo-002.png");
+    expect(previewImage).toHaveAttribute("src", "/uploads/albums/photo-002-thumbnail.webp");
     expect(previewImage).toHaveAttribute("loading", "lazy");
     expect(previewImage).toHaveAttribute("decoding", "async");
     expect(previewImage).toHaveStyle({ objectPosition: "center center" });
@@ -185,7 +224,8 @@ describe("AlbumWorkspacePageView", () => {
     fireEvent.click(screen.getByRole("button", { name: /第二张照片/ }));
 
     expect(screen.getByRole("dialog", { name: "照片详情弹窗" })).toBeInTheDocument();
-    expect(screen.getByLabelText("照片大图，上传于 2023-07-31 / 10:05")).toBeInTheDocument();
+    const detailImage = screen.getByLabelText("照片大图，上传于 2023-07-31 / 10:05").querySelector("img");
+    expect(detailImage).toHaveAttribute("src", "/uploads/albums/photo-002-display.webp");
     expect(window.location.search).toBe("?albumId=album-001&photoId=photo-002");
     expect(pushMock).not.toHaveBeenCalled();
   });
@@ -451,8 +491,8 @@ describe("AlbumWorkspacePageView", () => {
     );
 
     await waitFor(() => {
-      expect(imageSources).toContain("/uploads/albums/photo-001.png");
-      expect(imageSources).toContain("/uploads/albums/photo-003.png");
+      expect(imageSources).toContain("/uploads/albums/photo-001-display.webp");
+      expect(imageSources).toContain("/uploads/albums/photo-003-display.webp");
     });
   });
 

@@ -2,7 +2,9 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import type { Album, AlbumPhoto } from "./types";
 
 type StoredAlbumRow = {
+  cover_display_image: string | null;
   cover_image: string | null;
+  cover_thumbnail_image: string | null;
   created_at: string | null;
   description: string | null;
   id: string;
@@ -15,16 +17,18 @@ type StoredAlbumRow = {
 
 type StoredAlbumPhotoRow = {
   album_id: string;
+  display_url: string | null;
   id: string;
   image_position: string;
   image_url: string;
   note: string | null;
   sort_order: number;
+  thumbnail_url: string | null;
   uploaded_at: string;
 };
 
-const albumColumns = "id,title,description,cover_image,photo_count,visibility,status,created_at,sort_order";
-const albumPhotoColumns = "id,album_id,uploaded_at,note,image_url,image_position,sort_order";
+const albumColumns = "id,title,description,cover_image,cover_display_image,cover_thumbnail_image,photo_count,visibility,status,created_at,sort_order";
+const albumPhotoColumns = "id,album_id,uploaded_at,note,image_url,display_url,thumbnail_url,image_position,sort_order";
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const testAlbumStore = new Map<string, Album>();
 const testAlbumPhotoStore = new Map<string, StoredAlbumPhotoRow>();
@@ -35,6 +39,8 @@ function toAlbum(row: StoredAlbumRow): Album {
     title: row.title,
     description: row.description ?? undefined,
     coverImage: row.cover_image ?? undefined,
+    coverDisplayImage: row.cover_display_image ?? undefined,
+    coverThumbnailImage: row.cover_thumbnail_image ?? undefined,
     photoCount: row.photo_count,
     visibility: row.visibility,
     status: row.status,
@@ -49,6 +55,8 @@ function toStoredAlbumRow(album: Album): StoredAlbumRow {
     title: album.title,
     description: album.description ?? null,
     cover_image: album.coverImage ?? null,
+    cover_display_image: album.coverDisplayImage ?? null,
+    cover_thumbnail_image: album.coverThumbnailImage ?? null,
     photo_count: album.photoCount,
     visibility: album.visibility,
     status: album.status,
@@ -64,6 +72,8 @@ function toAlbumPhoto(row: StoredAlbumPhotoRow): AlbumPhoto {
     uploadedAt: row.uploaded_at,
     note: row.note ?? "",
     imageUrl: row.image_url,
+    displayUrl: row.display_url ?? undefined,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
     imagePosition: row.image_position,
   };
 }
@@ -75,6 +85,8 @@ function toStoredAlbumPhotoRow(photo: AlbumPhoto, sortOrder: number): StoredAlbu
     uploaded_at: photo.uploadedAt,
     note: photo.note,
     image_url: photo.imageUrl,
+    display_url: photo.displayUrl ?? null,
+    thumbnail_url: photo.thumbnailUrl ?? null,
     image_position: photo.imagePosition,
     sort_order: sortOrder,
   };

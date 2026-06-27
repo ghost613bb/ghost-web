@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
 import { createAlbum, getNextCreatedAlbumId, listAlbums } from "@/features/album/service";
 import { parseCreateAlbum } from "@/features/album/validation";
-import { buildAlbumCoverFileName } from "@/features/storage/paths";
+import { buildAlbumCoverFileName, buildAlbumCoverVariantFileName } from "@/features/storage/paths";
 import { uploadStorageObject } from "@/features/storage/service";
 import { isUploadedFile } from "@/features/storage/validation";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
+
+async function uploadAlbumFile(rawFile: FormDataEntryValue | null, objectPath: string) {
+  if (!isUploadedFile(rawFile) || rawFile.size === 0) {
+    return undefined;
+  }
+
+  const result = await uploadStorageObject({
+    buffer: Buffer.from(await rawFile.arrayBuffer()),
+    contentType: rawFile.type,
+    objectPath,
+    scope: "albums",
+  });
+
+  return result.url;
+}
 
 export async function GET() {
   return NextResponse.json({
@@ -27,6 +42,10 @@ export async function POST(request: Request) {
     const rawDescription = formData.get("description");
     const rawCoverFile = formData.get("coverFile");
     const rawCoverFileName = formData.get("coverFileName");
+    const rawCoverDisplayFile = formData.get("coverDisplayFile");
+    const rawCoverDisplayFileName = formData.get("coverDisplayFileName");
+    const rawCoverThumbnailFile = formData.get("coverThumbnailFile");
+    const rawCoverThumbnailFileName = formData.get("coverThumbnailFileName");
 
     const albumDraft = parseCreateAlbum({
       title: typeof rawTitle === "string" ? rawTitle : "",
@@ -36,17 +55,22 @@ export async function POST(request: Request) {
     const albumId = await getNextCreatedAlbumId();
 
     let coverImage: string | undefined;
+    let coverDisplayImage: string | undefined;
+    let coverThumbnailImage: string | undefined;
 
     if (isUploadedFile(rawCoverFile) && rawCoverFile.size > 0) {
       const requestedFileName = typeof rawCoverFileName === "string" && rawCoverFileName.trim().length > 0 ? rawCoverFileName.trim() : rawCoverFile.name;
-      const finalFileName = buildAlbumCoverFileName(albumId, requestedFileName || "cover");
-      const result = await uploadStorageObject({
-        buffer: Buffer.from(await rawCoverFile.arrayBuffer()),
-        contentType: rawCoverFile.type,
-        objectPath: finalFileName,
-        scope: "albums",
-      });
-      coverImage = result.url;
+      coverImage = await uploadAlbumFile(rawCoverFile, buildAlbumCoverFileName(albumId, requestedFileName || "cover"));
+    }
+
+    if (isUploadedFile(rawCoverDisplayFile) && rawCoverDisplayFile.size > 0) {
+      const requestedFileName = typeof rawCoverDisplayFileName === "string" && rawCoverDisplayFileName.trim().length > 0 ? rawCoverDisplayFileName.trim() : rawCoverDisplayFile.name;
+      coverDisplayImage = await uploadAlbumFile(rawCoverDisplayFile, buildAlbumCoverVariantFileName(albumId, "display", requestedFileName || "cover"));
+    }
+
+    if (isUploadedFile(rawCoverThumbnailFile) && rawCoverThumbnailFile.size > 0) {
+      const requestedFileName = typeof rawCoverThumbnailFileName === "string" && rawCoverThumbnailFileName.trim().length > 0 ? rawCoverThumbnailFileName.trim() : rawCoverThumbnailFile.name;
+      coverThumbnailImage = await uploadAlbumFile(rawCoverThumbnailFile, buildAlbumCoverVariantFileName(albumId, "thumbnail", requestedFileName || "cover"));
     }
 
     return NextResponse.json({
@@ -54,6 +78,8 @@ export async function POST(request: Request) {
         ...albumDraft,
         id: albumId,
         coverImage,
+        coverDisplayImage,
+        coverThumbnailImage,
       }),
     });
   } catch (error) {

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAlbumCoverFileName,
+  buildAlbumCoverVariantFileName,
   buildAlbumPhotoFileName,
+  buildAlbumPhotoVariantFileName,
   buildPlaylistAudioPath,
   buildPlaylistCollectionCoverPath,
   buildPlaylistSongCoverPath,
@@ -16,6 +18,10 @@ describe("storage paths", () => {
   it("keeps the current album file naming rules", () => {
     expect(buildAlbumCoverFileName("album-created-001", "summer cover.png")).toBe("album-created-001/cover/summer-cover.png");
     expect(buildAlbumPhotoFileName("album-created-001", "photo-001", "cat window.png")).toBe("album-created-001/photos/photo-001-cat-window.png");
+    expect(buildAlbumCoverVariantFileName("album-created-001", "display", "summer cover.webp")).toBe("album-created-001/cover/display-summer-cover.webp");
+    expect(buildAlbumCoverVariantFileName("album-created-001", "thumbnail", "summer cover.webp")).toBe("album-created-001/cover/thumbnail-summer-cover.webp");
+    expect(buildAlbumPhotoVariantFileName("album-created-001", "photo-001", "display", "cat window.webp")).toBe("album-created-001/photos/photo-001-display-cat-window.webp");
+    expect(buildAlbumPhotoVariantFileName("album-created-001", "photo-001", "thumbnail", "cat window.webp")).toBe("album-created-001/photos/photo-001-thumbnail-cat-window.webp");
   });
 
   it("keeps the current playlist object path rules", () => {

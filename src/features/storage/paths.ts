@@ -26,6 +26,14 @@ export function buildAlbumPhotoFileName(albumId: string, photoId: string, fileNa
   return `${albumId}/photos/${photoId}-${sanitizeAlbumUploadFileName(fileName || "photo")}`;
 }
 
+export function buildAlbumCoverVariantFileName(albumId: string, variant: "display" | "thumbnail", fileName: string) {
+  return `${albumId}/cover/${variant}-${sanitizeAlbumUploadFileName(fileName || "cover")}`;
+}
+
+export function buildAlbumPhotoVariantFileName(albumId: string, photoId: string, variant: "display" | "thumbnail", fileName: string) {
+  return `${albumId}/photos/${photoId}-${variant}-${sanitizeAlbumUploadFileName(fileName || "photo")}`;
+}
+
 export function buildPlaylistCollectionCoverPath(collectionId: string, extension: string) {
   return `collections/${collectionId}/cover.${normalizeExtension(extension)}`;
 }

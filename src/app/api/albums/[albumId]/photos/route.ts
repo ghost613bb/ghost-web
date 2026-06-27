@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
 import { createAlbumPhoto, getAlbumById, listAlbumPhotos } from "@/features/album/service";
 import { parseCreateAlbumPhoto } from "@/features/album/validation";
-import { buildAlbumPhotoFileName } from "@/features/storage/paths";
+import { buildAlbumPhotoFileName, buildAlbumPhotoVariantFileName } from "@/features/storage/paths";
 import { uploadStorageObject } from "@/features/storage/service";
 import { isUploadedFile } from "@/features/storage/validation";
 import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
+
+async function uploadAlbumFile(rawFile: FormDataEntryValue | null, objectPath: string) {
+  if (!isUploadedFile(rawFile) || rawFile.size === 0) {
+    return undefined;
+  }
+
+  const result = await uploadStorageObject({
+    buffer: Buffer.from(await rawFile.arrayBuffer()),
+    contentType: rawFile.type,
+    objectPath,
+    scope: "albums",
+  });
+
+  return result.url;
+}
 
 type AlbumPhotoRouteContext = {
   params: Promise<{
@@ -46,6 +61,10 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
     const rawNote = formData.get("note");
     const rawPhotoFile = formData.get("photoFile");
     const rawPhotoFileName = formData.get("photoFileName");
+    const rawPhotoDisplayFile = formData.get("photoDisplayFile");
+    const rawPhotoDisplayFileName = formData.get("photoDisplayFileName");
+    const rawPhotoThumbnailFile = formData.get("photoThumbnailFile");
+    const rawPhotoThumbnailFileName = formData.get("photoThumbnailFileName");
 
     if (!isUploadedFile(rawPhotoFile) || rawPhotoFile.size === 0) {
       return NextResponse.json({ error: "请先选择照片" }, { status: 400 });
@@ -53,18 +72,31 @@ export async function POST(request: Request, context: AlbumPhotoRouteContext) {
 
     const requestedFileName = typeof rawPhotoFileName === "string" && rawPhotoFileName.trim().length > 0 ? rawPhotoFileName.trim() : rawPhotoFile.name;
     const photoId = crypto.randomUUID();
-    const finalFileName = buildAlbumPhotoFileName(albumId, photoId, requestedFileName || "photo");
-    const result = await uploadStorageObject({
-      buffer: Buffer.from(await rawPhotoFile.arrayBuffer()),
-      contentType: rawPhotoFile.type,
-      objectPath: finalFileName,
-      scope: "albums",
-    });
+    const imageUrl = await uploadAlbumFile(rawPhotoFile, buildAlbumPhotoFileName(albumId, photoId, requestedFileName || "photo"));
+
+    if (!imageUrl) {
+      return NextResponse.json({ error: "请先选择照片" }, { status: 400 });
+    }
+
+    let displayUrl: string | undefined;
+    let thumbnailUrl: string | undefined;
+
+    if (isUploadedFile(rawPhotoDisplayFile) && rawPhotoDisplayFile.size > 0) {
+      const requestedDisplayFileName = typeof rawPhotoDisplayFileName === "string" && rawPhotoDisplayFileName.trim().length > 0 ? rawPhotoDisplayFileName.trim() : rawPhotoDisplayFile.name;
+      displayUrl = await uploadAlbumFile(rawPhotoDisplayFile, buildAlbumPhotoVariantFileName(albumId, photoId, "display", requestedDisplayFileName || "photo"));
+    }
+
+    if (isUploadedFile(rawPhotoThumbnailFile) && rawPhotoThumbnailFile.size > 0) {
+      const requestedThumbnailFileName = typeof rawPhotoThumbnailFileName === "string" && rawPhotoThumbnailFileName.trim().length > 0 ? rawPhotoThumbnailFileName.trim() : rawPhotoThumbnailFile.name;
+      thumbnailUrl = await uploadAlbumFile(rawPhotoThumbnailFile, buildAlbumPhotoVariantFileName(albumId, photoId, "thumbnail", requestedThumbnailFileName || "photo"));
+    }
 
     const photoDraft = parseCreateAlbumPhoto({
       id: photoId,
       note: typeof rawNote === "string" ? rawNote : undefined,
-      imageUrl: result.url,
+      imageUrl,
+      displayUrl,
+      thumbnailUrl,
     });
 
     const resultPayload = await createAlbumPhoto(albumId, photoDraft);
