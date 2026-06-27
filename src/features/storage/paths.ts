@@ -5,7 +5,9 @@ function normalizeExtension(extension: string) {
 }
 
 export function sanitizeThoughtAttachmentFileName(fileName: string) {
-  return fileName.trim().replace(/[^\p{L}\p{N}._-]+/gu, "-").replace(/^-+|-+$/g, "") || "attachment";
+  const extension = fileName.split(".").pop()?.replace(/[^a-zA-Z0-9]+/g, "").toLowerCase();
+
+  return extension ? `attachment.${extension}` : "attachment";
 }
 
 export function sanitizeAlbumUploadFileName(fileName: string) {

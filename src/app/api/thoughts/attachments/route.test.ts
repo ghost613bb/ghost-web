@@ -28,7 +28,7 @@ describe("/api/thoughts/attachments", () => {
   it("uploads an image attachment and returns a public URL", async () => {
     const storageService = await import("@/features/storage/service");
     const formData = new FormData();
-    formData.set("attachmentFileName", "小猫 photo.png");
+    formData.set("attachmentFileName", "小猫 attachment.png");
     formData.append("attachmentFile", new Blob(["image-binary"], { type: "image/png" }));
 
     const response = await POST(requestWithFormData(formData));
@@ -37,13 +37,13 @@ describe("/api/thoughts/attachments", () => {
     expect(response.status).toBe(200);
     expect(data.attachment).toMatchObject({
       type: "image",
-      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-小猫-photo\.png$/),
-      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-小猫-photo\.png$/),
+      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-attachment\.png$/),
+      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-attachment\.png$/),
     });
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "image/png",
-        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-小猫-photo\.png$/),
+        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-attachment\.png$/),
         scope: "thoughts",
       }),
     );
@@ -52,7 +52,7 @@ describe("/api/thoughts/attachments", () => {
   it("uploads a video attachment and returns a public URL", async () => {
     const storageService = await import("@/features/storage/service");
     const formData = new FormData();
-    formData.set("attachmentFileName", "clip.mp4");
+    formData.set("attachmentFileName", "attachment.mp4");
     formData.append("attachmentFile", new Blob(["video-binary"], { type: "video/mp4" }));
 
     const response = await POST(requestWithFormData(formData));
@@ -61,13 +61,13 @@ describe("/api/thoughts/attachments", () => {
     expect(response.status).toBe(200);
     expect(data.attachment).toMatchObject({
       type: "video",
-      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-clip\.mp4$/),
-      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-clip\.mp4$/),
+      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-attachment\.mp4$/),
+      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-attachment\.mp4$/),
     });
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "video/mp4",
-        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-clip\.mp4$/),
+        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-attachment\.mp4$/),
         scope: "thoughts",
       }),
     );
@@ -76,7 +76,7 @@ describe("/api/thoughts/attachments", () => {
   it("uploads a file attachment and returns a public URL", async () => {
     const storageService = await import("@/features/storage/service");
     const formData = new FormData();
-    formData.set("attachmentFileName", "note.md");
+    formData.set("attachmentFileName", "attachment.md");
     formData.append("attachmentFile", new Blob(["hello markdown"], { type: "text/markdown" }));
 
     const response = await POST(requestWithFormData(formData));
@@ -85,13 +85,13 @@ describe("/api/thoughts/attachments", () => {
     expect(response.status).toBe(200);
     expect(data.attachment).toMatchObject({
       type: "file",
-      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-note\.md$/),
-      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-note\.md$/),
+      fileName: expect.stringMatching(/^attachments\/thought-attachment-\d+-attachment\.md$/),
+      url: expect.stringMatching(/^https:\/\/cdn\.example\.com\/attachments\/thought-attachment-\d+-attachment\.md$/),
     });
     expect(storageService.uploadStorageObject).toHaveBeenCalledWith(
       expect.objectContaining({
         contentType: "text/markdown",
-        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-note\.md$/),
+        objectPath: expect.stringMatching(/^attachments\/thought-attachment-\d+-attachment\.md$/),
         scope: "thoughts",
       }),
     );
