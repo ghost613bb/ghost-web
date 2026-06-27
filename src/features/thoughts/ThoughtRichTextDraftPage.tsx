@@ -86,6 +86,19 @@ const paperTemplateOptions = [
   { label: "海盐边框", imageUrl: "/thought-backgrounds/sea-salt-frame.jpg" },
 ] as const;
 
+type ThoughtAttachmentUploadPayload = {
+  attachment: {
+    fileName: string;
+    type: "file" | "image" | "video";
+    upload?: {
+      signedUrl: string;
+    };
+    url: string;
+  };
+};
+
+class ThoughtAttachmentSignedUploadError extends Error {}
+
 type PaperTemplateOption = {
   imageUrl: string;
   label: string;
@@ -175,6 +188,73 @@ function buildFileAttachmentLinkHtml(fileName: string, url: string) {
   return `<p><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(fileName)}</a></p>`;
 }
 
+async function requestThoughtAttachmentSignedUpload(file: File): Promise<ThoughtAttachmentUploadPayload> {
+  const response = await fetch("/api/thoughts/attachments/signed-upload", {
+    body: JSON.stringify({
+      contentType: file.type,
+      fileName: file.name,
+      size: file.size,
+    }),
+    headers: {
+      "content-type": "application/json",
+    },
+    method: "POST",
+  });
+  const data = (await response.json()) as ThoughtAttachmentUploadPayload & { error?: string };
+
+  if (!response.ok) {
+    throw new ThoughtAttachmentSignedUploadError(data.error || "附件上传签名失败");
+  }
+
+  return data;
+}
+
+function uploadToSignedUrlWithProgress(signedUrl: string, file: File, onProgress: (progress: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+
+    formData.append("cacheControl", "3600");
+    formData.append("", file);
+    xhr.open("PUT", signedUrl);
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) {
+        return;
+      }
+
+      onProgress(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+        return;
+      }
+
+      reject(new Error("附件上传失败"));
+    };
+    xhr.onerror = () => reject(new Error("附件上传失败"));
+    xhr.send(formData);
+  });
+}
+
+async function uploadThoughtAttachmentViaLegacyApi(file: File): Promise<ThoughtAttachmentUploadPayload> {
+  const formData = new FormData();
+  formData.set("attachmentFile", file);
+  formData.set("attachmentFileName", file.name);
+
+  const response = await fetch("/api/thoughts/attachments", {
+    method: "POST",
+    body: formData,
+  });
+  const data = (await response.json()) as ThoughtAttachmentUploadPayload & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(data.error || "附件上传失败");
+  }
+
+  return data;
+}
+
 function getThoughtSlug(title: string, timestamp: number) {
   const normalizedTitle = title
     .trim()
@@ -190,6 +270,7 @@ function getThoughtSlug(title: string, timestamp: number) {
 export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPageProps = {}) {
   const router = useRouter();
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
+  const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
   const [attachmentUploadStatus, setAttachmentUploadStatus] = useState<"idle" | "uploading" | "uploaded">("idle");
   const [currentThought, setCurrentThought] = useState<Thought | null>(thought ?? null);
   const [customPaperTemplateMenu, setCustomPaperTemplateMenu] = useState<CustomPaperTemplateMenu>(null);
@@ -607,22 +688,28 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
     }
 
     setAttachmentUploadError("");
+    setAttachmentUploadProgress(null);
     setAttachmentUploadStatus("uploading");
 
     try {
       const uploadFile = file.type.startsWith("image/") ? await compressThoughtAttachmentImage(file) : file;
-      const formData = new FormData();
-      formData.set("attachmentFile", uploadFile);
-      formData.set("attachmentFileName", uploadFile.name);
+      let data: ThoughtAttachmentUploadPayload;
 
-      const response = await fetch("/api/thoughts/attachments", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
+      try {
+        data = await requestThoughtAttachmentSignedUpload(uploadFile);
 
-      if (!response.ok) {
-        throw new Error(data?.error || "附件上传失败");
+        if (!data.attachment.upload?.signedUrl) {
+          throw new Error("附件上传签名失败");
+        }
+
+        await uploadToSignedUrlWithProgress(data.attachment.upload.signedUrl, uploadFile, setAttachmentUploadProgress);
+      } catch (uploadError) {
+        if (uploadError instanceof ThoughtAttachmentSignedUploadError) {
+          throw uploadError;
+        }
+
+        console.warn(uploadError instanceof Error ? uploadError.message : "附件直传失败，已回退到服务端上传");
+        data = await uploadThoughtAttachmentViaLegacyApi(uploadFile);
       }
 
       if (data.attachment.type === "image") {
@@ -633,9 +720,11 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
         editor.chain().focus().insertContent(buildFileAttachmentLinkHtml(uploadFile.name, data.attachment.url)).run();
       }
 
+      setAttachmentUploadProgress(null);
       setAttachmentUploadStatus("uploaded");
     } catch (error) {
       setAttachmentUploadError(error instanceof Error ? error.message : "附件上传失败");
+      setAttachmentUploadProgress(null);
       setAttachmentUploadStatus("idle");
     }
   }
@@ -911,7 +1000,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
                 <Undo2 aria-hidden="true" size={17} strokeWidth={2.6} />
               </button>
                 </nav>
-                {attachmentUploadStatus === "uploading" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">附件上传中...</div> : null}
+                {attachmentUploadStatus === "uploading" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">{attachmentUploadProgress === null ? "附件上传中..." : `附件上传中 ${attachmentUploadProgress}%...`}</div> : null}
                 {attachmentUploadStatus === "uploaded" ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#d8ead8] bg-[#f4fff5] px-4 py-3 text-sm font-black text-[#5f8a68] shadow-[0_18px_34px_rgba(95,138,104,0.16)]" role="status">附件上传完成</div> : null}
                 {attachmentUploadError ? <div className="fixed right-6 top-6 z-50 rounded-[1rem] border border-[#f0c6cf] bg-[#fff4f6] px-4 py-3 text-sm font-black text-[#c65f73] shadow-[0_18px_34px_rgba(198,95,115,0.16)]" role="alert">{attachmentUploadError}</div> : null}
                 {saveToast?.type === "saving" ? <div className="fixed right-6 top-24 z-50 rounded-[1rem] border border-[#ead7ce] bg-[#fffaf4] px-4 py-3 text-sm font-black text-[#8a5b62] shadow-[0_18px_34px_rgba(122,79,85,0.16)]" role="status">{saveToast.message}</div> : null}

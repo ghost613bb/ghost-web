@@ -24,6 +24,15 @@ const mockEditor = {
 };
 
 const mockCompressThoughtAttachmentImage = vi.hoisted(() => vi.fn());
+const mockXhrInstances = vi.hoisted(() => [] as Array<{
+  method?: string;
+  onerror: (() => void) | null;
+  onload: (() => void) | null;
+  sentBody?: XMLHttpRequestBodyInit | null;
+  status: number;
+  upload: { onprogress: ((event: ProgressEvent) => void) | null };
+  url?: string;
+}>);
 
 let capturedUseEditorOptions: { content?: unknown; editable?: boolean; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown } | undefined;
 let editorState = {
@@ -158,6 +167,32 @@ describe("ThoughtRichTextDraftPage", () => {
 
     vi.restoreAllMocks();
     vi.stubGlobal("FileReader", MockFileReader);
+    mockXhrInstances.length = 0;
+    class MockXMLHttpRequest {
+      onerror: (() => void) | null = null;
+      onload: (() => void) | null = null;
+      status = 200;
+      upload: { onprogress: ((event: ProgressEvent) => void) | null } = { onprogress: null };
+      method?: string;
+      url?: string;
+      sentBody?: XMLHttpRequestBodyInit | null;
+
+      constructor() {
+        mockXhrInstances.push(this);
+      }
+
+      open(method: string, url: string) {
+        this.method = method;
+        this.url = url;
+      }
+
+      send(body?: XMLHttpRequestBodyInit | null) {
+        this.sentBody = body;
+        this.upload.onprogress?.({ lengthComputable: true, loaded: 50, total: 100 } as ProgressEvent);
+        this.onload?.();
+      }
+    }
+    vi.stubGlobal("XMLHttpRequest", MockXMLHttpRequest);
     capturedUseEditorOptions = undefined;
     window.localStorage.clear();
     editorState = {
@@ -795,9 +830,9 @@ describe("ThoughtRichTextDraftPage", () => {
     mockEditor.chain.mockReturnValueOnce(imageChain).mockReturnValueOnce(videoChain).mockReturnValueOnce(fileChain).mockImplementation(chainResult);
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.webp", fileName: "cat.webp" } }) } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "video", url: "/uploads/thoughts/clip.mp4", fileName: "clip.mp4" } }) } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "file", url: "/uploads/thoughts/note.md", fileName: "note.md" } }) } as Response);
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.webp", fileName: "cat.webp", upload: { signedUrl: "https://storage.example.com/cat" } } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "video", url: "/uploads/thoughts/clip.mp4", fileName: "clip.mp4", upload: { signedUrl: "https://storage.example.com/clip" } } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "file", url: "/uploads/thoughts/note.md", fileName: "note.md", upload: { signedUrl: "https://storage.example.com/note" } } }) } as Response);
 
     render(<ThoughtRichTextDraftPage />);
 
@@ -811,10 +846,15 @@ describe("ThoughtRichTextDraftPage", () => {
     const uploadToast = screen.getByRole("status");
     expect(uploadToast).toHaveClass("fixed", "right-6", "top-6");
     expect(mockCompressThoughtAttachmentImage).toHaveBeenCalledWith(imageFile);
-    expect(fetchMock).toHaveBeenCalledWith("/api/thoughts/attachments", expect.objectContaining({ method: "POST", body: expect.any(FormData) }));
-    const imageFormData = fetchMock.mock.calls[0]?.[1]?.body as FormData;
-    expect(imageFormData.get("attachmentFile")).toBe(compressedImageFile);
-    expect(imageFormData.get("attachmentFileName")).toBe("cat.webp");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/thoughts/attachments/signed-upload",
+      expect.objectContaining({
+        body: JSON.stringify({ contentType: "image/webp", fileName: "cat.webp", size: compressedImageFile.size }),
+        method: "POST",
+      }),
+    );
+    expect(mockXhrInstances[0]).toMatchObject({ method: "PUT", url: "https://storage.example.com/cat" });
+    expect(mockXhrInstances[0]?.sentBody).toBeInstanceOf(FormData);
     expect(imageChain.setImage).toHaveBeenCalledWith({ src: "/uploads/thoughts/cat.webp" });
     expect(imageChain.run).toHaveBeenCalledTimes(1);
 
@@ -822,9 +862,7 @@ describe("ThoughtRichTextDraftPage", () => {
     fireEvent.change(videoInput, { target: { files: [videoFile] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
-    const videoFormData = fetchMock.mock.calls[1]?.[1]?.body as FormData;
-    expect(videoFormData.get("attachmentFile")).toBe(videoFile);
-    expect(videoFormData.get("attachmentFileName")).toBe("clip.mp4");
+    expect(mockXhrInstances[1]).toMatchObject({ method: "PUT", url: "https://storage.example.com/clip" });
     expect(videoChain.setVideo).toHaveBeenCalledWith({ src: "/uploads/thoughts/clip.mp4" });
     expect(videoChain.run).toHaveBeenCalledTimes(1);
 
@@ -832,9 +870,7 @@ describe("ThoughtRichTextDraftPage", () => {
     fireEvent.change(fileInput, { target: { files: [markdownFile] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
-    const fileFormData = fetchMock.mock.calls[2]?.[1]?.body as FormData;
-    expect(fileFormData.get("attachmentFile")).toBe(markdownFile);
-    expect(fileFormData.get("attachmentFileName")).toBe("note.md");
+    expect(mockXhrInstances[2]).toMatchObject({ method: "PUT", url: "https://storage.example.com/note" });
     expect(mockCompressThoughtAttachmentImage).toHaveBeenCalledTimes(1);
     expect(fileChain.insertContent).toHaveBeenCalledWith('<p><a href="/uploads/thoughts/note.md" target="_blank" rel="noreferrer noopener">note.md</a></p>');
     expect(fileChain.run).toHaveBeenCalledTimes(1);
@@ -862,9 +898,38 @@ describe("ThoughtRichTextDraftPage", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("falls back to the legacy attachment API when direct upload fails", async () => {
+    const imageChain = chainResult();
+    const compressedImageFile = new File(["compressed-image"], "cat.webp", { type: "image/webp" });
+    mockCompressThoughtAttachmentImage.mockResolvedValueOnce(compressedImageFile);
+    mockEditor.chain.mockReturnValueOnce(imageChain).mockImplementation(chainResult);
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.webp", fileName: "cat.webp", upload: { signedUrl: "https://storage.example.com/cat" } } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/fallback-cat.webp", fileName: "cat.webp" } }) } as Response);
+    class FailingXMLHttpRequest {
+      onerror: (() => void) | null = null;
+      onload: (() => void) | null = null;
+      status = 0;
+      upload = { onprogress: null as ((event: ProgressEvent) => void) | null };
+      open() {}
+      send() {
+        this.onerror?.();
+      }
+    }
+    vi.stubGlobal("XMLHttpRequest", FailingXMLHttpRequest);
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/thoughts/attachments", expect.objectContaining({ method: "POST", body: expect.any(FormData) }));
+    expect(imageChain.setImage).toHaveBeenCalledWith({ src: "/uploads/thoughts/fallback-cat.webp" });
+  });
+
   it("hides attachment toast automatically", async () => {
     vi.useFakeTimers();
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png" } }) } as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png", upload: { signedUrl: "https://storage.example.com/cat" } } }) } as Response);
     render(<ThoughtRichTextDraftPage />);
 
     fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
