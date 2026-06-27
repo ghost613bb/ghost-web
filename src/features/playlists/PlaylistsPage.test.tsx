@@ -73,7 +73,7 @@ describe("PlaylistsPageView", () => {
     });
 
     expect(screen.getByRole("main")).toHaveClass("album-page-scrollbar", "h-dvh", "overflow-y-auto", "bg-[#f7f1e8]");
-    expect(screen.getByRole("heading", { level: 1, name: "歌单" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Soundtrack" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "返回首页小镇" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("navigation", { name: "内容页导航" })).toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "内容页导航" })).getByText("歌单")).toHaveClass("rounded-full", "bg-[#ffb9c8]");
@@ -644,6 +644,40 @@ describe("PlaylistsPageView", () => {
     expect(window.HTMLElement.prototype.scrollTo).toHaveBeenCalled();
   });
 
+  it("does not preload all remote song durations on first render", () => {
+    const remoteSongs = [
+      {
+        ...playlistSongs[0],
+        audioSrc: "https://cdn.example.com/remote-song-1.mp3",
+        duration: undefined,
+        id: "remote-song-1",
+        title: "远方的歌一",
+      },
+      {
+        ...playlistSongs[1],
+        audioSrc: "https://cdn.example.com/remote-song-2.mp3",
+        duration: undefined,
+        id: "remote-song-2",
+        title: "远方的歌二",
+      },
+    ];
+
+    render(
+      <PlaylistsPageView
+        collections={[{ ...playlistCollections[0], songIds: remoteSongs.map((song) => song.id) }]}
+        dataSource="supabase"
+        featuredSongId={remoteSongs[0].id}
+        notes={[]}
+        playerSnapshot={playlistPlayerSnapshot}
+        songs={remoteSongs}
+      />,
+    );
+
+    const audioElements = Array.from(document.querySelectorAll("audio"));
+    expect(audioElements).toHaveLength(1);
+    expect(audioElements[0]).not.toHaveAttribute("src");
+  });
+
   it("uses cached song durations before loading audio metadata", () => {
     const remoteSong = {
       ...playlistSongs[0],
@@ -705,6 +739,39 @@ describe("PlaylistsPageView", () => {
 
     expect(pauseMock).toHaveBeenCalledTimes(1);
     expect(within(playerBar).getByRole("button", { name: "播放doll" })).toBeInTheDocument();
+  });
+
+  it("loads and caches a remote song duration only after playback metadata is available", async () => {
+    const remoteSong = {
+      ...playlistSongs[0],
+      audioSrc: "https://cdn.example.com/remote-song.mp3",
+      duration: undefined,
+      id: "remote-song",
+      title: "远方的歌",
+    };
+
+    render(
+      <PlaylistsPageView
+        collections={[{ ...playlistCollections[0], songIds: [remoteSong.id] }]}
+        dataSource="supabase"
+        featuredSongId={remoteSong.id}
+        notes={[]}
+        playerSnapshot={playlistPlayerSnapshot}
+        songs={[remoteSong]}
+      />,
+    );
+
+    const playerBar = screen.getByLabelText("当前播放栏");
+    const audio = document.querySelector("audio") as HTMLAudioElement;
+
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    fireEvent.click(within(playerBar).getByRole("button", { name: "播放远方的歌" }));
+    fireEvent.loadedMetadata(audio);
+
+    await waitFor(() => expect(screen.getAllByText("2:00").length).toBeGreaterThan(0));
+    expect(JSON.parse(window.localStorage.getItem("ghost-web:playlist-duration-labels:v1") ?? "{}")).toMatchObject({
+      [remoteSong.audioSrc]: "2:00",
+    });
   });
 
   it("switches songs from the song table and updates the shared player state", () => {

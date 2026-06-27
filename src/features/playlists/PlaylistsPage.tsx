@@ -32,7 +32,7 @@ import { PlaylistCollectionDialog } from "./PlaylistCollectionDialog";
 import { PlaylistConfirmDialog } from "./PlaylistConfirmDialog";
 import { PlaylistDropdown } from "./PlaylistDropdown";
 import type { PlaylistDataSource } from "./service";
-import { getFeaturedSong, getSongDuration, SongDurationPreloader, usePlaylistPlayer, type PlaylistPlayerControls, type PlaylistMode, type SongDurationLabels } from "./usePlaylistPlayer";
+import { getFeaturedSong, getSongDuration, usePlaylistPlayer, type PlaylistPlayerControls, type PlaylistMode, type SongDurationLabels } from "./usePlaylistPlayer";
 
 type PlaylistsPageViewProps = {
   collections: PlaylistCollection[];
@@ -1020,7 +1020,6 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
         onTimeUpdate={player.handleTimeUpdate}
         preload="metadata"
       />
-      <SongDurationPreloader durationLabels={player.songDurationLabels} onDurationLoaded={player.handleSongDurationLoaded} songs={visibleSongs} />
     </main>
   );
 }
