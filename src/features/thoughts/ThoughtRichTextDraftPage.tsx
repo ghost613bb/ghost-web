@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import type { Thought } from "@/features/thoughts/types";
+import { compressThoughtAttachmentImage } from "./attachmentImageCompression";
 import { formatThoughtMetaTimestamp, shouldShowThoughtUpdatedAt } from "./time";
 
 const toolbarButtonBaseClass =
@@ -608,11 +609,12 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
     setAttachmentUploadError("");
     setAttachmentUploadStatus("uploading");
 
-    const formData = new FormData();
-    formData.set("attachmentFile", file);
-    formData.set("attachmentFileName", file.name);
-
     try {
+      const uploadFile = file.type.startsWith("image/") ? await compressThoughtAttachmentImage(file) : file;
+      const formData = new FormData();
+      formData.set("attachmentFile", uploadFile);
+      formData.set("attachmentFileName", uploadFile.name);
+
       const response = await fetch("/api/thoughts/attachments", {
         method: "POST",
         body: formData,
@@ -628,7 +630,7 @@ export function ThoughtRichTextDraftPage({ thought }: ThoughtRichTextDraftPagePr
       } else if (data.attachment.type === "video") {
         editor.chain().focus().setVideo({ src: data.attachment.url }).run();
       } else if (data.attachment.type === "file") {
-        editor.chain().focus().insertContent(buildFileAttachmentLinkHtml(file.name, data.attachment.url)).run();
+        editor.chain().focus().insertContent(buildFileAttachmentLinkHtml(uploadFile.name, data.attachment.url)).run();
       }
 
       setAttachmentUploadStatus("uploaded");

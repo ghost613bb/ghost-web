@@ -23,6 +23,8 @@ const mockEditor = {
   setEditable: vi.fn(),
 };
 
+const mockCompressThoughtAttachmentImage = vi.hoisted(() => vi.fn());
+
 let capturedUseEditorOptions: { content?: unknown; editable?: boolean; extensions?: unknown[]; immediatelyRender?: boolean; onUpdate?: unknown } | undefined;
 let editorState = {
   canUndo: false,
@@ -106,6 +108,10 @@ vi.mock("emoji-picker-react", () => ({
   ),
 }));
 
+vi.mock("./attachmentImageCompression", () => ({
+  compressThoughtAttachmentImage: mockCompressThoughtAttachmentImage,
+}));
+
 function chainResult() {
   return {
     focus: vi.fn().mockReturnThis(),
@@ -178,6 +184,7 @@ describe("ThoughtRichTextDraftPage", () => {
     mockRouter.refresh.mockClear();
     mockRouter.replace.mockClear();
     mockEditor.chain.mockImplementation(chainResult);
+    mockCompressThoughtAttachmentImage.mockImplementation(async (file: File) => file);
     mockEditor.getHTML.mockReturnValue("<p>今天写了一点碎碎念</p>");
     mockEditor.getText.mockReturnValue("今天写了一点碎碎念");
     mockEditor.setEditable.mockClear();
@@ -783,10 +790,12 @@ describe("ThoughtRichTextDraftPage", () => {
     const imageChain = chainResult();
     const videoChain = chainResult();
     const fileChain = chainResult();
+    const compressedImageFile = new File(["compressed-image"], "cat.webp", { type: "image/webp" });
+    mockCompressThoughtAttachmentImage.mockResolvedValueOnce(compressedImageFile);
     mockEditor.chain.mockReturnValueOnce(imageChain).mockReturnValueOnce(videoChain).mockReturnValueOnce(fileChain).mockImplementation(chainResult);
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.png", fileName: "cat.png" } }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "image", url: "/uploads/thoughts/cat.webp", fileName: "cat.webp" } }) } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "video", url: "/uploads/thoughts/clip.mp4", fileName: "clip.mp4" } }) } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ attachment: { type: "file", url: "/uploads/thoughts/note.md", fileName: "note.md" } }) } as Response);
 
@@ -795,24 +804,38 @@ describe("ThoughtRichTextDraftPage", () => {
     const imageInput = screen.getByLabelText("上传图片附件");
     const videoInput = screen.getByLabelText("上传视频附件");
     const fileInput = screen.getByLabelText("上传文件附件");
-    fireEvent.change(imageInput, { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+    const imageFile = new File(["image"], "cat.png", { type: "image/png" });
+    fireEvent.change(imageInput, { target: { files: [imageFile] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
     const uploadToast = screen.getByRole("status");
     expect(uploadToast).toHaveClass("fixed", "right-6", "top-6");
+    expect(mockCompressThoughtAttachmentImage).toHaveBeenCalledWith(imageFile);
     expect(fetchMock).toHaveBeenCalledWith("/api/thoughts/attachments", expect.objectContaining({ method: "POST", body: expect.any(FormData) }));
-    expect(imageChain.setImage).toHaveBeenCalledWith({ src: "/uploads/thoughts/cat.png" });
+    const imageFormData = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+    expect(imageFormData.get("attachmentFile")).toBe(compressedImageFile);
+    expect(imageFormData.get("attachmentFileName")).toBe("cat.webp");
+    expect(imageChain.setImage).toHaveBeenCalledWith({ src: "/uploads/thoughts/cat.webp" });
     expect(imageChain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.change(videoInput, { target: { files: [new File(["video"], "clip.mp4", { type: "video/mp4" })] } });
+    const videoFile = new File(["video"], "clip.mp4", { type: "video/mp4" });
+    fireEvent.change(videoInput, { target: { files: [videoFile] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    const videoFormData = fetchMock.mock.calls[1]?.[1]?.body as FormData;
+    expect(videoFormData.get("attachmentFile")).toBe(videoFile);
+    expect(videoFormData.get("attachmentFileName")).toBe("clip.mp4");
     expect(videoChain.setVideo).toHaveBeenCalledWith({ src: "/uploads/thoughts/clip.mp4" });
     expect(videoChain.run).toHaveBeenCalledTimes(1);
 
-    fireEvent.change(fileInput, { target: { files: [new File(["markdown"], "note.md", { type: "text/markdown" })] } });
+    const markdownFile = new File(["markdown"], "note.md", { type: "text/markdown" });
+    fireEvent.change(fileInput, { target: { files: [markdownFile] } });
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("附件上传完成"));
+    const fileFormData = fetchMock.mock.calls[2]?.[1]?.body as FormData;
+    expect(fileFormData.get("attachmentFile")).toBe(markdownFile);
+    expect(fileFormData.get("attachmentFileName")).toBe("note.md");
+    expect(mockCompressThoughtAttachmentImage).toHaveBeenCalledTimes(1);
     expect(fileChain.insertContent).toHaveBeenCalledWith('<p><a href="/uploads/thoughts/note.md" target="_blank" rel="noreferrer noopener">note.md</a></p>');
     expect(fileChain.run).toHaveBeenCalledTimes(1);
   });
@@ -826,6 +849,17 @@ describe("ThoughtRichTextDraftPage", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("只支持上传图片、视频或文件附件"));
     const errorToast = screen.getByRole("alert");
     expect(errorToast).toHaveClass("fixed", "right-6", "top-6");
+  });
+
+  it("does not upload images when compression fails", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    mockCompressThoughtAttachmentImage.mockRejectedValueOnce(new Error("图片压缩失败，请重试或换一张图片"));
+    render(<ThoughtRichTextDraftPage />);
+
+    fireEvent.change(screen.getByLabelText("上传图片附件"), { target: { files: [new File(["image"], "cat.png", { type: "image/png" })] } });
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("图片压缩失败，请重试或换一张图片"));
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("hides attachment toast automatically", async () => {
