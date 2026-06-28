@@ -1,11 +1,15 @@
-import { renderModulePage } from "@/features/module-display-mode/demoPage";
+import { CoffeeRankingsPage } from "@/features/coffee/CoffeeRankingsPage";
+import { getDisplayMode } from "@/features/module-display-mode/service";
 
 export default async function CoffeePage() {
-  return renderModulePage({
-    moduleId: "coffee",
-    title: "咖啡推荐",
-    demoTitle: "咖啡推荐-演示模式",
-    demoDescription: "这是咖啡推荐模块的基础演示内容。",
-    activeTab: "coffee",
-  });
+  if ((await getDisplayMode("coffee")) === "demo") {
+    return (
+      <section className="space-y-3">
+        <h1>咖啡推荐-演示模式</h1>
+        <p>这是咖啡推荐模块的基础演示内容。</p>
+      </section>
+    );
+  }
+
+  return <CoffeeRankingsPage />;
 }
