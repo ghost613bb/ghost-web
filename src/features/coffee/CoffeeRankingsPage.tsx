@@ -28,10 +28,26 @@ type CoffeeItem = {
 
 type ReviewFormState = {
   coffeeId: string;
-  note: string;
+  coffeeName: string;
+  score: string;
+  temperature: string;
+  why: string;
+  reminder: string;
   photoUrl: string;
   verdict: CoffeeReview["verdict"];
 };
+
+type SelectOption<T extends string> = {
+  label: string;
+  value: T;
+};
+
+const verdictOptions: SelectOption<CoffeeReview["verdict"]>[] = [
+  { label: "夯：愿意复购", value: "夯" },
+  { label: "稳：不会出错", value: "稳" },
+  { label: "待观察：看当天", value: "待观察" },
+  { label: "拉：下次慎点", value: "拉" },
+];
 
 const initialCoffees: CoffeeItem[] = [
   {
@@ -40,7 +56,7 @@ const initialCoffees: CoffeeItem[] = [
     alias: "续命白月光",
     rankLabel: "夯到爆",
     score: 98,
-    temperature: "冰 / 少糖 / 必须大杯",
+    temperature: "冰 / 少糖",
     flavor: "椰香很厚，咖啡感不怂，像把人从工位上拎起来重启。",
     warning: "下午三点后喝会把夜晚变成第二个白天。",
     gradient: "from-[#fff7d8] via-[#f6d995] to-[#c9864d]",
@@ -161,6 +177,17 @@ function createReviewId() {
   return `review-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
+function createCoffeeId() {
+  return `coffee-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
+
+function getRankLabel(verdict: CoffeeReview["verdict"]) {
+  if (verdict === "夯") return "新晋夯杯";
+  if (verdict === "稳") return "新晋稳杯";
+  if (verdict === "待观察") return "继续观察";
+  return "新晋避雷";
+}
+
 function getCurrentDateLabel() {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -187,6 +214,67 @@ function CoffeePhoto({ coffee, photoUrl }: { coffee: CoffeeItem; photoUrl?: stri
   );
 }
 
+function HandwrittenSelect<T extends string>({ label, onChange, options, value }: { label: string; onChange: (value: T) => void; options: SelectOption<T>[]; value: T }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <div
+      className="space-y-1 text-sm font-black"
+      onBlur={(event) => {
+        const nextFocusTarget = event.relatedTarget;
+
+        if (!(nextFocusTarget instanceof Node) || !event.currentTarget.contains(nextFocusTarget)) {
+          setIsOpen(false);
+        }
+      }}
+    >
+      <p>{label}</p>
+      <div className="relative mt-1">
+        <button
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-label={label}
+          className="flex w-full items-center justify-between gap-3 rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-left text-sm font-black text-[#4a2e28] outline-none transition hover:bg-[#fff6f3] focus:border-[#d48b9a]"
+          onClick={() => setIsOpen((current) => !current)}
+          type="button"
+        >
+          <span className="truncate">{selectedOption.label}</span>
+          <svg aria-hidden="true" className={`h-4 w-4 shrink-0 text-[#7a5147] transition ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" viewBox="0 0 16 16">
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </button>
+        {isOpen ? (
+          <div className="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffdf2] shadow-[6px_6px_0_rgba(91,58,48,0.1)]">
+            <ul className="max-h-56 overflow-y-auto p-1.5" role="listbox">
+              {options.map((option) => {
+                const isSelected = option.value === value;
+
+                return (
+                  <li key={option.value} role="presentation">
+                    <button
+                      aria-selected={isSelected}
+                      className={`w-full rounded-[0.75rem] px-3 py-2 text-left text-sm font-black transition ${isSelected ? "bg-[#ffb9c8] text-[#5b3a30]" : "text-[#765247] hover:bg-[#fff1f4]"}`}
+                      onClick={() => {
+                        onChange(option.value);
+                        setIsOpen(false);
+                      }}
+                      role="option"
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeItem; index: number; isActive: boolean; onSelect: (coffeeId: string) => void }) {
   const latestReview = coffee.reviews[0];
 
@@ -209,9 +297,8 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-[1.12rem] font-black leading-none tracking-tight text-[#4a2e28]">{coffee.name}</h2>
-            <span className={`rounded-full border-2 px-2.5 py-0.5 text-[0.68rem] font-black shadow-[2px_2px_0_rgba(91,58,48,0.1)] ${verdictStyle[latestReview.verdict]}`}>{coffee.rankLabel}</span>
+            <span className={`rounded-full border-2 px-2.5 py-0.5 text-[0.68rem] font-black shadow-[2px_2px_0_rgba(91,58,48,0.1)] ${verdictStyle[latestReview.verdict]}`}>本次判定：{latestReview.verdict}</span>
           </div>
-          <p className="mt-1 text-xs font-black tracking-[0.12em] text-[#b56f72]">{coffee.alias}</p>
           <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[#765247]">{latestReview.note}</p>
         </div>
         <div className="relative z-10 rounded-[0.85rem] border-2 border-[#5b3a30] bg-[#fffbeb] px-2 py-1.5 text-center shadow-[3px_3px_0_rgba(91,58,48,0.1)]">
@@ -223,7 +310,7 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
   );
 }
 
-function ReviewComposer({ coffees, form, onFormChange, onPhotoSelect, onSubmit }: { coffees: CoffeeItem[]; form: ReviewFormState; onFormChange: (form: ReviewFormState) => void; onPhotoSelect: (event: ChangeEvent<HTMLInputElement>) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+function ReviewComposer({ form, onFormChange, onPhotoSelect, onSubmit }: { form: ReviewFormState; onFormChange: (form: ReviewFormState) => void; onPhotoSelect: (event: ChangeEvent<HTMLInputElement>) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
     <form className="rounded-[1.35rem] border-[2px] border-[#5b3a30] bg-[#fffdf2] p-3.5 text-[#4a2e28] shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:p-4" onSubmit={onSubmit}>
       <div className="flex items-center justify-between gap-3">
@@ -238,30 +325,31 @@ function ReviewComposer({ coffees, form, onFormChange, onPhotoSelect, onSubmit }
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[1.1fr_0.85fr]">
         <label className="space-y-1 text-sm font-black">
-          选择咖啡
-          <select className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, coffeeId: event.currentTarget.value })} value={form.coffeeId}>
-            {coffees.map((coffee) => (
-              <option key={coffee.id} value={coffee.id}>
-                {coffee.name} / {coffee.alias}
-              </option>
-            ))}
-          </select>
+          咖啡名
+          <input className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, coffeeName: event.currentTarget.value })} placeholder="例如：生椰拿铁" value={form.coffeeName} />
         </label>
+        <HandwrittenSelect label="本次判定" onChange={(verdict) => onFormChange({ ...form, verdict })} options={verdictOptions} value={form.verdict} />
+      </div>
 
+      <div className="mt-4 grid gap-3 sm:grid-cols-[0.72fr_1fr]">
         <label className="space-y-1 text-sm font-black">
-          本次判定
-          <select className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, verdict: event.currentTarget.value as CoffeeReview["verdict"] })} value={form.verdict}>
-            <option value="夯">夯：愿意复购</option>
-            <option value="稳">稳：不会出错</option>
-            <option value="待观察">待观察：看当天</option>
-            <option value="拉">拉：下次慎点</option>
-          </select>
+          打分
+          <input className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" inputMode="numeric" max="100" min="0" onChange={(event) => onFormChange({ ...form, score: event.currentTarget.value })} placeholder="0-100" type="number" value={form.score} />
+        </label>
+        <label className="space-y-1 text-sm font-black">
+          温度/糖度
+          <input className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, temperature: event.currentTarget.value })} placeholder="例如：冰 / 少糖" value={form.temperature} />
         </label>
       </div>
 
       <label className="mt-4 block text-sm font-black">
-        评论
-        <textarea className="mt-1 min-h-28 w-full resize-none rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-3 text-sm font-bold leading-6 text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, note: event.currentTarget.value })} placeholder="今天这杯是夯还是拉？甜度、咖啡感、踩雷点都可以写在这里。" value={form.note} />
+        why
+        <textarea className="mt-1 min-h-24 w-full resize-none rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-3 text-sm font-bold leading-6 text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, why: event.currentTarget.value })} placeholder="今天这杯为什么夯/稳/拉？甜度、咖啡感、踩雷点都可以写在这里。" value={form.why} />
+      </label>
+
+      <label className="mt-4 block text-sm font-black">
+        提醒
+        <input className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, reminder: event.currentTarget.value })} placeholder="例如：下午三点后别喝" value={form.reminder} />
       </label>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -285,7 +373,16 @@ export function CoffeeRankingsPage() {
   const [coffees, setCoffees] = useState<CoffeeItem[]>(initialCoffees);
   const rankedCoffees = useMemo(() => [...coffees].sort((a, b) => b.score - a.score), [coffees]);
   const [activeCoffeeId, setActiveCoffeeId] = useState(initialCoffees[0].id);
-  const [form, setForm] = useState<ReviewFormState>({ coffeeId: initialCoffees[0].id, note: "", photoUrl: "", verdict: "夯" });
+  const [form, setForm] = useState<ReviewFormState>({
+    coffeeId: initialCoffees[0].id,
+    coffeeName: initialCoffees[0].name,
+    score: String(initialCoffees[0].score),
+    temperature: initialCoffees[0].temperature,
+    why: initialCoffees[0].flavor,
+    reminder: initialCoffees[0].warning,
+    photoUrl: "",
+    verdict: "夯",
+  });
   const activeCoffee = rankedCoffees.find((coffee) => coffee.id === activeCoffeeId) ?? rankedCoffees[0];
   const totalReviews = coffees.reduce((total, coffee) => total + coffee.reviews.length, 0);
   const hottestCoffee = rankedCoffees[0];
@@ -301,31 +398,59 @@ export function CoffeeRankingsPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const trimmedNote = form.note.trim();
-    if (!trimmedNote) return;
+    const trimmedCoffeeName = form.coffeeName.trim();
+    const trimmedWhy = form.why.trim();
+    const trimmedTemperature = form.temperature.trim();
+    const trimmedReminder = form.reminder.trim();
+    const parsedScore = Number.parseInt(form.score, 10);
+    const nextScore = Number.isFinite(parsedScore) ? Math.max(0, Math.min(100, parsedScore)) : 78;
+    if (!trimmedCoffeeName || !trimmedWhy) return;
 
     const review: CoffeeReview = {
       id: createReviewId(),
       author: "我本人",
       date: getCurrentDateLabel(),
-      note: trimmedNote,
+      note: trimmedWhy,
       photoUrl: form.photoUrl || undefined,
       verdict: form.verdict,
     };
+    const matchedCoffee = coffees.find((coffee) => coffee.name === trimmedCoffeeName);
+    const targetCoffeeId = matchedCoffee?.id ?? createCoffeeId();
 
-    setCoffees((currentCoffees) =>
-      currentCoffees.map((coffee) =>
-        coffee.id === form.coffeeId
-          ? {
-              ...coffee,
-              score: Math.max(0, Math.min(100, coffee.score + getVerdictDelta(form.verdict))),
-              reviews: [review, ...coffee.reviews],
-            }
-          : coffee,
-      ),
-    );
-    setActiveCoffeeId(form.coffeeId);
-    setForm((currentForm) => ({ ...currentForm, note: "", photoUrl: "" }));
+    setCoffees((currentCoffees) => {
+      if (matchedCoffee) {
+        return currentCoffees.map((coffee) =>
+          coffee.id === matchedCoffee.id
+            ? {
+                ...coffee,
+                score: nextScore,
+                temperature: trimmedTemperature || coffee.temperature,
+                flavor: trimmedWhy,
+                warning: trimmedReminder || coffee.warning,
+                reviews: [review, ...coffee.reviews],
+              }
+            : coffee,
+        );
+      }
+
+      return [
+        ...currentCoffees,
+        {
+          id: targetCoffeeId,
+          name: trimmedCoffeeName,
+          alias: "新杯待命名",
+          rankLabel: getRankLabel(form.verdict),
+          score: nextScore,
+          temperature: trimmedTemperature || "按本次记录",
+          flavor: trimmedWhy,
+          warning: trimmedReminder || "还没有稳定结论，多喝几次再定级。",
+          gradient: "from-[#fff7d8] via-[#ffd7e0] to-[#d7f2ec]",
+          reviews: [review],
+        },
+      ];
+    });
+    setActiveCoffeeId(targetCoffeeId);
+    setForm((currentForm) => ({ ...currentForm, photoUrl: "" }));
     event.currentTarget.reset();
   }
 
@@ -334,8 +459,6 @@ export function CoffeeRankingsPage() {
       <ContentTabsHeader activeTab="coffee" />
 
       <section className="relative mx-auto max-w-[1280px] px-4 pb-12 pt-8 sm:px-6">
-        <div aria-hidden="true" className="absolute right-10 top-56 hidden h-22 w-22 rotate-[12deg] rounded-full border-[2.5px] border-[#5b3a30]/35 bg-[#bee9dd]/55 lg:block" />
-
         <div className="relative overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/92 p-3.5 shadow-[6px_6px_0_rgba(91,58,48,0.09)] sm:p-5">
           <div aria-hidden="true" className="absolute inset-0 opacity-55 [background-image:radial-gradient(circle,rgba(91,58,48,0.16)_0_1px,transparent_2px)] [background-size:24px_24px]" />
           <div className="relative grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
@@ -388,7 +511,7 @@ export function CoffeeRankingsPage() {
                 ))}
               </div>
             </div>
-            <ReviewComposer coffees={rankedCoffees} form={form} onFormChange={setForm} onPhotoSelect={handlePhotoSelect} onSubmit={handleSubmit} />
+            <ReviewComposer form={form} onFormChange={setForm} onPhotoSelect={handlePhotoSelect} onSubmit={handleSubmit} />
           </aside>
 
           <section className="space-y-6" aria-label="咖啡详情与评价记录">
@@ -423,36 +546,6 @@ export function CoffeeRankingsPage() {
                 </div>
               </div>
             </article>
-
-            <div className="rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/94 p-4 shadow-[8px_8px_0_rgba(91,58,48,0.1)] sm:p-5">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">review wall</p>
-                  <h2 className="text-xl font-black tracking-tight text-[#4a2e28]">{activeCoffee.name} 的多次评价</h2>
-                </div>
-                <span className="rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] px-3 py-1 text-xs font-black text-[#765247] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">{activeCoffee.reviews.length} 条记录</span>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                {activeCoffee.reviews.map((review, index) => (
-                  <article className={`overflow-hidden rounded-[1.15rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] shadow-[5px_5px_0_rgba(91,58,48,0.1)] ${index % 2 === 0 ? "rotate-[-0.35deg]" : "rotate-[0.35deg]"}`} key={review.id}>
-                    <div className="h-42 border-b-[2.5px] border-[#5b3a30]">
-                      <CoffeePhoto coffee={activeCoffee} photoUrl={review.photoUrl} />
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#b56f72]">{review.date}</p>
-                          <p className="mt-1 text-sm font-black text-[#4a2e28]">{review.author}</p>
-                        </div>
-                        <span className={`rounded-full border-2 px-3 py-1 text-xs font-black shadow-[2px_2px_0_rgba(91,58,48,0.08)] ${verdictStyle[review.verdict]}`}>{review.verdict}</span>
-                      </div>
-                      <p className="mt-3 text-sm font-bold leading-7 text-[#765247]">{review.note}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
           </section>
         </div>
       </section>

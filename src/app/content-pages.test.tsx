@@ -698,7 +698,7 @@ describe("content module pages", () => {
     expect(screen.getByRole("heading", { level: 2, name: "夯拉排行榜" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "再审一杯" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2, name: "生椰拿铁" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("生椰拿铁 的多次评价")).toBeInTheDocument();
+    expect(screen.queryByText("生椰拿铁 的多次评价")).not.toBeInTheDocument();
   });
 
   it("renders the message page", async () => {
