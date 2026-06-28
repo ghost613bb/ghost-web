@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { Camera, Flame, ImagePlus, MessageSquareText, Plus, Trophy, Zap } from "lucide-react";
+import { Heart, ImagePlus, MessageSquareText, Plus, Sparkles, Trophy } from "lucide-react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 
 type CoffeeReview = {
@@ -43,7 +43,7 @@ const initialCoffees: CoffeeItem[] = [
     temperature: "冰 / 少糖 / 必须大杯",
     flavor: "椰香很厚，咖啡感不怂，像把人从工位上拎起来重启。",
     warning: "下午三点后喝会把夜晚变成第二个白天。",
-    gradient: "from-[#fff3c7] via-[#f2d38b] to-[#7c4b27]",
+    gradient: "from-[#fff7d8] via-[#f6d995] to-[#c9864d]",
     reviews: [
       {
         id: "review-coconut-1",
@@ -70,7 +70,7 @@ const initialCoffees: CoffeeItem[] = [
     temperature: "冰 / 无糖 / 不许摇太散",
     flavor: "前调清爽，后调有一点椰子水的甜，适合需要理智但不想受苦的时候。",
     warning: "状态差时会觉得它太直给。",
-    gradient: "from-[#dff7ef] via-[#9ed9c6] to-[#1f6b5a]",
+    gradient: "from-[#e7fbf3] via-[#bdebdc] to-[#73bba7]",
     reviews: [
       {
         id: "review-americano-1",
@@ -90,7 +90,7 @@ const initialCoffees: CoffeeItem[] = [
     temperature: "热 / 半糖 / 加班备用",
     flavor: "奶感很厚，咖啡被包住了，像穿毛衣的工作日。",
     warning: "连喝两天会腻，需要美式解围。",
-    gradient: "from-[#fff9e7] via-[#f1c987] to-[#b56a31]",
+    gradient: "from-[#fff9e7] via-[#f4d79f] to-[#d99b67]",
     reviews: [
       {
         id: "review-cheese-1",
@@ -110,7 +110,7 @@ const initialCoffees: CoffeeItem[] = [
     temperature: "冰 / 默认糖 / 只在想换口味时点",
     flavor: "果酸很亮，咖啡存在感被橙子推到墙角，快乐但不够日常。",
     warning: "空腹喝像把胃交给随机数。",
-    gradient: "from-[#ffe1ae] via-[#ff9f45] to-[#9f3a1d]",
+    gradient: "from-[#fff0c7] via-[#ffc981] to-[#f19b60]",
     reviews: [
       {
         id: "review-orange-1",
@@ -130,7 +130,7 @@ const initialCoffees: CoffeeItem[] = [
     temperature: "冰 / 少糖也甜 / 慎点",
     flavor: "黑糖香很抢，像喝了一杯披着咖啡外套的甜品。",
     warning: "需要强咖啡因时不要被它骗。",
-    gradient: "from-[#f2d7b0] via-[#9b5a33] to-[#2a1610]",
+    gradient: "from-[#f7dfbd] via-[#c99267] to-[#7b4a32]",
     reviews: [
       {
         id: "review-brown-1",
@@ -144,10 +144,10 @@ const initialCoffees: CoffeeItem[] = [
 ];
 
 const verdictStyle: Record<CoffeeReview["verdict"], string> = {
-  夯: "bg-[#ff4f2e] text-[#fff8de] shadow-[0_0_22px_rgba(255,79,46,0.42)]",
-  稳: "bg-[#f3c447] text-[#2b160b]",
-  待观察: "bg-[#8fd6c3] text-[#102d25]",
-  拉: "bg-[#34201a] text-[#ffe6b0]",
+  夯: "border-[#5b3a30] bg-[#ffb9c8] text-[#5b3a30]",
+  稳: "border-[#5b3a30] bg-[#ffe8a8] text-[#5b3a30]",
+  待观察: "border-[#5b3a30] bg-[#bee9dd] text-[#36584f]",
+  拉: "border-[#5b3a30] bg-[#d9c1ad] text-[#5b3a30]",
 };
 
 function getVerdictDelta(verdict: CoffeeReview["verdict"]) {
@@ -178,10 +178,11 @@ function CoffeePhoto({ coffee, photoUrl }: { coffee: CoffeeItem; photoUrl?: stri
 
   return (
     <div className={`relative h-full w-full bg-gradient-to-br ${coffee.gradient}`}>
-      <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_24%_20%,rgba(255,255,255,0.72)_0_9%,transparent_10%),radial-gradient(circle_at_70%_78%,rgba(255,255,255,0.22)_0_18%,transparent_19%)]" />
-      <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-b-[2.2rem] rounded-t-[0.85rem] border-[3px] border-[#2d1a12]/75 bg-white/35 shadow-[inset_0_-20px_0_rgba(45,26,18,0.18)]" />
-      <div aria-hidden="true" className="absolute left-[58%] top-[44%] h-10 w-10 rounded-full border-[3px] border-[#2d1a12]/65" />
-      <span className="absolute bottom-4 left-4 rounded-full bg-[#2d1a12]/82 px-3 py-1 text-[0.7rem] font-black uppercase tracking-[0.12em] text-[#fff4ce]">No Photo</span>
+      <div aria-hidden="true" className="absolute inset-0 opacity-50 [background-image:radial-gradient(circle,rgba(255,255,255,0.72)_0_2px,transparent_3px)] [background-size:22px_22px]" />
+      <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-24 w-30 -translate-x-1/2 -translate-y-1/2 rounded-b-[2.4rem] rounded-t-[1.1rem] border-[2.5px] border-[#5b3a30] bg-[#fffaf0]/74 shadow-[inset_0_-22px_0_rgba(121,76,55,0.13),4px_6px_0_rgba(91,58,48,0.12)]" />
+      <div aria-hidden="true" className="absolute left-[59%] top-[43%] h-11 w-11 rounded-full border-[2.5px] border-[#5b3a30]/85" />
+      <div aria-hidden="true" className="absolute left-[43%] top-[31%] h-7 w-1.5 rounded-full bg-[#fffaf0]/70 shadow-[14px_-5px_0_rgba(255,250,240,0.62),28px_0_0_rgba(255,250,240,0.55)]" />
+      <span className="absolute bottom-4 left-4 rotate-[-3deg] rounded-full border-[2px] border-[#5b3a30] bg-[#fffaf0] px-3 py-1 text-[0.7rem] font-black tracking-[0.08em] text-[#7a5147] shadow-[3px_3px_0_rgba(91,58,48,0.1)]">等一张咖啡照</span>
     </div>
   );
 }
@@ -192,30 +193,30 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
   return (
     <button
       aria-pressed={isActive}
-      className={`group relative w-full overflow-hidden rounded-[1.45rem] border-[2.5px] p-4 text-left transition duration-300 ${
+      className={`group relative w-full overflow-hidden rounded-[1.2rem] border-[2px] p-4 text-left transition duration-300 ${
         isActive
-          ? "-translate-y-1 border-[#2a1710] bg-[#fff7df] shadow-[9px_9px_0_rgba(42,23,16,0.2)]"
-          : "border-[#2a1710]/55 bg-[#fff1bf]/72 shadow-[4px_4px_0_rgba(42,23,16,0.09)] hover:-translate-y-0.5 hover:border-[#2a1710]"
+          ? "-translate-y-1 rotate-[-0.45deg] border-[#5b3a30] bg-[#fffdf2] shadow-[7px_7px_0_rgba(91,58,48,0.15)]"
+          : "border-[#5b3a30]/70 bg-[#fffaf0]/82 shadow-[4px_4px_0_rgba(91,58,48,0.08)] hover:-translate-y-0.5 hover:border-[#5b3a30]"
       }`}
       onClick={() => onSelect(coffee.id)}
       type="button"
     >
-      <div aria-hidden="true" className={`absolute inset-y-0 right-0 w-24 bg-gradient-to-br ${coffee.gradient} opacity-50 transition group-hover:opacity-70`} />
-      <div className="relative flex items-start gap-3">
-        <span className="grid h-13 w-13 shrink-0 place-items-center rounded-[1rem] border-[2.5px] border-[#2a1710] bg-[#ff4f2e] text-2xl font-black text-[#fff8de] shadow-[4px_4px_0_rgba(42,23,16,0.18)]">
+      <div aria-hidden="true" className={`absolute -right-7 -top-9 h-24 w-24 rounded-full bg-gradient-to-br ${coffee.gradient} opacity-60 transition group-hover:scale-110`} />
+      <div className="relative flex items-start gap-2.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] text-lg font-black text-[#5b3a30] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[1.35rem] font-black leading-none tracking-tight text-[#2a1710]">{coffee.name}</h2>
-            <span className={`rounded-full px-2.5 py-1 text-[0.68rem] font-black ${verdictStyle[latestReview.verdict]}`}>{coffee.rankLabel}</span>
+            <h2 className="text-[1.12rem] font-black leading-none tracking-tight text-[#4a2e28]">{coffee.name}</h2>
+            <span className={`rounded-full border-2 px-2.5 py-0.5 text-[0.68rem] font-black shadow-[2px_2px_0_rgba(91,58,48,0.1)] ${verdictStyle[latestReview.verdict]}`}>{coffee.rankLabel}</span>
           </div>
-          <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-[#8b4d25]">{coffee.alias}</p>
-          <p className="mt-3 line-clamp-2 text-sm font-semibold leading-6 text-[#654034]">{latestReview.note}</p>
+          <p className="mt-1 text-xs font-black tracking-[0.12em] text-[#b56f72]">{coffee.alias}</p>
+          <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[#765247]">{latestReview.note}</p>
         </div>
-        <div className="relative z-10 text-right">
-          <p className="text-[2rem] font-black leading-none text-[#2a1710]">{coffee.score.toFixed(0)}</p>
-          <p className="text-[0.66rem] font-black uppercase tracking-[0.18em] text-[#8b4d25]">points</p>
+        <div className="relative z-10 rounded-[0.85rem] border-2 border-[#5b3a30] bg-[#fffbeb] px-2 py-1.5 text-center shadow-[3px_3px_0_rgba(91,58,48,0.1)]">
+          <p className="text-[1.2rem] font-black leading-none text-[#6a3c34]">{coffee.score.toFixed(0)}</p>
+          <p className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#a27a64]">分</p>
         </div>
       </div>
     </button>
@@ -224,19 +225,21 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
 
 function ReviewComposer({ coffees, form, onFormChange, onPhotoSelect, onSubmit }: { coffees: CoffeeItem[]; form: ReviewFormState; onFormChange: (form: ReviewFormState) => void; onPhotoSelect: (event: ChangeEvent<HTMLInputElement>) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
-    <form className="rounded-[1.6rem] border-[2.5px] border-[#2a1710] bg-[#2a1710] p-4 text-[#fff4ce] shadow-[10px_10px_0_rgba(255,79,46,0.24)] sm:p-5" onSubmit={onSubmit}>
+    <form className="rounded-[1.35rem] border-[2px] border-[#5b3a30] bg-[#fffdf2] p-3.5 text-[#4a2e28] shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:p-4" onSubmit={onSubmit}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#ffb54d]">new log</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight">再审一杯</h2>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">new note</p>
+          <h2 className="mt-1 text-xl font-black tracking-tight">再审一杯</h2>
         </div>
-        <Plus aria-hidden="true" className="h-7 w-7 text-[#ff4f2e]" />
+        <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#5b3a30] bg-[#ffb9c8] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
+          <Plus aria-hidden="true" className="h-5 w-5" />
+        </span>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[1.1fr_0.85fr]">
         <label className="space-y-1 text-sm font-black">
           选择咖啡
-          <select className="mt-1 w-full rounded-[1rem] border-2 border-[#8a5b40] bg-[#fff4ce] px-3 py-2.5 text-sm font-black text-[#2a1710] outline-none transition focus:border-[#ff4f2e]" onChange={(event) => onFormChange({ ...form, coffeeId: event.currentTarget.value })} value={form.coffeeId}>
+          <select className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, coffeeId: event.currentTarget.value })} value={form.coffeeId}>
             {coffees.map((coffee) => (
               <option key={coffee.id} value={coffee.id}>
                 {coffee.name} / {coffee.alias}
@@ -247,7 +250,7 @@ function ReviewComposer({ coffees, form, onFormChange, onPhotoSelect, onSubmit }
 
         <label className="space-y-1 text-sm font-black">
           本次判定
-          <select className="mt-1 w-full rounded-[1rem] border-2 border-[#8a5b40] bg-[#fff4ce] px-3 py-2.5 text-sm font-black text-[#2a1710] outline-none transition focus:border-[#ff4f2e]" onChange={(event) => onFormChange({ ...form, verdict: event.currentTarget.value as CoffeeReview["verdict"] })} value={form.verdict}>
+          <select className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, verdict: event.currentTarget.value as CoffeeReview["verdict"] })} value={form.verdict}>
             <option value="夯">夯：愿意复购</option>
             <option value="稳">稳：不会出错</option>
             <option value="待观察">待观察：看当天</option>
@@ -258,19 +261,19 @@ function ReviewComposer({ coffees, form, onFormChange, onPhotoSelect, onSubmit }
 
       <label className="mt-4 block text-sm font-black">
         评论
-        <textarea className="mt-1 min-h-28 w-full resize-none rounded-[1rem] border-2 border-[#8a5b40] bg-[#fff4ce] px-3 py-3 text-sm font-bold leading-6 text-[#2a1710] outline-none transition placeholder:text-[#8a5b40]/70 focus:border-[#ff4f2e]" onChange={(event) => onFormChange({ ...form, note: event.currentTarget.value })} placeholder="例如：这一杯像不像今日续命燃料？甜度、咖啡感、踩雷点都写在这里。" value={form.note} />
+        <textarea className="mt-1 min-h-28 w-full resize-none rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-3 text-sm font-bold leading-6 text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, note: event.currentTarget.value })} placeholder="今天这杯是夯还是拉？甜度、咖啡感、踩雷点都可以写在这里。" value={form.note} />
       </label>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-        <label className="block rounded-[1rem] border-2 border-dashed border-[#d59158] bg-[#3a2318] px-3 py-3 text-sm font-black text-[#fff4ce] transition hover:border-[#ff4f2e]">
+        <label className="block rounded-[1rem] border-2 border-dashed border-[#d48b9a] bg-[#fff6f3] px-3 py-3 text-sm font-black text-[#6a3c34] transition hover:bg-[#fff1f4]">
           <span className="flex items-center gap-2">
-            <ImagePlus aria-hidden="true" className="h-4 w-4 text-[#ffb54d]" />
+            <ImagePlus aria-hidden="true" className="h-4 w-4 text-[#d67a8f]" />
             上传本次照片
           </span>
           <input accept="image/*" className="sr-only" onChange={onPhotoSelect} type="file" />
-          <span className="mt-1 block truncate text-xs font-semibold text-[#d7b990]">{form.photoUrl ? "已选择照片，保存后会出现在评价墙。" : "可选：先放本地预览，不打断记录手感。"}</span>
+          <span className="mt-1 block truncate text-xs font-semibold text-[#9b7463]">{form.photoUrl ? "已选好照片，保存后会贴到评价墙。" : "可选：给这次评价贴一张小照片。"}</span>
         </label>
-        <button className="rounded-[1rem] border-2 border-[#2a1710] bg-[#ff4f2e] px-5 py-3 text-sm font-black text-[#fff8de] shadow-[0_5px_0_rgba(255,181,77,0.58)] transition hover:-translate-y-0.5 hover:bg-[#ff673e]" type="submit">
+        <button className="rounded-[1rem] border-2 border-[#5b3a30] bg-[#ffb9c8] px-5 py-3 text-sm font-black text-[#5b3a30] shadow-[4px_4px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-0.5 hover:bg-[#ffc6d2]" type="submit">
           记入排名
         </button>
       </div>
@@ -327,58 +330,57 @@ export function CoffeeRankingsPage() {
   }
 
   return (
-    <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#160d09] text-[#2a1710] [background-image:radial-gradient(circle_at_14%_8%,rgba(255,79,46,0.34)_0_120px,transparent_121px),radial-gradient(circle_at_86%_30%,rgba(255,181,77,0.26)_0_160px,transparent_161px),linear-gradient(135deg,rgba(255,244,206,0.05)_25%,transparent_25%,transparent_50%,rgba(255,244,206,0.05)_50%,rgba(255,244,206,0.05)_75%,transparent_75%,transparent)] [background-size:auto,auto,32px_32px]">
+    <main className="album-page-scrollbar h-dvh overflow-y-auto bg-[#fff8e6] text-[#4a2e28] [background-image:radial-gradient(circle_at_12%_18%,rgba(255,199,211,0.28)_0_80px,transparent_81px),radial-gradient(circle_at_88%_72%,rgba(190,233,221,0.36)_0_120px,transparent_121px),linear-gradient(90deg,rgba(121,76,55,0.04)_1px,transparent_1px),linear-gradient(rgba(121,76,55,0.035)_1px,transparent_1px)] [background-size:auto,auto,42px_42px,42px_42px]">
       <ContentTabsHeader activeTab="coffee" />
 
-      <section className="relative mx-auto max-w-[1280px] px-4 pb-16 pt-10 sm:px-6 lg:pt-14">
-        <div aria-hidden="true" className="absolute left-4 top-20 hidden h-40 w-40 rounded-full border-[22px] border-[#ff4f2e]/25 lg:block" />
-        <div aria-hidden="true" className="absolute right-8 top-44 hidden h-28 w-28 rotate-12 rounded-[2rem] bg-[#ffb54d]/25 lg:block" />
+      <section className="relative mx-auto max-w-[1280px] px-4 pb-12 pt-8 sm:px-6">
+        <div aria-hidden="true" className="absolute right-10 top-56 hidden h-22 w-22 rotate-[12deg] rounded-full border-[2.5px] border-[#5b3a30]/35 bg-[#bee9dd]/55 lg:block" />
 
-        <div className="relative overflow-hidden rounded-[2rem] border-[3px] border-[#2a1710] bg-[#fff4ce] p-5 shadow-[12px_12px_0_rgba(255,79,46,0.32)] sm:p-8">
-          <div aria-hidden="true" className="absolute inset-0 opacity-45 [background-image:linear-gradient(90deg,rgba(42,23,16,0.09)_1px,transparent_1px),linear-gradient(rgba(42,23,16,0.07)_1px,transparent_1px)] [background-size:26px_26px]" />
-          <div className="relative grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+        <div className="relative overflow-hidden rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/92 p-3.5 shadow-[6px_6px_0_rgba(91,58,48,0.09)] sm:p-5">
+          <div aria-hidden="true" className="absolute inset-0 opacity-55 [background-image:radial-gradient(circle,rgba(91,58,48,0.16)_0_1px,transparent_2px)] [background-size:24px_24px]" />
+          <div className="relative grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border-2 border-[#2a1710] bg-[#ff4f2e] px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#fff8de] shadow-[4px_4px_0_rgba(42,23,16,0.18)]">
-                <Zap aria-hidden="true" className="h-4 w-4" />
-                cotti dependency board
+              <p className="inline-flex rotate-[-1deg] items-center gap-1.5 rounded-full border-[2px] border-[#5b3a30] bg-[#ffb9c8] px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6a3c34] shadow-[3px_3px_0_rgba(91,58,48,0.1)]">
+                <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />
+                Cotti coffee notebook
               </p>
-              <h1 className="mt-5 max-w-3xl text-[3.15rem] font-black leading-[0.9] tracking-[-0.07em] text-[#2a1710] sm:text-[5.2rem]" style={{ fontFamily: '"Arial Black", "Impact", "Hiragino Sans GB", sans-serif' }}>
+              <h1 className="mt-3 max-w-3xl text-[2rem] font-black leading-tight tracking-tight text-[#4a2e28] [text-shadow:2px_2px_0_#fff7df,0_1px_0_rgba(91,58,48,0.18)] sm:text-[2.8rem]">
                 咖啡推荐
               </h1>
-              <p className="mt-5 max-w-2xl text-base font-bold leading-8 text-[#654034] sm:text-lg">
-                库迪咖啡私人审判台：按「夯 → 稳 → 待观察 → 拉」记录真实续命体验。每杯咖啡可以被反复评价，照片和评论会沉淀成一条越来越偏执的咖啡因证词链。
+              <p className="mt-3 max-w-2xl text-xs font-semibold leading-6 text-[#765247] sm:text-sm">
+                库迪咖啡小本本：从「夯」到「拉」记录每一杯的真实体感。可以对同一杯反复评价，也可以给这次评价贴一张照片，慢慢攒成自己的咖啡续命地图。
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-              <div className="rounded-[1.25rem] border-[2.5px] border-[#2a1710] bg-[#2a1710] p-4 text-[#fff4ce] shadow-[5px_5px_0_rgba(42,23,16,0.14)]">
-                <Trophy aria-hidden="true" className="mb-3 h-6 w-6 text-[#ffb54d]" />
-                <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[#d7b990]">top one</p>
-                <p className="mt-1 text-xl font-black">{hottestCoffee.name}</p>
+              <div className="rounded-[1.05rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] p-3 shadow-[3px_3px_0_rgba(91,58,48,0.09)]">
+                <Trophy aria-hidden="true" className="mb-2 h-5 w-5 text-[#d67a8f]" />
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#b56f72]">top one</p>
+                <p className="mt-1 text-base font-black text-[#4a2e28]">{hottestCoffee.name}</p>
               </div>
-              <div className="rounded-[1.25rem] border-[2.5px] border-[#2a1710] bg-[#ffb54d] p-4 shadow-[5px_5px_0_rgba(42,23,16,0.14)]">
-                <MessageSquareText aria-hidden="true" className="mb-3 h-6 w-6" />
-                <p className="text-[0.68rem] font-black uppercase tracking-[0.18em]">reviews</p>
-                <p className="mt-1 text-3xl font-black">{totalReviews}</p>
+              <div className="rounded-[1.05rem] border-[2px] border-[#5b3a30] bg-[#ffe8a8] p-3 shadow-[3px_3px_0_rgba(91,58,48,0.09)]">
+                <MessageSquareText aria-hidden="true" className="mb-2 h-5 w-5 text-[#6a3c34]" />
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#8b5c46]">reviews</p>
+                <p className="mt-1 text-2xl font-black text-[#4a2e28]">{totalReviews}</p>
               </div>
-              <div className="rounded-[1.25rem] border-[2.5px] border-[#2a1710] bg-[#ff4f2e] p-4 text-[#fff8de] shadow-[5px_5px_0_rgba(42,23,16,0.14)]">
-                <Flame aria-hidden="true" className="mb-3 h-6 w-6" />
-                <p className="text-[0.68rem] font-black uppercase tracking-[0.18em]">scale</p>
-                <p className="mt-1 text-xl font-black">夯到拉</p>
+              <div className="rounded-[1.05rem] border-[2px] border-[#5b3a30] bg-[#bee9dd] p-3 shadow-[3px_3px_0_rgba(91,58,48,0.09)]">
+                <Heart aria-hidden="true" className="mb-2 h-5 w-5 text-[#6a3c34]" />
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#4f7069]">scale</p>
+                <p className="mt-1 text-base font-black text-[#4a2e28]">夯到拉</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[0.95fr_1.35fr]">
+        <div className="mt-6 grid gap-5 lg:grid-cols-[0.9fr_1.3fr]">
           <aside className="space-y-4 lg:sticky lg:top-5 lg:self-start" aria-label="咖啡排名榜">
-            <div className="rounded-[1.7rem] border-[2.5px] border-[#2a1710] bg-[#f6dfaa] p-4 shadow-[10px_10px_0_rgba(42,23,16,0.22)]">
+            <div className="rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#ffe8a8]/88 p-3.5 shadow-[6px_6px_0_rgba(91,58,48,0.09)] sm:p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#8b4d25]">ranking</p>
-                  <h2 className="text-2xl font-black tracking-tight">夯拉排行榜</h2>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">ranking</p>
+                  <h2 className="text-xl font-black tracking-tight text-[#4a2e28]">夯拉排行榜</h2>
                 </div>
-                <span className="rounded-full border-2 border-[#2a1710] bg-[#fff4ce] px-3 py-1 text-xs font-black">实时按分排序</span>
+                <span className="rounded-full border-2 border-[#5b3a30] bg-[#fffaf0] px-3 py-1 text-xs font-black text-[#765247] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">按分排序</span>
               </div>
               <div className="space-y-3">
                 {rankedCoffees.map((coffee, index) => (
@@ -390,75 +392,66 @@ export function CoffeeRankingsPage() {
           </aside>
 
           <section className="space-y-6" aria-label="咖啡详情与评价记录">
-            <article className="overflow-hidden rounded-[2rem] border-[3px] border-[#2a1710] bg-[#fff4ce] shadow-[12px_12px_0_rgba(255,181,77,0.2)]">
+            <article className="overflow-hidden rounded-[1.65rem] border-[2px] border-[#5b3a30] bg-[#fffdf2] shadow-[8px_8px_0_rgba(91,58,48,0.1)]">
               <div className="grid min-h-[24rem] lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="relative min-h-[21rem] overflow-hidden border-b-[3px] border-[#2a1710] lg:border-b-0 lg:border-r-[3px]">
+                <div className="relative min-h-[21rem] overflow-hidden border-b-[2.5px] border-[#5b3a30] bg-[#fffaf0] lg:border-b-0 lg:border-r-[2.5px]">
                   <CoffeePhoto coffee={activeCoffee} photoUrl={activeCoffee.reviews.find((review) => review.photoUrl)?.photoUrl} />
-                  <div className="absolute left-4 top-4 rounded-full border-2 border-[#2a1710] bg-[#ff4f2e] px-4 py-2 text-sm font-black text-[#fff8de] shadow-[4px_4px_0_rgba(42,23,16,0.18)]">
+                  <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full border-2 border-[#5b3a30] bg-[#ffb9c8] px-4 py-2 text-sm font-black text-[#6a3c34] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
                     #{rankedCoffees.findIndex((coffee) => coffee.id === activeCoffee.id) + 1} / {activeCoffee.rankLabel}
                   </div>
                 </div>
                 <div className="p-5 sm:p-7">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#8b4d25]">selected cup</p>
-                  <h2 className="mt-2 text-[2.55rem] font-black leading-none tracking-[-0.05em] text-[#2a1710] sm:text-[4rem]" style={{ fontFamily: '"Arial Black", "Impact", "Hiragino Sans GB", sans-serif' }}>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">selected cup</p>
+                  <h2 className="mt-2 text-[1.9rem] font-black leading-tight tracking-tight text-[#4a2e28] [text-shadow:1px_1px_0_#fff7df] sm:text-[2.55rem]">
                     {activeCoffee.name}
                   </h2>
-                  <p className="mt-3 inline-flex rounded-full border-2 border-[#2a1710] bg-[#ffb54d] px-3 py-1 text-sm font-black">{activeCoffee.temperature}</p>
-                  <div className="mt-6 grid gap-3 sm:grid-cols-[0.75fr_1fr]">
-                    <div className="rounded-[1.2rem] border-2 border-[#2a1710] bg-[#2a1710] p-4 text-[#fff4ce]">
-                      <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[#d7b990]">score</p>
-                      <p className="mt-1 text-6xl font-black leading-none text-[#ffb54d]">{activeCoffee.score.toFixed(0)}</p>
+                  <p className="mt-3 inline-flex rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] px-3 py-1 text-xs font-black text-[#6a3c34] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">{activeCoffee.temperature}</p>
+                  <div className="mt-6 grid gap-3 sm:grid-cols-[0.72fr_1fr]">
+                    <div className="rounded-[1.2rem] border-2 border-[#5b3a30] bg-[#fffaf0] p-4 shadow-[3px_3px_0_rgba(91,58,48,0.08)]">
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#b56f72]">score</p>
+                      <p className="mt-1 text-5xl font-black leading-none text-[#d67a8f]">{activeCoffee.score.toFixed(0)}</p>
                     </div>
-                    <div className="rounded-[1.2rem] border-2 border-[#2a1710] bg-[#fffaf0] p-4">
-                      <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[#8b4d25]">why</p>
-                      <p className="mt-2 text-sm font-bold leading-7 text-[#5e3b2f]">{activeCoffee.flavor}</p>
+                    <div className="rounded-[1.2rem] border-2 border-[#5b3a30] bg-[#fffaf0] p-4 shadow-[3px_3px_0_rgba(91,58,48,0.08)]">
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#b56f72]">why</p>
+                      <p className="mt-2 text-sm font-bold leading-7 text-[#765247]">{activeCoffee.flavor}</p>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-[1.2rem] border-2 border-[#2a1710] bg-[#ffe2d8] p-4">
-                    <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[#8b4d25]">risk memo</p>
-                    <p className="mt-2 text-sm font-black leading-7 text-[#5e2e24]">{activeCoffee.warning}</p>
+                  <div className="mt-4 rounded-[1.2rem] border-2 border-[#5b3a30] bg-[#fff1f4] p-4 shadow-[3px_3px_0_rgba(91,58,48,0.08)]">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#b56f72]">小提醒</p>
+                    <p className="mt-2 text-sm font-black leading-7 text-[#765247]">{activeCoffee.warning}</p>
                   </div>
                 </div>
               </div>
             </article>
 
-            <div className="rounded-[1.7rem] border-[2.5px] border-[#2a1710] bg-[#f6dfaa] p-4 shadow-[10px_10px_0_rgba(42,23,16,0.18)] sm:p-5">
+            <div className="rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#fffdf2]/94 p-4 shadow-[8px_8px_0_rgba(91,58,48,0.1)] sm:p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#8b4d25]">review wall</p>
-                  <h2 className="text-2xl font-black tracking-tight">{activeCoffee.name} 的多次评价</h2>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">review wall</p>
+                  <h2 className="text-xl font-black tracking-tight text-[#4a2e28]">{activeCoffee.name} 的多次评价</h2>
                 </div>
-                <span className="rounded-full border-2 border-[#2a1710] bg-[#fff4ce] px-3 py-1 text-xs font-black">{activeCoffee.reviews.length} 条记录</span>
+                <span className="rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] px-3 py-1 text-xs font-black text-[#765247] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">{activeCoffee.reviews.length} 条记录</span>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                {activeCoffee.reviews.map((review) => (
-                  <article className="overflow-hidden rounded-[1.35rem] border-[2.5px] border-[#2a1710] bg-[#fffaf0] shadow-[5px_5px_0_rgba(42,23,16,0.12)]" key={review.id}>
-                    <div className="h-42 border-b-[2.5px] border-[#2a1710]">
+                {activeCoffee.reviews.map((review, index) => (
+                  <article className={`overflow-hidden rounded-[1.15rem] border-[2px] border-[#5b3a30] bg-[#fffaf0] shadow-[5px_5px_0_rgba(91,58,48,0.1)] ${index % 2 === 0 ? "rotate-[-0.35deg]" : "rotate-[0.35deg]"}`} key={review.id}>
+                    <div className="h-42 border-b-[2.5px] border-[#5b3a30]">
                       <CoffeePhoto coffee={activeCoffee} photoUrl={review.photoUrl} />
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8b4d25]">{review.date}</p>
-                          <p className="mt-1 text-sm font-black text-[#2a1710]">{review.author}</p>
+                          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#b56f72]">{review.date}</p>
+                          <p className="mt-1 text-sm font-black text-[#4a2e28]">{review.author}</p>
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-black ${verdictStyle[review.verdict]}`}>{review.verdict}</span>
+                        <span className={`rounded-full border-2 px-3 py-1 text-xs font-black shadow-[2px_2px_0_rgba(91,58,48,0.08)] ${verdictStyle[review.verdict]}`}>{review.verdict}</span>
                       </div>
-                      <p className="mt-3 text-sm font-bold leading-7 text-[#5e3b2f]">{review.note}</p>
+                      <p className="mt-3 text-sm font-bold leading-7 text-[#765247]">{review.note}</p>
                     </div>
                   </article>
                 ))}
               </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              {["夯：复购优先级拉满", "稳：工作日安全牌", "拉：记录下来避免重蹈覆辙"].map((label) => (
-                <div className="rounded-[1.25rem] border-[2.5px] border-[#2a1710] bg-[#2a1710] p-4 text-[#fff4ce] shadow-[6px_6px_0_rgba(255,79,46,0.18)]" key={label}>
-                  <Camera aria-hidden="true" className="mb-3 h-6 w-6 text-[#ffb54d]" />
-                  <p className="text-sm font-black leading-6">{label}</p>
-                </div>
-              ))}
             </div>
           </section>
         </div>
