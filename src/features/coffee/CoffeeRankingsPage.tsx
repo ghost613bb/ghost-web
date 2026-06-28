@@ -232,6 +232,7 @@ function HandwrittenSelect<T extends string>({ label, onChange, options, value }
       <p>{label}</p>
       <div className="relative mt-1">
         <button
+          aria-controls={`${label}-coffee-select-listbox`}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           aria-label={label}
@@ -246,7 +247,7 @@ function HandwrittenSelect<T extends string>({ label, onChange, options, value }
         </button>
         {isOpen ? (
           <div className="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffdf2] shadow-[6px_6px_0_rgba(91,58,48,0.1)]">
-            <ul className="max-h-56 overflow-y-auto p-1.5" role="listbox">
+            <ul className="max-h-56 overflow-y-auto p-1.5" id={`${label}-coffee-select-listbox`} role="listbox">
               {options.map((option) => {
                 const isSelected = option.value === value;
 
@@ -299,7 +300,7 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
             <h2 className="text-[1.12rem] font-black leading-none tracking-tight text-[#4a2e28]">{coffee.name}</h2>
             <span className={`rounded-full border-2 px-2.5 py-0.5 text-[0.68rem] font-black shadow-[2px_2px_0_rgba(91,58,48,0.1)] ${verdictStyle[latestReview.verdict]}`}>本次判定：{latestReview.verdict}</span>
           </div>
-          <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[#765247]">{latestReview.note}</p>
+          <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[#765247]">{coffee.flavor}</p>
         </div>
         <div className="relative z-10 rounded-[0.85rem] border-2 border-[#5b3a30] bg-[#fffbeb] px-2 py-1.5 text-center shadow-[3px_3px_0_rgba(91,58,48,0.1)]">
           <p className="text-[1.2rem] font-black leading-none text-[#6a3c34]">{coffee.score.toFixed(0)}</p>
@@ -323,7 +324,7 @@ function ReviewComposer({ form, onFormChange, onPhotoSelect, onSubmit }: { form:
         </span>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[1.1fr_0.85fr]">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm font-black">
           咖啡名
           <input className="mt-1 w-full rounded-[1rem] border-2 border-[#d7b7a2] bg-[#fffaf0] px-3 py-2.5 text-sm font-black text-[#4a2e28] outline-none transition placeholder:text-[#a27a64]/80 focus:border-[#d48b9a]" onChange={(event) => onFormChange({ ...form, coffeeName: event.currentTarget.value })} placeholder="例如：生椰拿铁" value={form.coffeeName} />
@@ -495,8 +496,8 @@ export function CoffeeRankingsPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-[0.9fr_1.3fr]">
-          <aside className="space-y-4 lg:sticky lg:top-5 lg:self-start" aria-label="咖啡排名榜">
+        <div className="mt-6 grid items-start gap-5 lg:grid-cols-[0.88fr_1.22fr]">
+          <aside className="lg:sticky lg:top-5 lg:self-start" aria-label="咖啡排名榜">
             <div className="rounded-[1.45rem] border-[2px] border-[#5b3a30] bg-[#ffe8a8]/88 p-3.5 shadow-[6px_6px_0_rgba(91,58,48,0.09)] sm:p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -511,25 +512,30 @@ export function CoffeeRankingsPage() {
                 ))}
               </div>
             </div>
-            <ReviewComposer form={form} onFormChange={setForm} onPhotoSelect={handlePhotoSelect} onSubmit={handleSubmit} />
           </aside>
 
-          <section className="space-y-6" aria-label="咖啡详情与评价记录">
+          <section className="space-y-5" aria-label="咖啡详情与评价记录">
             <article className="overflow-hidden rounded-[1.65rem] border-[2px] border-[#5b3a30] bg-[#fffdf2] shadow-[8px_8px_0_rgba(91,58,48,0.1)]">
-              <div className="grid min-h-[24rem] lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="relative min-h-[21rem] overflow-hidden border-b-[2.5px] border-[#5b3a30] bg-[#fffaf0] lg:border-b-0 lg:border-r-[2.5px]">
-                  <CoffeePhoto coffee={activeCoffee} photoUrl={activeCoffee.reviews.find((review) => review.photoUrl)?.photoUrl} />
+              <div className="grid min-h-[22rem] lg:grid-cols-[0.78fr_1.22fr]">
+                <div className="relative min-h-[17rem] overflow-hidden border-b-[2.5px] border-[#5b3a30] bg-[#fffaf0] lg:border-b-0 lg:border-r-[2.5px]">
+                  <div className="h-full min-h-[17rem] lg:min-h-0">
+                    <CoffeePhoto coffee={activeCoffee} photoUrl={activeCoffee.reviews.find((review) => review.photoUrl)?.photoUrl} />
+                  </div>
                   <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full border-2 border-[#5b3a30] bg-[#ffb9c8] px-4 py-2 text-sm font-black text-[#6a3c34] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
                     #{rankedCoffees.findIndex((coffee) => coffee.id === activeCoffee.id) + 1} / {activeCoffee.rankLabel}
                   </div>
                 </div>
-                <div className="p-5 sm:p-7">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">selected cup</p>
-                  <h2 className="mt-2 text-[1.9rem] font-black leading-tight tracking-tight text-[#4a2e28] [text-shadow:1px_1px_0_#fff7df] sm:text-[2.55rem]">
-                    {activeCoffee.name}
-                  </h2>
-                  <p className="mt-3 inline-flex rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] px-3 py-1 text-xs font-black text-[#6a3c34] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">{activeCoffee.temperature}</p>
-                  <div className="mt-6 grid gap-3 sm:grid-cols-[0.72fr_1fr]">
+                <div className="grid content-start gap-4 p-5 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#b56f72]">selected cup</p>
+                      <h2 className="mt-2 text-[1.9rem] font-black leading-tight tracking-tight text-[#4a2e28] [text-shadow:1px_1px_0_#fff7df] sm:text-[2.4rem]">
+                        {activeCoffee.name}
+                      </h2>
+                    </div>
+                    <p className="inline-flex rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] px-3 py-1 text-xs font-black text-[#6a3c34] shadow-[2px_2px_0_rgba(91,58,48,0.08)]">{activeCoffee.temperature}</p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-[0.52fr_1fr]">
                     <div className="rounded-[1.2rem] border-2 border-[#5b3a30] bg-[#fffaf0] p-4 shadow-[3px_3px_0_rgba(91,58,48,0.08)]">
                       <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#b56f72]">score</p>
                       <p className="mt-1 text-5xl font-black leading-none text-[#d67a8f]">{activeCoffee.score.toFixed(0)}</p>
@@ -539,13 +545,14 @@ export function CoffeeRankingsPage() {
                       <p className="mt-2 text-sm font-bold leading-7 text-[#765247]">{activeCoffee.flavor}</p>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-[1.2rem] border-2 border-[#5b3a30] bg-[#fff1f4] p-4 shadow-[3px_3px_0_rgba(91,58,48,0.08)]">
+                  <div className="rounded-[1.2rem] border-2 border-[#5b3a30] bg-[#fff1f4] p-4 shadow-[3px_3px_0_rgba(91,58,48,0.08)]">
                     <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#b56f72]">小提醒</p>
                     <p className="mt-2 text-sm font-black leading-7 text-[#765247]">{activeCoffee.warning}</p>
                   </div>
                 </div>
               </div>
             </article>
+            <ReviewComposer form={form} onFormChange={setForm} onPhotoSelect={handlePhotoSelect} onSubmit={handleSubmit} />
           </section>
         </div>
       </section>
