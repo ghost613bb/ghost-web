@@ -1,9 +1,11 @@
 "use client";
 
 import { Camera, ChevronLeft, ChevronRight, ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
+import { useAdminSession } from "@/features/admin/useAdminSession";
 import { getAlbumCoverDisplayUrl, getAlbumCoverThumbnailUrl, getAlbumPhotoDisplayUrl, getAlbumPhotoPreviewUrl } from "./albumImageUrls";
 import { createAlbumCoverImageVariants, createAlbumPhotoImageVariants } from "./albumImageVariants";
 import { AlbumFormDialog } from "./AlbumFormDialog";
@@ -16,11 +18,6 @@ type AlbumWorkspacePageViewProps = {
   initialAlbums: Album[];
   initialDeleteAlbumCandidate?: Album | null;
   initialPhotos: AlbumPhoto[];
-};
-
-type AdminSessionResult = {
-  authenticated?: boolean;
-  error?: string;
 };
 
 type AlbumPhotosByAlbumId = Record<string, AlbumPhoto[]>;
@@ -119,33 +116,22 @@ function mergeAlbumPhotos(currentPhotos: AlbumPhoto[], serverPhotos: AlbumPhoto[
   return nextPhotos;
 }
 
-function AlbumAdminPanel({ adminError, adminToken, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
+function AlbumAdminPanel({ isAdminUnlocked }: { isAdminUnlocked: boolean }) {
   return (
-    <form className="rounded-[1.15rem] border-2 border-stone-700/70 bg-white/65 p-3 shadow-[0_6px_0_rgba(91,58,48,0.08)]" onSubmit={onUnlock}>
+    <section className="rounded-[1.15rem] border-2 border-stone-700/70 bg-white/65 p-3 shadow-[0_6px_0_rgba(91,58,48,0.08)]">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-sm font-black text-[#5a3a33]">Admin 管理</p>
         <span className={`rounded-full px-2 py-0.5 text-[0.68rem] font-black ${isAdminUnlocked ? "bg-[#dff3cf] text-[#42672d]" : "bg-[#ffeef1] text-[#7a3d3f]"}`}>
           {isAdminUnlocked ? "已解锁" : "未解锁"}
         </span>
       </div>
-      <p className="mb-2 text-xs font-semibold leading-5 text-stone-600">{isAdminUnlocked ? "管理会话已保存，后续操作无需重复输入 Token。" : "输入一次管理 Token，解锁相册管理。"}</p>
-      {isAdminUnlocked ? (
-        <button className="w-full rounded-[0.9rem] border-2 border-stone-700/60 bg-white px-3 py-1.5 text-xs font-black text-stone-900 transition hover:bg-[#fff5f6]" disabled={isAdminSubmitting} onClick={onLock} type="button">
-          退出管理模式
-        </button>
-      ) : (
-        <div className="space-y-2">
-          <label className="sr-only" htmlFor="album-workspace-admin-token">
-            管理 Token
-          </label>
-          <input className="w-full rounded-[0.9rem] border-2 border-stone-700/50 bg-white/80 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isAdminSubmitting} id="album-workspace-admin-token" onChange={(event) => onAdminTokenChange(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
-          <button className="w-full rounded-[0.9rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-1.5 text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isAdminSubmitting} type="submit">
-            {isAdminSubmitting ? "解锁中..." : "解锁管理"}
-          </button>
-        </div>
-      )}
-      {adminError ? <p className="mt-2 rounded-[0.85rem] border border-[#b75d66] bg-[#ffeef1] px-2 py-1.5 text-xs font-black text-[#7a3d3f]">{adminError}</p> : null}
-    </form>
+      <p className="mb-2 text-xs font-semibold leading-5 text-stone-600">{isAdminUnlocked ? "后台会话已生效，可以管理相册内容。" : "相册管理已统一到后台入口。"}</p>
+      {!isAdminUnlocked ? (
+        <Link className="block w-full rounded-[0.9rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-1.5 text-center text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] transition hover:-translate-y-0.5" href="/admin">
+          去后台解锁管理
+        </Link>
+      ) : null}
+    </section>
   );
 }
 
@@ -250,10 +236,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
   const [pendingDeletePhoto, setPendingDeletePhoto] = useState<AlbumPhoto | null>(null);
   const [pendingDeleteAlbumError, setPendingDeleteAlbumError] = useState("");
   const [pendingDeletePhotoError, setPendingDeletePhotoError] = useState("");
-  const [adminToken, setAdminToken] = useState("");
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
-  const [adminError, setAdminError] = useState<string | null>(null);
+  const { isAdminUnlocked, refreshAdminSession } = useAdminSession();
 
   const updateWorkspaceHistory = useCallback((albumId?: string | null, photoId?: string | null, mode: "push" | "replace" = "push") => {
     if (typeof window === "undefined") {
@@ -284,31 +267,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       updateWorkspaceHistory(nextActiveAlbum.id, null, "replace");
     }
   }, [initialActiveAlbum, initialActivePhoto, initialAlbums, initialPhotos, updateWorkspaceHistory]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadAdminSession = async () => {
-      try {
-        const response = await fetch("/api/admin/session", { credentials: "same-origin" });
-        const data = (await response.json()) as AdminSessionResult;
-
-        if (isMounted) {
-          setIsAdminUnlocked(Boolean(response.ok && data.authenticated));
-        }
-      } catch {
-        if (isMounted) {
-          setIsAdminUnlocked(false);
-        }
-      }
-    };
-
-    void loadAdminSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const activeAlbum = useMemo(() => (activeAlbumId ? displayAlbums.find((album) => album.id === activeAlbumId) ?? null : null), [activeAlbumId, displayAlbums]);
   const visiblePhotosByAlbumId = useMemo(() => {
@@ -492,64 +450,6 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
     });
   }, [applyAlbumSelectionLocally, displayAlbums]);
 
-  const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAdminError(null);
-
-    if (!adminToken.trim()) {
-      setAdminError("请输入管理 Token");
-      return;
-    }
-
-    setIsAdminSubmitting(true);
-
-    try {
-      const response = await fetch("/api/admin/session", {
-        body: JSON.stringify({ token: adminToken }),
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as AdminSessionResult;
-
-      if (!response.ok || !data.authenticated) {
-        throw new Error(data.error ?? "管理解锁失败");
-      }
-
-      setIsAdminUnlocked(true);
-      setAdminToken("");
-    } catch (error) {
-      setIsAdminUnlocked(false);
-      setAdminError(error instanceof Error ? error.message : "管理解锁失败");
-    } finally {
-      setIsAdminSubmitting(false);
-    }
-  };
-
-  const handleAdminLock = async () => {
-    setAdminError(null);
-    setIsAdminSubmitting(true);
-
-    try {
-      await fetch("/api/admin/session", { credentials: "same-origin", method: "DELETE" });
-      setIsAdminUnlocked(false);
-      setIsCreateDialogOpen(false);
-      setEditingAlbum(null);
-      uploadAlbumIdRef.current = null;
-      setIsUploadDialogOpen(false);
-      setUploadingAlbum(null);
-      setEditingPhoto(null);
-      setPendingDeleteAlbum(null);
-      setPendingDeletePhoto(null);
-    } catch (error) {
-      setAdminError(error instanceof Error ? error.message : "退出管理模式失败");
-    } finally {
-      setIsAdminSubmitting(false);
-    }
-  };
-
   const chooseNextAlbumId = useCallback((nextAlbums: Album[]) => {
     const nextAlbum = nextAlbums[activeAlbumIndex] ?? nextAlbums[Math.max(0, activeAlbumIndex - 1)] ?? nextAlbums[0] ?? null;
     return nextAlbum?.id ?? null;
@@ -589,11 +489,10 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
       <div className="mx-auto max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)]">
           <aside className="rounded-[1.7rem] border-[2.5px] border-stone-700/80 bg-[#fff7df] p-4 shadow-[0_14px_28px_rgba(112,84,84,0.09)] xl:sticky xl:top-5 xl:h-[calc(100dvh-3.25rem)] xl:self-start xl:overflow-hidden xl:flex xl:flex-col">
-            <AlbumAdminPanel adminError={adminError} adminToken={adminToken} isAdminSubmitting={isAdminSubmitting} isAdminUnlocked={isAdminUnlocked} onAdminTokenChange={setAdminToken} onLock={() => void handleAdminLock()} onUnlock={handleAdminUnlock} />
+            <AlbumAdminPanel isAdminUnlocked={isAdminUnlocked} />
             <div className="mb-4 mt-4">
               <button className="flex w-full items-center justify-center gap-2 rounded-[1.15rem] border-[2.5px] border-stone-700/80 bg-[#ffe6ad] px-4 py-2 text-sm font-black text-stone-900 shadow-[0_5px_0_rgba(112,84,84,0.16)] transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" disabled={!isAdminUnlocked} onClick={() => {
-                setAdminError(null);
-                clearPhotoSelection();
+                                clearPhotoSelection();
                 setIsCreateDialogOpen(true);
               }} type="button">
                 <Plus aria-hidden="true" className="h-4 w-4" />
@@ -639,8 +538,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                       return;
                     }
 
-                    setAdminError(null);
-                    clearPhotoSelection();
+                                        clearPhotoSelection();
                     uploadAlbumIdRef.current = activeAlbum.id;
                     setUploadingAlbum(activeAlbum);
                     setIsUploadDialogOpen(true);
@@ -771,7 +669,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
               const message = getManagementErrorMessage(data.error ?? "新建相册失败");
 
               if (message === "请先解锁管理") {
-                setIsAdminUnlocked(false);
+                void refreshAdminSession();
               }
 
               throw new Error(message);
@@ -840,7 +738,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                 const message = getManagementErrorMessage(data.error ?? "编辑相册失败");
 
                 if (message === "请先解锁管理") {
-                  setIsAdminUnlocked(false);
+                  void refreshAdminSession();
                 }
 
                 throw new Error(message);
@@ -892,7 +790,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
               const message = getManagementErrorMessage(data.error ?? "上传照片失败");
 
               if (message === "请先解锁管理") {
-                setIsAdminUnlocked(false);
+                void refreshAdminSession();
               }
 
               throw new Error(message);
@@ -934,7 +832,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
               const message = getManagementErrorMessage(data.error ?? "编辑照片失败");
 
               if (message === "请先解锁管理") {
-                setIsAdminUnlocked(false);
+                void refreshAdminSession();
               }
 
               throw new Error(message);
@@ -1003,7 +901,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                     const message = getManagementErrorMessage(data.error ?? "删除相册失败");
 
                     if (message === "请先解锁管理") {
-                      setIsAdminUnlocked(false);
+                      void refreshAdminSession();
                     }
 
                     throw new Error(message);
@@ -1073,7 +971,7 @@ export function AlbumWorkspacePageView({ initialActiveAlbum, initialActivePhoto,
                     const message = getManagementErrorMessage(data.error ?? "删除照片失败");
 
                     if (message === "请先解锁管理") {
-                      setIsAdminUnlocked(false);
+                      void refreshAdminSession();
                     }
 
                     throw new Error(message);

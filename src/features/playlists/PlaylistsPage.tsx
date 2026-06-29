@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
 import {
   ChevronDown,
   Disc3,
@@ -23,7 +23,9 @@ import {
   Volume2,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import type { PlaylistCollection, PlaylistNote, PlaylistPlayerSnapshot, PlaylistSong } from "@/data/playlists";
+import { useAdminSession } from "@/features/admin/useAdminSession";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
 import { CommentPlayerPanel } from "./CommentPlayerPanel";
 import { PlaylistBatchImportDialog } from "./PlaylistBatchImportDialog";
@@ -57,11 +59,6 @@ type PlaylistSongManageResult = {
   sourceSongIds?: string[];
   targetCollectionId?: string;
   targetSongIds?: string[];
-};
-
-type AdminSessionResult = {
-  authenticated: boolean;
-  error?: string;
 };
 
 const lyricSyncOffsetSeconds = 0.35;
@@ -110,35 +107,24 @@ function PlaylistCover({ collection }: { collection: PlaylistCollection }) {
   );
 }
 
-function PlaylistAdminPanel({ adminError, adminToken, dataSource, isAdminSubmitting, isAdminUnlocked, onAdminTokenChange, onLock, onUnlock }: { adminError: string | null; adminToken: string; dataSource?: PlaylistDataSource; isAdminSubmitting: boolean; isAdminUnlocked: boolean; onAdminTokenChange: (token: string) => void; onLock: () => void; onUnlock: (event: FormEvent<HTMLFormElement>) => void }) {
+function PlaylistAdminPanel({ dataSource, isAdminUnlocked }: { dataSource?: PlaylistDataSource; isAdminUnlocked: boolean }) {
   const isStaticSource = dataSource !== "supabase";
 
   return (
-    <form className="mb-4 rounded-[1.15rem] border-2 border-stone-700/70 bg-white/55 p-3" onSubmit={onUnlock}>
+    <section className="mb-4 rounded-[1.15rem] border-2 border-stone-700/70 bg-white/55 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-sm font-black text-[#4f2525]">Admin 管理</p>
         <span className={`rounded-full px-2 py-0.5 text-[0.68rem] font-black ${isAdminUnlocked ? "bg-[#dff3cf] text-[#42672d]" : "bg-[#ffeef1] text-[#7a3d3f]"}`}>
           {isAdminUnlocked ? "已解锁" : "未解锁"}
         </span>
       </div>
-      <p className="mb-2 text-xs font-semibold leading-5 text-stone-600">{isStaticSource ? "当前为本地 fallback，管理功能需要 Supabase 数据源。" : isAdminUnlocked ? "管理会话已保存，后续操作无需重复输入 Token。" : "输入一次管理 Token，解锁歌单和评论管理。"}</p>
-      {isAdminUnlocked ? (
-        <button className="w-full rounded-[0.9rem] border-2 border-stone-700/60 bg-white px-3 py-1.5 text-xs font-black text-stone-900 transition hover:bg-[#fff5f6]" disabled={isAdminSubmitting} onClick={onLock} type="button">
-          退出管理模式
-        </button>
-      ) : (
-        <div className="space-y-2">
-          <label className="sr-only" htmlFor="playlist-admin-token">
-            管理 Token
-          </label>
-          <input className="w-full rounded-[0.9rem] border-2 border-stone-700/50 bg-white/80 px-3 py-2 text-sm font-semibold text-stone-800" disabled={isStaticSource || isAdminSubmitting} id="playlist-admin-token" onChange={(event) => onAdminTokenChange(event.currentTarget.value)} placeholder="管理 Token" type="password" value={adminToken} />
-          <button className="w-full rounded-[0.9rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-1.5 text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isStaticSource || isAdminSubmitting} type="submit">
-            {isAdminSubmitting ? "解锁中..." : "解锁管理"}
-          </button>
-        </div>
-      )}
-      {adminError ? <p className="mt-2 rounded-[0.85rem] border border-[#b75d66] bg-[#ffeef1] px-2 py-1.5 text-xs font-black text-[#7a3d3f]">{adminError}</p> : null}
-    </form>
+      <p className="mb-2 text-xs font-semibold leading-5 text-stone-600">{isStaticSource ? "当前为本地 fallback，管理功能需要 Supabase 数据源。" : isAdminUnlocked ? "后台会话已生效，可以管理歌单和评论。" : "歌单管理已统一到后台入口。"}</p>
+      {!isStaticSource && !isAdminUnlocked ? (
+        <Link className="block w-full rounded-[0.9rem] border-2 border-stone-700/70 bg-[#ffe6ad] px-3 py-1.5 text-center text-xs font-black text-stone-900 shadow-[0_3px_0_rgba(112,84,84,0.12)] transition hover:-translate-y-0.5" href="/admin">
+          去后台解锁管理
+        </Link>
+      ) : null}
+    </section>
   );
 }
 
@@ -577,10 +563,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   const [editingCollection, setEditingCollection] = useState<PlaylistCollection | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
-  const [adminToken, setAdminToken] = useState("");
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
-  const [adminError, setAdminError] = useState<string | null>(null);
+  const { isAdminUnlocked } = useAdminSession();
   const [isSongManageMode, setIsSongManageMode] = useState(false);
   const [selectedSongIds, setSelectedSongIds] = useState<string[]>([]);
   const [bulkTargetCollectionId, setBulkTargetCollectionId] = useState(() => displayCollections.find((collection) => collection.id !== initialCollection.id)?.id ?? "");
@@ -597,31 +580,6 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
   const player = usePlaylistPlayer(visibleSongs.length > 0 ? visibleSongs : songs, activeFeaturedSong.id, playerSnapshot);
   const isManagementUnlocked = dataSource === "supabase" && isAdminUnlocked;
   const movableCollections = useMemo(() => displayCollections.filter((collection) => collection.id !== activeCollection.id), [activeCollection.id, displayCollections]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadAdminSession = async () => {
-      try {
-        const response = await fetch("/api/admin/session", { credentials: "same-origin" });
-        const data = (await response.json()) as AdminSessionResult;
-
-        if (isMounted) {
-          setIsAdminUnlocked(Boolean(response.ok && data.authenticated));
-        }
-      } catch {
-        if (isMounted) {
-          setIsAdminUnlocked(false);
-        }
-      }
-    };
-
-    void loadAdminSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     setIsSongManageMode(false);
@@ -646,61 +604,6 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
     }
   }, [bulkTargetCollectionId, movableCollections]);
 
-  const handleAdminUnlock = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAdminError(null);
-
-    if (dataSource !== "supabase") {
-      setAdminError("当前为本地 fallback，管理功能需要 Supabase 数据源。");
-      return;
-    }
-
-    if (!adminToken.trim()) {
-      setAdminError("请输入管理 Token");
-      return;
-    }
-
-    setIsAdminSubmitting(true);
-
-    try {
-      const response = await fetch("/api/admin/session", {
-        body: JSON.stringify({ token: adminToken }),
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-      const data = (await response.json()) as AdminSessionResult;
-
-      if (!response.ok || !data.authenticated) {
-        throw new Error(data.error ?? "管理解锁失败");
-      }
-
-      setIsAdminUnlocked(true);
-      setAdminToken("");
-    } catch (error) {
-      setIsAdminUnlocked(false);
-      setAdminError(error instanceof Error ? error.message : "管理解锁失败");
-    } finally {
-      setIsAdminSubmitting(false);
-    }
-  };
-
-  const handleAdminLock = async () => {
-    setAdminError(null);
-    setIsAdminSubmitting(true);
-
-    try {
-      await fetch("/api/admin/session", { credentials: "same-origin", method: "DELETE" });
-      setIsAdminUnlocked(false);
-    } catch (error) {
-      setAdminError(error instanceof Error ? error.message : "退出管理模式失败");
-    } finally {
-      setIsAdminSubmitting(false);
-    }
-  };
-
   const handleCreatedCollection = (collection: PlaylistCollection) => {
     setDisplayCollections((currentCollections) => [...currentCollections, collection]);
     setActiveCollectionId(collection.id);
@@ -714,7 +617,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
 
   const handleDeleteCollection = (collection: PlaylistCollection) => {
     if (displayCollections.length <= 1) {
-      setAdminError("至少保留一个歌单");
+      setDeleteCollectionError("至少保留一个歌单");
       return;
     }
 
@@ -791,7 +694,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
 
   const handleToggleSongManageMode = () => {
     if (!isManagementUnlocked) {
-      setAdminError(dataSource !== "supabase" ? "当前为本地 fallback，管理功能需要 Supabase 数据源。" : "请先解锁 Admin 管理模式。");
+      setBulkSongError(dataSource !== "supabase" ? "当前为本地 fallback，管理功能需要 Supabase 数据源。" : "请先去后台解锁管理。");
       return;
     }
 
@@ -969,7 +872,7 @@ export function PlaylistsPageView({ collections, dataSource, featuredSongId, not
         <div className="grid gap-5 xl:grid-cols-[18rem_minmax(0,1fr)_21rem]">
           <PlaylistSidebar
             activeCollectionId={activeCollection.id}
-            adminPanel={<PlaylistAdminPanel adminError={adminError} adminToken={adminToken} dataSource={dataSource} isAdminSubmitting={isAdminSubmitting} isAdminUnlocked={isAdminUnlocked} onAdminTokenChange={setAdminToken} onLock={() => void handleAdminLock()} onUnlock={handleAdminUnlock} />}
+            adminPanel={<PlaylistAdminPanel dataSource={dataSource} isAdminUnlocked={isAdminUnlocked} />}
             collections={displayCollections}
             createDisabled={!isManagementUnlocked}
             importDisabled={!isManagementUnlocked}

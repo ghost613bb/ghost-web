@@ -30,6 +30,7 @@ export function ModuleDisplayModeAdminForm() {
       setError(null);
 
       const response = await fetch("/api/admin/display-modes", {
+        credentials: "same-origin",
         method: "GET",
       });
 
@@ -56,11 +57,12 @@ export function ModuleDisplayModeAdminForm() {
       setError(null);
 
       const response = await fetch("/api/admin/display-modes", {
-        method: "PATCH",
+        body: JSON.stringify({ moduleId, displayMode }),
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ moduleId, displayMode }),
+        method: "PATCH",
       });
 
       const data = (await response.json()) as {
@@ -69,7 +71,7 @@ export function ModuleDisplayModeAdminForm() {
       };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "更新展示模式失败");
+        throw new Error(response.status === 401 ? "请先在后台解锁管理" : data.error ?? "更新展示模式失败");
       }
 
       setModes(data.modes as DisplayModes);

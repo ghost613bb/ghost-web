@@ -241,7 +241,7 @@ export function CoffeeRankingsPage({ initialCoffeeItems = cloneInitialCoffees() 
       const result = (await response.json().catch(() => ({}))) as { coffee?: CoffeeItem; coffees?: CoffeeItem[]; error?: string };
 
       if (!response.ok || !result.coffee || !result.coffees) {
-        throw new Error(result.error ?? "咖啡评价暂时没记上");
+        throw new Error(response.status === 401 ? "请先去后台解锁管理，再记录咖啡评价。" : result.error ?? "咖啡评价暂时没记上");
       }
 
       setCoffees(result.coffees);

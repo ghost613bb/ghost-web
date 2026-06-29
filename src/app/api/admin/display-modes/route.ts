@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDisplayModes, updateDisplayMode } from "@/features/module-display-mode/service";
 import { parseDisplayModeUpdate } from "@/features/module-display-mode/validation";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export async function GET() {
   return NextResponse.json({
@@ -9,6 +10,12 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const unauthorizedResponse = requireAdminRequest(request, "无权限更新展示模式");
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
+
   try {
     const body = (await request.json()) as {
       moduleId?: unknown;

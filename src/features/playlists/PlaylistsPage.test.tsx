@@ -26,11 +26,6 @@ function mockAdminSessionFetch(authenticated = false) {
   );
 }
 
-async function unlockPlaylistAdmin(token = "test-token") {
-  fireEvent.change(screen.getByLabelText("管理 Token"), { target: { value: token } });
-  fireEvent.click(screen.getByRole("button", { name: "解锁管理" }));
-  await screen.findByText("已解锁");
-}
 
 function renderPlaylistsPage(dataSource: "static" | "supabase" = "supabase") {
   render(
@@ -160,8 +155,9 @@ describe("PlaylistsPageView", () => {
   });
 
   it("opens the create collection dialog", async () => {
+    mockAdminSessionFetch(true);
     renderPlaylistsPage();
-    await unlockPlaylistAdmin();
+    await screen.findByText("已解锁");
 
     fireEvent.click(screen.getByRole("button", { name: "New Collection" }));
 
@@ -392,8 +388,9 @@ describe("PlaylistsPageView", () => {
   });
 
   it("opens the batch import dialog", async () => {
+    mockAdminSessionFetch(true);
     renderPlaylistsPage();
-    await unlockPlaylistAdmin();
+    await screen.findByText("已解锁");
 
     fireEvent.click(screen.getByRole("button", { name: "批量导入歌曲" }));
 
@@ -505,8 +502,9 @@ describe("PlaylistsPageView", () => {
   });
 
   it("renders comment notes for the featured listening panel", async () => {
+    mockAdminSessionFetch(true);
     renderPlaylistsPage();
-    await unlockPlaylistAdmin();
+    await screen.findByText("已解锁");
 
     const commentPanel = screen.getByLabelText("耳机留言播放器");
 

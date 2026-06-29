@@ -36,7 +36,7 @@ describe("ModuleDisplayModeAdminForm", () => {
 
     const albumFieldset = await screen.findByRole("group", { name: "个人相册 展示模式" });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/admin/display-modes", { method: "GET" });
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/display-modes", { credentials: "same-origin", method: "GET" });
     expect(within(albumFieldset).getByText("当前：试玩模式")).toBeInTheDocument();
     expect(within(albumFieldset).getByRole("radio", { name: "试玩模式" })).toBeChecked();
   });
@@ -62,14 +62,15 @@ describe("ModuleDisplayModeAdminForm", () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/admin/display-modes", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           moduleId: "album",
           displayMode: "demo",
         }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
       });
     });
 
