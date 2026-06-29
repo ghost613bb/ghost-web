@@ -14,6 +14,10 @@ export function sanitizeAlbumUploadFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
 
+export function sanitizeCoffeeUploadFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
+}
+
 export function buildThoughtAttachmentFileName(fileName: string, timestamp = Date.now()) {
   return `attachments/thought-attachment-${timestamp}-${sanitizeThoughtAttachmentFileName(fileName)}`;
 }
@@ -32,6 +36,10 @@ export function buildAlbumCoverVariantFileName(albumId: string, variant: "displa
 
 export function buildAlbumPhotoVariantFileName(albumId: string, photoId: string, variant: "display" | "thumbnail", fileName: string) {
   return `${albumId}/photos/${photoId}-${variant}-${sanitizeAlbumUploadFileName(fileName || "photo")}`;
+}
+
+export function buildCoffeeReviewPhotoPath(reviewId: string, fileName: string) {
+  return `reviews/${reviewId}/${sanitizeCoffeeUploadFileName(fileName || "photo")}`;
 }
 
 export function buildPlaylistCollectionCoverPath(collectionId: string, extension: string) {

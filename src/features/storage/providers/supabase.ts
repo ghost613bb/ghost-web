@@ -9,6 +9,8 @@ function getDefaultSupabaseBucket(scope: StorageScope) {
       return process.env.STORAGE_BUCKET_ALBUMS ?? "album-assets";
     case "playlists":
       return process.env.PLAYLIST_STORAGE_BUCKET ?? "playlist-assets";
+    case "coffee":
+      return process.env.STORAGE_BUCKET_COFFEE ?? "coffee-assets";
   }
 }
 

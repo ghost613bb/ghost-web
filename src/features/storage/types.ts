@@ -1,4 +1,4 @@
-export type StorageScope = "thoughts" | "albums" | "playlists";
+export type StorageScope = "thoughts" | "albums" | "playlists" | "coffee";
 
 export type StorageProvider = "local" | "supabase";
 

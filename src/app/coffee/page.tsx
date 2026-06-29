@@ -1,4 +1,5 @@
 import { CoffeeRankingsPage } from "@/features/coffee/CoffeeRankingsPage";
+import { getCoffeePageData } from "@/features/coffee/service";
 import { getDisplayMode } from "@/features/module-display-mode/service";
 
 export default async function CoffeePage() {
@@ -11,5 +12,7 @@ export default async function CoffeePage() {
     );
   }
 
-  return <CoffeeRankingsPage />;
+  const data = await getCoffeePageData();
+
+  return <CoffeeRankingsPage initialCoffeeItems={data.coffees} />;
 }

@@ -6,6 +6,7 @@ const defaultProviderByScope: Record<StorageScope, StorageProvider> = {
   thoughts: "supabase",
   albums: "supabase",
   playlists: "supabase",
+  coffee: "supabase",
 };
 
 function resolveStorageProvider(scope: StorageScope, provider?: StorageProvider) {

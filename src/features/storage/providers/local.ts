@@ -24,6 +24,11 @@ function getDefaultLocalStorageConfig(scope: StorageScope): LocalStorageConfig {
         baseDir: path.join(process.cwd(), "public/uploads/playlists"),
         publicBasePath: "/uploads/playlists",
       };
+    case "coffee":
+      return {
+        baseDir: path.join(process.cwd(), "public/uploads/coffee"),
+        publicBasePath: "/uploads/coffee",
+      };
   }
 }
 

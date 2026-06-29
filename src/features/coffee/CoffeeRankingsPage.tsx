@@ -3,200 +3,8 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { Heart, ImagePlus, MessageSquareText, Plus, Sparkles, Trophy } from "lucide-react";
 import { ContentTabsHeader } from "@/features/content-modules/components/ContentTabsHeader";
-
-type CoffeeReview = {
-  id: string;
-  author: string;
-  date: string;
-  note: string;
-  photoUrl?: string;
-  verdict: "夯" | "稳" | "待观察" | "拉";
-};
-
-type CoffeeItem = {
-  id: string;
-  name: string;
-  alias: string;
-  rankLabel: string;
-  score: number;
-  temperature: string;
-  flavor: string;
-  warning: string;
-  gradient: string;
-  reviews: CoffeeReview[];
-};
-
-type ReviewFormState = {
-  coffeeId: string;
-  coffeeName: string;
-  score: string;
-  temperature: string;
-  why: string;
-  reminder: string;
-  photoUrl: string;
-  verdict: CoffeeReview["verdict"];
-};
-
-type SelectOption<T extends string> = {
-  label: string;
-  value: T;
-};
-
-const verdictOptions: SelectOption<CoffeeReview["verdict"]>[] = [
-  { label: "夯：愿意复购", value: "夯" },
-  { label: "稳：不会出错", value: "稳" },
-  { label: "待观察：看当天", value: "待观察" },
-  { label: "拉：下次慎点", value: "拉" },
-];
-
-const initialCoffees: CoffeeItem[] = [
-  {
-    id: "coconut-latte",
-    name: "生椰拿铁",
-    alias: "续命白月光",
-    rankLabel: "夯到爆",
-    score: 98,
-    temperature: "冰 / 少糖",
-    flavor: "椰香很厚，咖啡感不怂，像把人从工位上拎起来重启。",
-    warning: "下午三点后喝会把夜晚变成第二个白天。",
-    gradient: "from-[#fff7d8] via-[#f6d995] to-[#c9864d]",
-    reviews: [
-      {
-        id: "review-coconut-1",
-        author: "我本人",
-        date: "06.25 10:18",
-        note: "今天的椰香在线，入口像一口奶油色电池，精神条直接回满。",
-        verdict: "夯",
-      },
-      {
-        id: "review-coconut-2",
-        author: "我本人",
-        date: "06.27 14:06",
-        note: "加冰之后甜度刚好，适合周会前强行恢复人类语言能力。",
-        verdict: "夯",
-      },
-    ],
-  },
-  {
-    id: "raw-coconut-americano",
-    name: "生椰美式",
-    alias: "清醒狠角色",
-    rankLabel: "很能打",
-    score: 91,
-    temperature: "冰 / 无糖 / 不许摇太散",
-    flavor: "前调清爽，后调有一点椰子水的甜，适合需要理智但不想受苦的时候。",
-    warning: "状态差时会觉得它太直给。",
-    gradient: "from-[#e7fbf3] via-[#bdebdc] to-[#73bba7]",
-    reviews: [
-      {
-        id: "review-americano-1",
-        author: "我本人",
-        date: "06.20 09:47",
-        note: "像给脑子开了一扇窗，适合早上第一杯。",
-        verdict: "稳",
-      },
-    ],
-  },
-  {
-    id: "cheese-latte",
-    name: "厚乳拿铁",
-    alias: "圆润缓冲垫",
-    rankLabel: "稳定上桌",
-    score: 86,
-    temperature: "热 / 半糖 / 加班备用",
-    flavor: "奶感很厚，咖啡被包住了，像穿毛衣的工作日。",
-    warning: "连喝两天会腻，需要美式解围。",
-    gradient: "from-[#fff9e7] via-[#f4d79f] to-[#d99b67]",
-    reviews: [
-      {
-        id: "review-cheese-1",
-        author: "我本人",
-        date: "06.18 19:32",
-        note: "夜里写东西时很安慰，但没有生椰那种上头感。",
-        verdict: "稳",
-      },
-    ],
-  },
-  {
-    id: "orange-americano",
-    name: "橙C美式",
-    alias: "花活选手",
-    rankLabel: "看当天心情",
-    score: 73,
-    temperature: "冰 / 默认糖 / 只在想换口味时点",
-    flavor: "果酸很亮，咖啡存在感被橙子推到墙角，快乐但不够日常。",
-    warning: "空腹喝像把胃交给随机数。",
-    gradient: "from-[#fff0c7] via-[#ffc981] to-[#f19b60]",
-    reviews: [
-      {
-        id: "review-orange-1",
-        author: "我本人",
-        date: "06.13 16:45",
-        note: "第一口很开心，第八口开始想念正常咖啡。",
-        verdict: "待观察",
-      },
-    ],
-  },
-  {
-    id: "brown-sugar-latte",
-    name: "黑糖拿铁",
-    alias: "甜到报警",
-    rankLabel: "拉警戒线",
-    score: 58,
-    temperature: "冰 / 少糖也甜 / 慎点",
-    flavor: "黑糖香很抢，像喝了一杯披着咖啡外套的甜品。",
-    warning: "需要强咖啡因时不要被它骗。",
-    gradient: "from-[#f7dfbd] via-[#c99267] to-[#7b4a32]",
-    reviews: [
-      {
-        id: "review-brown-1",
-        author: "我本人",
-        date: "06.11 12:24",
-        note: "不是难喝，是它不承担咖啡应该承担的责任。",
-        verdict: "拉",
-      },
-    ],
-  },
-];
-
-const verdictStyle: Record<CoffeeReview["verdict"], string> = {
-  夯: "border-[#5b3a30] bg-[#ffb9c8] text-[#5b3a30]",
-  稳: "border-[#5b3a30] bg-[#ffe8a8] text-[#5b3a30]",
-  待观察: "border-[#5b3a30] bg-[#bee9dd] text-[#36584f]",
-  拉: "border-[#5b3a30] bg-[#d9c1ad] text-[#5b3a30]",
-};
-
-function getVerdictDelta(verdict: CoffeeReview["verdict"]) {
-  if (verdict === "夯") return 2.4;
-  if (verdict === "稳") return 0.8;
-  if (verdict === "待观察") return -0.6;
-  return -2.8;
-}
-
-function createReviewId() {
-  return `review-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
-
-function createCoffeeId() {
-  return `coffee-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
-
-function getRankLabel(verdict: CoffeeReview["verdict"]) {
-  if (verdict === "夯") return "新晋夯杯";
-  if (verdict === "稳") return "新晋稳杯";
-  if (verdict === "待观察") return "继续观察";
-  return "新晋避雷";
-}
-
-function getCurrentDateLabel() {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const date = String(now.getDate()).padStart(2, "0");
-  const hour = String(now.getHours()).padStart(2, "0");
-  const minute = String(now.getMinutes()).padStart(2, "0");
-
-  return `${month}.${date} ${hour}:${minute}`;
-}
+import { cloneInitialCoffees, defaultCoffeeGradient, verdictOptions, verdictStyle } from "./staticData";
+import type { CoffeeItem, ReviewFormState, SelectOption } from "./types";
 
 function CoffeePhoto({ coffee, photoUrl }: { coffee: CoffeeItem; photoUrl?: string }) {
   if (photoUrl) {
@@ -204,7 +12,7 @@ function CoffeePhoto({ coffee, photoUrl }: { coffee: CoffeeItem; photoUrl?: stri
   }
 
   return (
-    <div className={`relative h-full w-full bg-gradient-to-br ${coffee.gradient}`}>
+    <div className={`relative h-full w-full bg-gradient-to-br ${defaultCoffeeGradient}`}>
       <div aria-hidden="true" className="absolute inset-0 opacity-50 [background-image:radial-gradient(circle,rgba(255,255,255,0.72)_0_2px,transparent_3px)] [background-size:22px_22px]" />
       <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-24 w-30 -translate-x-1/2 -translate-y-1/2 rounded-b-[2.4rem] rounded-t-[1.1rem] border-[2.5px] border-[#5b3a30] bg-[#fffaf0]/74 shadow-[inset_0_-22px_0_rgba(121,76,55,0.13),4px_6px_0_rgba(91,58,48,0.12)]" />
       <div aria-hidden="true" className="absolute left-[59%] top-[43%] h-11 w-11 rounded-full border-[2.5px] border-[#5b3a30]/85" />
@@ -290,7 +98,7 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
       onClick={() => onSelect(coffee.id)}
       type="button"
     >
-      <div aria-hidden="true" className={`absolute -right-7 -top-9 h-24 w-24 rounded-full bg-gradient-to-br ${coffee.gradient} opacity-60 transition group-hover:scale-110`} />
+      <div aria-hidden="true" className={`absolute -right-7 -top-9 h-24 w-24 rounded-full bg-gradient-to-br ${defaultCoffeeGradient} opacity-60 transition group-hover:scale-110`} />
       <div className="relative flex items-start gap-2.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-[#5b3a30] bg-[#ffe8a8] text-lg font-black text-[#5b3a30] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
           {index + 1}
@@ -311,7 +119,7 @@ function CoffeeRankCard({ coffee, index, isActive, onSelect }: { coffee: CoffeeI
   );
 }
 
-function ReviewComposer({ form, onFormChange, onPhotoSelect, onSubmit }: { form: ReviewFormState; onFormChange: (form: ReviewFormState) => void; onPhotoSelect: (event: ChangeEvent<HTMLInputElement>) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+function ReviewComposer({ form, isSubmitting, onFormChange, onPhotoSelect, onSubmit, submitError }: { form: ReviewFormState; isSubmitting: boolean; onFormChange: (form: ReviewFormState) => void; onPhotoSelect: (event: ChangeEvent<HTMLInputElement>) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; submitError: string | null }) {
   return (
     <form className="rounded-[1.35rem] border-[2px] border-[#5b3a30] bg-[#fffdf2] p-3.5 text-[#4a2e28] shadow-[6px_6px_0_rgba(91,58,48,0.1)] sm:p-4" onSubmit={onSubmit}>
       <div className="flex items-center justify-between gap-3">
@@ -362,25 +170,34 @@ function ReviewComposer({ form, onFormChange, onPhotoSelect, onSubmit }: { form:
           <input accept="image/*" className="sr-only" onChange={onPhotoSelect} type="file" />
           <span className="mt-1 block truncate text-xs font-semibold text-[#9b7463]">{form.photoUrl ? "已选好照片，保存后会贴到评价墙。" : "可选：给这次评价贴一张小照片。"}</span>
         </label>
-        <button className="rounded-[1rem] border-2 border-[#5b3a30] bg-[#ffb9c8] px-5 py-3 text-sm font-black text-[#5b3a30] shadow-[4px_4px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-0.5 hover:bg-[#ffc6d2]" type="submit">
-          记入排名
+        <button className="rounded-[1rem] border-2 border-[#5b3a30] bg-[#ffb9c8] px-5 py-3 text-sm font-black text-[#5b3a30] shadow-[4px_4px_0_rgba(91,58,48,0.14)] transition hover:-translate-y-0.5 hover:bg-[#ffc6d2] disabled:cursor-not-allowed disabled:opacity-60" disabled={isSubmitting} type="submit">
+          {isSubmitting ? "记录中..." : "记入排名"}
         </button>
       </div>
+      {submitError ? <p className="mt-3 rounded-[1rem] border border-[#d67a8f] bg-[#fff1f4] px-3 py-2 text-xs font-black text-[#9f5365]">{submitError}</p> : null}
     </form>
   );
 }
 
-export function CoffeeRankingsPage() {
-  const [coffees, setCoffees] = useState<CoffeeItem[]>(initialCoffees);
+type CoffeeRankingsPageProps = {
+  initialCoffeeItems?: CoffeeItem[];
+};
+
+export function CoffeeRankingsPage({ initialCoffeeItems = cloneInitialCoffees() }: CoffeeRankingsPageProps) {
+  const firstCoffee = initialCoffeeItems[0] ?? cloneInitialCoffees()[0];
+  const [coffees, setCoffees] = useState<CoffeeItem[]>(initialCoffeeItems.length > 0 ? initialCoffeeItems : [firstCoffee]);
   const rankedCoffees = useMemo(() => [...coffees].sort((a, b) => b.score - a.score), [coffees]);
-  const [activeCoffeeId, setActiveCoffeeId] = useState(initialCoffees[0].id);
+  const [activeCoffeeId, setActiveCoffeeId] = useState(firstCoffee.id);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<ReviewFormState>({
-    coffeeId: initialCoffees[0].id,
-    coffeeName: initialCoffees[0].name,
-    score: String(initialCoffees[0].score),
-    temperature: initialCoffees[0].temperature,
-    why: initialCoffees[0].flavor,
-    reminder: initialCoffees[0].warning,
+    coffeeId: firstCoffee.id,
+    coffeeName: firstCoffee.name,
+    score: String(firstCoffee.score),
+    temperature: firstCoffee.temperature,
+    why: firstCoffee.flavor,
+    reminder: firstCoffee.warning,
     photoUrl: "",
     verdict: "夯",
   });
@@ -393,66 +210,54 @@ export function CoffeeRankingsPage() {
 
     if (!file) return;
 
+    setPhotoFile(file);
     setForm((currentForm) => ({ ...currentForm, photoUrl: URL.createObjectURL(file) }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setSubmitError(null);
+    setIsSubmitting(true);
 
-    const trimmedCoffeeName = form.coffeeName.trim();
-    const trimmedWhy = form.why.trim();
-    const trimmedTemperature = form.temperature.trim();
-    const trimmedReminder = form.reminder.trim();
-    const parsedScore = Number.parseInt(form.score, 10);
-    const nextScore = Number.isFinite(parsedScore) ? Math.max(0, Math.min(100, parsedScore)) : 78;
-    if (!trimmedCoffeeName || !trimmedWhy) return;
+    try {
+      const formData = new FormData();
+      formData.set("coffeeId", form.coffeeId);
+      formData.set("coffeeName", form.coffeeName);
+      formData.set("score", form.score);
+      formData.set("temperature", form.temperature);
+      formData.set("why", form.why);
+      formData.set("reminder", form.reminder);
+      formData.set("verdict", form.verdict);
 
-    const review: CoffeeReview = {
-      id: createReviewId(),
-      author: "我本人",
-      date: getCurrentDateLabel(),
-      note: trimmedWhy,
-      photoUrl: form.photoUrl || undefined,
-      verdict: form.verdict,
-    };
-    const matchedCoffee = coffees.find((coffee) => coffee.name === trimmedCoffeeName);
-    const targetCoffeeId = matchedCoffee?.id ?? createCoffeeId();
-
-    setCoffees((currentCoffees) => {
-      if (matchedCoffee) {
-        return currentCoffees.map((coffee) =>
-          coffee.id === matchedCoffee.id
-            ? {
-                ...coffee,
-                score: nextScore,
-                temperature: trimmedTemperature || coffee.temperature,
-                flavor: trimmedWhy,
-                warning: trimmedReminder || coffee.warning,
-                reviews: [review, ...coffee.reviews],
-              }
-            : coffee,
-        );
+      if (photoFile) {
+        formData.set("photoFile", photoFile);
       }
 
-      return [
-        ...currentCoffees,
-        {
-          id: targetCoffeeId,
-          name: trimmedCoffeeName,
-          alias: "新杯待命名",
-          rankLabel: getRankLabel(form.verdict),
-          score: nextScore,
-          temperature: trimmedTemperature || "按本次记录",
-          flavor: trimmedWhy,
-          warning: trimmedReminder || "还没有稳定结论，多喝几次再定级。",
-          gradient: "from-[#fff7d8] via-[#ffd7e0] to-[#d7f2ec]",
-          reviews: [review],
-        },
-      ];
-    });
-    setActiveCoffeeId(targetCoffeeId);
-    setForm((currentForm) => ({ ...currentForm, photoUrl: "" }));
-    event.currentTarget.reset();
+      const response = await fetch("/api/coffee/reviews", {
+        body: formData,
+        credentials: "same-origin",
+        method: "POST",
+      });
+      const result = (await response.json().catch(() => ({}))) as { coffee?: CoffeeItem; coffees?: CoffeeItem[]; error?: string };
+
+      if (!response.ok || !result.coffee || !result.coffees) {
+        throw new Error(result.error ?? "咖啡评价暂时没记上");
+      }
+
+      setCoffees(result.coffees);
+      setActiveCoffeeId(result.coffee.id);
+      setForm((currentForm) => ({
+        ...currentForm,
+        coffeeId: result.coffee?.id ?? currentForm.coffeeId,
+        coffeeName: result.coffee?.name ?? currentForm.coffeeName,
+        photoUrl: "",
+      }));
+      setPhotoFile(null);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "咖啡评价暂时没记上");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -522,7 +327,7 @@ export function CoffeeRankingsPage() {
                     <CoffeePhoto coffee={activeCoffee} photoUrl={activeCoffee.reviews.find((review) => review.photoUrl)?.photoUrl} />
                   </div>
                   <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full border-2 border-[#5b3a30] bg-[#ffb9c8] px-4 py-2 text-sm font-black text-[#6a3c34] shadow-[3px_3px_0_rgba(91,58,48,0.12)]">
-                    #{rankedCoffees.findIndex((coffee) => coffee.id === activeCoffee.id) + 1} / {activeCoffee.rankLabel}
+                    #{rankedCoffees.findIndex((coffee) => coffee.id === activeCoffee.id) + 1} / {activeCoffee.reviews[0]?.verdict ?? "待观察"}
                   </div>
                 </div>
                 <div className="grid content-start gap-4 p-5 sm:p-6">
@@ -552,7 +357,7 @@ export function CoffeeRankingsPage() {
                 </div>
               </div>
             </article>
-            <ReviewComposer form={form} onFormChange={setForm} onPhotoSelect={handlePhotoSelect} onSubmit={handleSubmit} />
+            <ReviewComposer form={form} isSubmitting={isSubmitting} onFormChange={setForm} onPhotoSelect={handlePhotoSelect} onSubmit={handleSubmit} submitError={submitError} />
           </section>
         </div>
       </section>
